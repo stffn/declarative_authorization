@@ -1,0 +1,64 @@
+require File.join(File.dirname(__FILE__), 'test_helper.rb')
+require File.dirname(__FILE__) + '/../lib/in_controller.rb'
+require File.dirname(__FILE__) + '/../lib/helper.rb'
+
+MockController.send :include, Authorization::AuthorizationInController
+
+class HelperTest < Test::Unit::TestCase
+  include Authorization::AuthorizationHelper
+  attr_reader :controller
+  
+  def test_permit
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :mocks, :to => :show
+        end
+        role :test_role_2 do
+          has_permission_on :mocks, :to => :update
+        end
+      end
+    }
+    user = MockUser.new(:test_role)
+    @controller = MockController.new(reader).request!(user, :action)
+    
+    assert permitted_to?(:show, :mocks)
+    assert !permitted_to?(:update, :mocks)
+    
+    block_evaled = false
+    permitted_to?(:show, :mocks) do
+      block_evaled = true
+    end
+    assert block_evaled
+    
+    block_evaled = false
+    permitted_to?(:update, :mocks) do
+      block_evaled = true
+    end
+    assert !block_evaled
+  end
+
+  def test_permit_with_object
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :mocks do
+            to :show
+            if_attribute :test_attr => is {user.test_attr}
+          end
+        end
+      end
+    }
+    user = MockUser.new(:test_role, :test_attr => 1)
+    mock = MockDataObject.new(:test_attr => 1)
+    mock_2 = MockDataObject.new(:test_attr => 2)
+    @controller = MockController.new(reader).request!(user, :action)
+    
+    assert permitted_to?(:show, mock)
+    assert permitted_to?(:show, :mocks)
+    assert !permitted_to?(:show, mock_2)
+  end
+  
+end

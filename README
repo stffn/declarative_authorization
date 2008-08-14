@@ -1,0 +1,277 @@
+= Authorization
+
+This plugin offers an authorization mechanism inspired by _RBAC_.  The most 
+notable distinction to existing authorization plugins is the declarative
+authorization approach.  That is, authorization rules are not programmatically
+in between business logic but in an authorization configuration.
+
+Currently, Rails authorization plugins only provide for programmatic 
+authorization rules.  That is, the developer needs to specify which roles are 
+allowed to access a specific controller action or a part of a view, which is
+not DRY.  With a growing application code base and functions, as it happens 
+especially in agile development processes, it may be decided to introduce new 
+roles.  Then, at several places of the source code the new group needs to be 
+added, possibly leading to omissions and thus hard to test errors.  Another 
+aspect are changing authorization requirements in development or
+even after taking the application into production.  Then, privileges of
+certain roles need to be easily adjusted when the original assumptions
+concerning access control prove unrealistic.  In these situations, a
+declarative approach as offered by this plugin increases the development
+and maintenance efficiency.
+
+Plugin features
+* Authorization at controller action level
+* Authorization helpers for Views
+* Authorization at model level
+  * Authorize CRUD (Create, Read, Update, Delete) activities
+  * Query rewriting to automatically only fetch authorized records
+* DSL for specifying Authorization rules in an authorization configuration
+
+
+Requirements
+* Authentication solution ([TODO] examples): 
+  * User object in Controller.current_user, etc. [TODO]
+* User object needs to respond to a method :roles and return an array of role symbols
+See below.
+
+
+= Authorization Data Model
+
+ ----- App domain ----|-------- Authorization conf ---------|------- App domain ------
+
+                       includes                   includes
+                        .--.                        .---.
+                        |  v                        |   v
+  .------.  can_play  .------.  has_permission  .------------.  requires  .----------.
+  | User |----------->| Role |----------------->| Permission |<-----------| Activity |
+  '------' *        * '------' *              * '------------' 1        * '----------'
+                                                      |
+                                              .-------+------.
+                                           1 /        | 1     \ *
+                                 .-----------.   .---------.  .-----------.
+                                 | Privilege |   | Context |  | Attribute |
+                                 '-----------'   '---------'  '-----------'
+
+In the application domain, each *User* may be assigned to *Roles* that should 
+define the users' job in the application, such as _Administrator_.  On the 
+right-hand side of this diagram, application developers specify which *Permissions* 
+are necessary for users to perform activities, such as calling a controller action,
+viewing parts of a View or acting on records in the database.  Note that
+Permissions consist of an *Privilege* that is to be performed, such as _read_, 
+and a *Context* in that the Operation takes place, such as _companies_.
+
+In the authorization configuration, Permissions are assigned to Roles and Role
+and Permission hierarchies are defined.  *Attributes* may be employed to allow
+authorization according to dynamic information about the context and the
+current user, e.g. "only allow access on employees that belong to the
+current user's branch."
+
+
+= Examples
+
+== Controller
+
+If authentication is in place, enabling user-specific access control may be
+as simple as one call to filter_access_to :all which simply requires the 
+according privileges for present actions.  E.g. the privilege index_users is
+required for action index.  This works as a first default configuration
+for RESTful controllers, with these privileges easily handled in the
+authorization configuration, which will be described below.
+
+    class EmployeeController < ApplicationController
+      filter_access_to :all
+      def index
+        ...
+      end
+      ...
+    end
+
+When custom actions are added to such a controller, it helps to define more
+clearly which privileges are the respective requirements.  That is when the
+filter_access_to call may become more verbose:
+
+    class EmployeeController < ApplicationController
+      filter_access_to :all
+      # this one would be included in :all, but :read seems to be
+      # a more suitable privilege than :auto_complete_for_user_name
+      filter_access_to :auto_complete_for_employee_name, :require => :read
+      def auto_complete_for_employee_name
+        ...
+      end
+      ...
+    end
+
+For some actions it might be necessary to check certain attributes of the
+object the action is to be acting on.  Then, the object needs to be loaded 
+before the action's access control is evaluated.  On the other hand, some actions
+might prefer the authorization to ignore specific attribute checks as the object is
+unknown at checking time, so attribute checks and thus automatic loading of
+objects needs to be enabled explicitly.
+
+    class EmployeeController < ApplicationController
+      ...
+      filter_access_to :update, :attribute_check => true
+      def update
+        # @employee is already loaded from param[:id]
+        @employee ||= Employee.find(param[:id])
+        ...
+      end
+      ...
+    end
+
+For further customization of object loading, have a look at the complete
+API documentation of filter_access_to in 
+Authorization::AuthorizationInController::ClassMethods.
+
+
+== Views
+
+In views, a simple permitted_to? helper makes showing blocks according to the
+current user's privileges easy:
+
+    <% permitted_to?(:create, :employees) do %>
+    <%= link_to 'New', new_employee_path %>
+    <% end %>
+    ...
+    <% for employee in @employees %>
+    ...
+    <%= link_to 'Edit', edit_employee_path(company) if permitted_to?(:update, employee) %>
+    <% end %>
+
+See also Authorization::AuthorizationHelper.
+
+
+== Models
+
+There are two destinct features for model security built into this plugin:
+authorizing CRUD operations on objects as well as query rewriting to limit
+results according to certain privileges.
+
+See also Authorization::AuthorizationInModel.
+
+=== Model security for CRUD opterations
+To activate model security, all it takes is an explicit enabling for each
+model that model security should be enforced on, i.e.
+
+    class Employee < ActiveRecord::Base
+      using_access_control
+      ...
+    end
+
+As access control on read are costly, with possibly lots of objects being
+loaded at a time in one query, checks on read need to be actived explicitly by
+adding the :include_read option.
+
+TODO: Example, Exceptions
+
+=== Query rewriting using named scopes
+When retrieving large sets of records from databases, any authorization needs
+to be integrated into the query in order to prevent inefficient filtering
+afterwards and to use LIMIT and OFFSET in SQL statements.  To keep authorization
+rules out of the source code, this plugin offers query rewriting mechanisms
+through named scopes.
+
+    Employee.having_permission_to(:read)
+
+returns all employee records that the current user is authorized to read.  In
+addition, just like normal named scopes, query rewriting may be chained with
+the usual find method:
+
+    Employee.having_permission_to(:read).find(:all, :conditions => ...)
+
+=== Custom Rewriting
+
+
+== Authorization Rules
+
+Authorization rules are defined in config/authorization_rules.rb.  E.g.
+
+    authorization do
+      role :admin do
+        has_permission_on :employees, :to => [:create, :read, :update, :delete]
+      end
+    end
+
+Privileges, such as :create, may be put into hierarchies to simplify
+maintenance.  So the example above has the same meaning as
+
+    authorization do
+      role :admin do
+        has_permission_on :employees, :to => :manage
+      end
+    end
+
+    privileges do
+      privilege :manage do
+        includes :create, :read, :update, :delete
+      end
+    end
+
+Privilege hierarchies may be context-specific, e.g. applicable to :employees.
+
+    privileges do
+      privilege :manage, :employees, :includes => :increase_salary
+    end
+
+For more complex use cases, authorizations need to be based on attributes.  E.g.
+a branch admin should manage only employees of his branch.
+
+    authorization do
+      role :branch_admin do
+        has_permission.on :employees do
+          to :manage
+          # user refers to the current_user when evaluating
+          if_attribute :branch => is {user.branch}
+        end
+      end
+    end
+
+Lastly, not only privileges may be organized in a hierarchy but roles as well.
+Here, project manager inherit the permissions of employees.
+
+      role :project_manager do
+        includes :employee
+      end
+
+See also Authorization::Reader.
+
+= Installation
+TODO: how-to
+
+== Meeting the Requirements
+TODO: Helping to overcome requirements
+* install acts_as_authenticated or restful_authentication
+  or provide Controller.current_user
+
+  restful_authentication
+   ruby script/plugin install http://svn.techno-weenie.net/projects/plugins/restful_authentication/
+   ruby script/generate authenticated user sessions
+   move include AuthenticatedSystem to ApplicationController
+   add before_filter :login_required
+
+   $current_user ?
+
+* add roles field to User model
+  Migration for roles table
+  Model for roles
+  has_many :roles in User model
+
+
+== Debugging Authorization
+
+* Logging
+* Exceptions
+
+
+== Contact
+
+Steffen Bartsch
+TZI, Universität Bremen, Germany
+sbartsch at tzi.org
+
+
+== Licence
+
+Copyright (c) 2008 Steffen Bartsch, TZI, Universität Bremen, Germany
+released under the MIT license
+
