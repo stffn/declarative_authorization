@@ -36,6 +36,22 @@ module Authorization
           &block)
     end
     
+    # Works similar to the permitted_to? method, but doesn't accept a block
+    # and throws the authorization exceptions, just like Engine#permit!
+    def permitted_to! (privilege, object_or_sym = nil)
+      context = object = nil
+      if object_or_sym.is_a?(Symbol)
+        context = object_or_sym
+      else
+        object = object_or_sym
+      end
+      authorization_engine.permit!(privilege, 
+          {:user => current_user, 
+           :object => object,
+           :context => context,
+           :skip_attribute_test => object.nil?})
+    end
+    
     module ClassMethods
       #
       # Defines a filter to be applied according to the authorization of the
