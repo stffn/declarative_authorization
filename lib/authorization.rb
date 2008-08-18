@@ -14,7 +14,7 @@ module Authorization
   # Controller-independent method for retrieving the current user.
   # Needed for model security where the current controller is not available.
   def self.current_user
-    $current_user
+    $current_user || GuestUser.new
   end
   
   # Controller-independent method for setting the current user.
@@ -34,12 +34,18 @@ module Authorization
   # a certain privilege is granted for the current user.
   #
   class Engine
+    attr_reader :roles
+    
     # If +reader+ is not given, a new one is created with the default
     # authorization configuration of +AUTH_DSL_FILE+.  If given, may be either
     # a Reader object or a path to a configuration file.
     def initialize (reader = nil)
       if reader.nil?
-        reader = Reader::DSLReader.load(AUTH_DSL_FILE)
+        begin
+          reader = Reader::DSLReader.load(AUTH_DSL_FILE)
+        rescue SystemCallError
+          reader = Reader::DSLReader.new
+        end
       elsif reader.is_a?(String)
         reader = Reader::DSLReader.load(reader)
       end
@@ -185,16 +191,16 @@ module Authorization
     private
     def user_roles_privleges_from_options(privilege, options)
       options = {
-        :user => Authorization.current_user,
+        :user => nil,
         :context => nil
       }.merge(options)
-      user = options[:user]
+      user = options[:user] || Authorization.current_user
       privileges = privilege.is_a?(Array) ? privilege : [privilege]
       
-      raise AuthorizationUsageError, "No user object available" unless user
+      raise AuthorizationUsageError, "No user object available (#{user.inspect})" unless user
       raise AuthorizationUsageError, "User object doesn't respond to roles" unless user.respond_to?(:roles)
       
-      roles = flatten_roles user.roles
+      roles = flatten_roles((user.roles.blank? ? [:guest] : user.roles))
       privileges = flatten_privileges privileges, options[:context]
       [user, roles, privileges]
     end
@@ -313,6 +319,14 @@ module Authorization
         end
       end
       hash
+    end
+  end
+  
+  # Represents a pseudo-user to facilitate guest users in applications
+  class GuestUser
+    attr_reader :roles
+    def initialize (roles = [:guest])
+      @roles = roles
     end
   end
 end

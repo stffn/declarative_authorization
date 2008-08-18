@@ -20,6 +20,20 @@ class AuthorizationTest < Test::Unit::TestCase
       :user => MockUser.new(:test_role_2))
   end
   
+  def test_guest_user
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :guest do
+          has_permission_on :permissions, :to => :test
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert engine.permit?(:test, :context => :permissions)
+    assert !engine.permit?(:test, :context => :permissions_2)
+  end
+  
   def test_role_hierarchy
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
