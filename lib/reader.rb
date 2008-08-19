@@ -21,9 +21,16 @@ module Authorization
   # for details.
   #
   module Reader
-    class ParameterError < Exception; end
-    class DSLSyntaxError < Exception; end
+    # Signals errors that occur while reading and parsing an authorization DSL
+    class DSLError < Exception; end
+    # Signals errors in the syntax of an authorization DSL.
+    class DSLSyntaxError < DSLError; end
     
+    # Top-level reader, parses the methods +privileges+ and +authorization+.
+    # +authorization+ takes a block with authorization rules as described in
+    # AuthorizationRulesReader.  The block to +privileges+ defines privilege
+    # hierarchies, as described in PrivilegesReader.
+    #
     class DSLReader
       attr_reader :privileges_reader, :auth_rules_reader # :nodoc:
 
@@ -32,6 +39,8 @@ module Authorization
         @auth_rules_reader = AuthorizationRulesReader.new
       end
 
+      # Parses a authorization DSL specification from the string given
+      # in +dsl_data+.  Raises DSLSyntaxError if errors occur on parsing.
       def parse (dsl_data, file_name = nil)
         if file_name
           DSLMethods.new(self).instance_eval(dsl_data, file_name)
@@ -42,8 +51,9 @@ module Authorization
         raise DSLSyntaxError, "Illegal DSL syntax: #{e}"
       end
 
-      # TODO cache reader in production mode?
+      # Loads and parses a DSL from the given file name.
       def self.load (dsl_file)
+        # TODO cache reader in production mode?
         reader = new
         reader.parse(File.read(dsl_file), dsl_file)
         reader
@@ -69,8 +79,10 @@ module Authorization
       end
     end
 
-    # TODO handle privileges with separated context
+    # The PrivilegeReader handles the part of the authorization DSL in
+    # a +privileges+ block.  Here, privilege hierarchies are defined.
     class PrivilegesReader
+      # TODO handle privileges with separated context
       attr_reader :privileges, :privilege_hierarchy # :nodoc:
 
       def initialize # :nodoc:
@@ -105,9 +117,10 @@ module Authorization
         @current_context = nil
       end
 
-      # Specifies +privileges+ that are to be assigned as lower ones.
+      # Specifies +privileges+ that are to be assigned as lower ones.  Only to
+      # be used inside a privilege block.
       def includes (*privileges)
-        raise ParameterError, "includes only in privilege block" if @current_priv.nil?
+        raise DSLError, "includes only in privilege block" if @current_priv.nil?
         privileges.each do |priv|
           append_privilege priv
           @privilege_hierarchy[@current_priv] ||= []
@@ -134,6 +147,10 @@ module Authorization
 
       # Defines the authorization rules for the given +role+ in the
       # following block.
+      #   role :admin do
+      #     has_permissions_on ...
+      #   end
+      #
       def role (role, &block)
         append_role role
         @current_role = role
@@ -144,21 +161,49 @@ module Authorization
 
       # Roles may inherit all the rights from subroles.  The given +roles+
       # become subroles of the current block's role.
+      #   role :admin do
+      #     includes :user
+      #     has_permission_on :employees, :to => [:update, :create]
+      #   end
+      #   role :user do
+      #     has_permission_on :employees, :to => :read
+      #   end
+      #
       def includes (*roles)
-        raise ParameterError, "includes only in role blocks" if @current_role.nil?
+        raise DSLError, "includes only in role blocks" if @current_role.nil?
         @role_hierarchy[@current_role] ||= []
         @role_hierarchy[@current_role] += roles.flatten
       end
       
       # Allows the definition of privileges to be allowed for the current role,
-      # either in a has_permission block or directly in has_permission.to.
+      # either in a has_permission_on block or directly in one call.
+      #   role :admin
+      #     has_permission_on :employees, :to => :read
+      #     has_permission_on :employees do
+      #       to :create
+      #       if_attribute ...
+      #     end
+      #     has_permission_on :employees, :to => :delete do
+      #       if_attribute ...
+      #     end
+      #   end
+      # The block form allows to describe restrictions on the permissions
+      # using if_attribute.  Multiple has_permission_on statements are
+      # OR'ed when evaluating the permissions.  Also, multiple if_attribute
+      # statements in one block are OR'ed.
+      # 
+      # Available options
+      # [:+to+]
+      #   A symbol or an array of symbols representing the privileges that
+      #   should be granted in this statement.
+      #
       def has_permission_on (context, options = {}, &block)
-        raise ParameterError, "has_permission_on only allowed in role blocks" if @current_role.nil?
+        raise DSLError, "has_permission_on only allowed in role blocks" if @current_role.nil?
         options = {:to => []}.merge(options)
         
         privs = options[:to] 
         privs = [privs] unless privs.is_a?(Array)
-        raise ParameterError, "has_permission_on either needs a block or :to option" if !block_given? and privs.empty?
+        raise DSLError, "has_permission_on either needs a block or :to option" if !block_given? and privs.empty?
         
         rule = AuthorizationRule.new(@current_role, privs, context)
         @auth_rules << rule
@@ -171,30 +216,58 @@ module Authorization
       end
       
       # Used in a has_permission_on block, to may be used to specify privileges
-      # to be assigned to the current role.
+      # to be assigned to the current role under the conditions specified in
+      # the current block.
+      #   role :admin
+      #     has_permission_on :employees do
+      #       to :create, :read, :update, :delete
+      #     end
+      #   end
       def to (*privs)
-        # in has_permission block
-        raise ParameterError, "to only allowed in has_permission_on blocks" if @current_rule.nil?
+        raise DSLError, "to only allowed in has_permission_on blocks" if @current_rule.nil?
         @current_rule.append_privileges(privs)
       end
 
-      # In a has_permission block, if_attribute specifies additional conditions
+      # In a has_permission_on block, if_attribute specifies conditions
       # of dynamic parameters that have to be met for the user to meet the
-      # privileges in this block.  Multiple if_attribute statements are OR'ed.
+      # privileges in this block.  Conditions are evaluated on the context
+      # object.  Thus, the following allows CRUD for branch admins only on 
+      # employees that belong to the same branch as the current user.
+      #   role :branch_admin
+      #     has_permission_on :employees do
+      #       to :create, :read, :update, :delete
+      #       if_attribute :branch => is { user.branch }
+      #     end
+      #   end
+      # In this case, is is the operator for evaluating the condition.  Another
+      # operator is contains for collections.  In the block supplied to the
+      # operator, +user+ specifies the current user for whom the condition
+      # is evaluated.
+      # 
+      # Conditions may be nested:
+      #   role :company_admin
+      #     has_permission_on :employees do
+      #       to :create, :read, :update, :delete
+      #       if_attribute :branch => { :company => is {user.branch.company} }
+      #     end
+      #   end
+      # 
+      # Multiple if_attribute statements are OR'ed.
       def if_attribute (attr_conditions_hash)
-        raise ParameterError, "if_attribute only in has_permission blocks" if @current_rule.nil?
+        raise DSLError, "if_attribute only in has_permission blocks" if @current_rule.nil?
         parse_attribute_conditions_hash!(attr_conditions_hash)
         @current_rule.append_attribute Attribute.new(attr_conditions_hash)
       end
       
       # In an if_attribute statement, is says that the value has to be exactly
-      # met by the if_attribute attribute.
+      # met by the if_attribute attribute.  For the block, see if_attribute.
       def is (&block)
         [:is, block]
       end
       
       # In an if_attribute statement, contains says that the value has to be
       # part of the collection specified by the if_attribute attribute.
+      # For the block, see if_attribute.
       def contains (&block)
         [:contains, block]
       end
