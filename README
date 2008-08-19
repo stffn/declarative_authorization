@@ -1,9 +1,9 @@
-= Authorization
+= Declarative Authorization
 
-This plugin offers an authorization mechanism inspired by _RBAC_.  The most 
-notable distinction to existing authorization plugins is the declarative
-authorization approach.  That is, authorization rules are not programmatically
-in between business logic but in an authorization configuration.
+The declarative authorization plugin offers an authorization mechanism inspired 
+by _RBAC_.  The most notable distinction to existing authorization plugins is the 
+declarative authorization approach.  That is, authorization rules are not 
+programmatically in between business logic but in an authorization configuration.
 
 Currently, Rails authorization plugins only provide for programmatic 
 authorization rules.  That is, the developer needs to specify which roles are 
@@ -29,10 +29,11 @@ Plugin features
 
 
 Requirements
-* Authentication solution ([TODO] examples): 
-  * User object in Controller.current_user, etc. [TODO]
-* User object needs to respond to a method :roles and return an array of role symbols
-See below.
+* An authentication mechanism 
+  * User object in Controller#current_user
+* User object needs to respond to a method :roles, which should return an 
+  array of role symbols
+See below for installation instructions.
 
 
 = Authorization Data Model
@@ -119,8 +120,10 @@ objects needs to be enabled explicitly.
       ...
     end
 
-For further customization of object loading, have a look at the complete
-API documentation of filter_access_to in 
+If the access is denied, a +permission_denied+ method is called on the
+current_controller, if defined and the issue is logged.
+For further customization of the filters and object loading, have a look at 
+the complete API documentation of filter_access_to in 
 Authorization::AuthorizationInController::ClassMethods.
 
 
@@ -158,28 +161,36 @@ model that model security should be enforced on, i.e.
       ...
     end
 
+Thus,
+    Employee.create(...)
+fails, if the current user is not allowed to :create :employees according
+to the authorization rules.  For the application to find out about what 
+happened if an operation is denied, the filters throw 
+Authorization::NotAuthorized exceptions.
+
 As access control on read are costly, with possibly lots of objects being
 loaded at a time in one query, checks on read need to be actived explicitly by
 adding the :include_read option.
-
-TODO: Example, Exceptions
 
 === Query rewriting using named scopes
 When retrieving large sets of records from databases, any authorization needs
 to be integrated into the query in order to prevent inefficient filtering
 afterwards and to use LIMIT and OFFSET in SQL statements.  To keep authorization
 rules out of the source code, this plugin offers query rewriting mechanisms
-through named scopes.
+through named scopes.  Thus,
 
-    Employee.having_permission_to(:read)
+    Employee.with_permissions_to(:read)
 
 returns all employee records that the current user is authorized to read.  In
 addition, just like normal named scopes, query rewriting may be chained with
 the usual find method:
 
-    Employee.having_permission_to(:read).find(:all, :conditions => ...)
+    Employee.with_permissions_to(:read).find(:all, :conditions => ...)
 
-=== Custom Rewriting
+If the current user is completely missing the permissions, an 
+Authorization::NotAuthorized exception is raised.  Through 
+Model.obligation_conditions, application developers may retrieve
+the conditions for manual rewrites.
 
 
 == Authorization Rules
@@ -191,6 +202,12 @@ Authorization rules are defined in config/authorization_rules.rb.  E.g.
         has_permission_on :employees, :to => [:create, :read, :update, :delete]
       end
     end
+
+There is a default role :+guest+ that is used if a request is not associated
+with any user or with a user without any roles.  So, if your application has
+public pages, :+guest+ can be used to allow access for users that are not
+logged in.  All other roles are application defined and need to be associated
+with users by the application.
 
 Privileges, such as :create, may be put into hierarchies to simplify
 maintenance.  So the example above has the same meaning as
@@ -214,7 +231,7 @@ Privilege hierarchies may be context-specific, e.g. applicable to :employees.
     end
 
 For more complex use cases, authorizations need to be based on attributes.  E.g.
-a branch admin should manage only employees of his branch.
+if a branch admin should manage only employees of his branch:
 
     authorization do
       role :branch_admin do
@@ -235,32 +252,58 @@ Here, project manager inherit the permissions of employees.
 
 See also Authorization::Reader.
 
-= Installation
-TODO: how-to
+= Installation of declarative_authorization and Usage
 
-== Meeting the Requirements
-TODO: Helping to overcome requirements
-* install acts_as_authenticated or restful_authentication
-  or provide Controller.current_user
+To install simply execute in your applications root directory
+  cd vendor/plugins && git clone git://github.com/stffn/declarative_authorization.git
 
-  restful_authentication
-   ruby script/plugin install http://svn.techno-weenie.net/projects/plugins/restful_authentication/
+Then, 
+* provide the requirements as noted below, 
+* create a basic config/authorization_rules.rb--you might want to take the 
+  provided example authorization_rules.dist.rb in the plugin root as a starting 
+  point, 
+* add +filter_access_to+, +permitted_to+? and model security as needed.
+
+== Providing the Plugin's Requirements
+The requirements are
+* An authentication mechanism 
+* A user object returned by controller.current_user
+* An array of role symbols returned by user.roles
+
+Of the various ways to provide these requirements, here is one way employing
+restful_authentication:
+
+* Install restful_authentication
+   cd vendor/plugins && git clone git://github.com/technoweenie/restful-authentication.git restful_authentication
    ruby script/generate authenticated user sessions
-   move include AuthenticatedSystem to ApplicationController
-   add before_filter :login_required
+* Move "include AuthenticatedSystem" to ApplicationController
+* Add +before_filter+ :+login_required+ to controllers where a user should be
+  forced to log in;  if parts of your application are public, 
+  +filter_access_to+ calls as described above are sufficient.
+* If you'd like to use model security, add a before_filter that sets the user 
+  globally to your ApplicationController.  Note, this is by no means thread-safe.
+   before_filter :set_current_user
+   protected
+   def set_current_user
+     Authorization.current_user = current_user
+   end
 
-   $current_user ?
-
-* add roles field to User model
-  Migration for roles table
-  Model for roles
-  has_many :roles in User model
+* Add roles field to User model: a migration and table for roles,
+  +has_many+ :+roles+ in User model and a roles method that returns the roles 
+  as an Array of Symbols, e.g.
+   def roles
+     (super || []).map {|r| r.title.to_sym}
+   end
 
 
 == Debugging Authorization
 
-* Logging
-* Exceptions
+Currently, the main means of debugging authorization decisions is logging and
+exceptions.  Denied access to actions is logged to +warn+ or +info+, including
+some hints about what went wrong.
+
+All bang methods throw exceptions which may be used to retrieve more
+information about a denied access than a Boolean value.
 
 
 == Contact

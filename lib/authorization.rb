@@ -4,9 +4,17 @@ require "set"
 
 
 module Authorization
+  # An exception raised if anything goes wrong in the Authorization realm
   class AuthorizationError < Exception ; end
+  # NotAuthorized is raised if the current user is not allowed to perform
+  # the given operation possibly on a specific object.
   class NotAuthorized < AuthorizationError ; end
+  # AttributeAuthorizationError is more specific than NotAuthorized, signalling
+  # that the access was denied on the grounds of attribute conditions.
   class AttributeAuthorizationError < NotAuthorized ; end
+  # AuthorizationUsageError is used whenever a situation is encountered
+  # in which the application misused the plugin.  That is, if, e.g.,
+  # authorization rules may not be evaluated.
   class AuthorizationUsageError < AuthorizationError ; end
   
   AUTH_DSL_FILE = "#{RAILS_ROOT}/config/authorization_rules.rb"

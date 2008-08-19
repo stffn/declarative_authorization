@@ -119,9 +119,9 @@ class DSLReaderTest < Test::Unit::TestCase
     }
   end
   
-  def test_parameter_error
+  def test_dsl_error
     reader = Authorization::Reader::DSLReader.new
-    assert_raise(Authorization::Reader::ParameterError) do
+    assert_raise(Authorization::Reader::DSLError) do
       reader.parse %{
         authorization do
           includes :lesser_role

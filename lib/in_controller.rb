@@ -47,23 +47,32 @@ module Authorization
       #     filter_access_to :all
       #     ...
       #   end
+      #   
+      # When the access is denied, the method +permission_denied+ is called
+      # on the current controller, if defined.  Else, a simple "you are not
+      # allowed" string is output.  Log.info is given more information on the
+      # reasons of denial.
+      # 
+      #   def permission_denied
+      #     respond_to do |format|
+      #     flash[:error] = 'Sorry, you are not allowed to the requested page.'
+      #     format.html { redirect_to(:back) rescue redirect_to('/') }
+      #     format.xml  { head :unauthorized }
+      #     format.js   { head :unauthorized }
+      #   end
       # 
       # By default, required privileges are infered from the action name and
       # the controller name.  Thus, in UserController :+edit+ requires
-      # :+edit_users+.  To specify required privilege, use the option :+require+
-      #   filter_access_to :new, :create, :require => :create_users
+      # :+edit+ +users+.  To specify required privilege, use the option :+require+
+      #   filter_access_to :new, :create, :require => :create, :context => :users
       #   
       # For further customization, a custom filter expression may be formulated
       # in a block, which is then evaluated in the context of the controller
       # on a matching request.  That is, for checking two objects, use the 
       # following:
       #   filter_access_to :merge do
-      #     authorization_engine.permit!(:update, :context => :users,
-      #                                  :object => User.find(params[:original_id]),
-      #                                  :user => current_user) and
-      #       authorization_engine.permit!(:delete, :context => :users,
-      #                                    :object => User.find(params[:id]),
-      #                                    :user => current_user)
+      #     permitted_to!(:update, User.find(params[:original_id])) and
+      #       permitted_to!(:delete, User.find(params[:id]))
       #   end
       # The block should raise a Authorization::AuthorizationError or return
       # false if the access is to be denied.
