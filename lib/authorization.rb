@@ -34,7 +34,7 @@ module Authorization
   # For use in test cases only
   def self.ignore_access_control (state = nil) # :nodoc:
     @@ignore_access_control = state unless state.nil?
-    @@ignore_access_control
+    ENV['RAILS_ENV'] == 'test' and @@ignore_access_control
   end
   
   # Authorization::Engine implements the reference monitor.  It may be used
@@ -176,7 +176,7 @@ module Authorization
     # yet.  If +dsl_file+ is given, it is passed on to Engine.new and 
     # a new instance is always created.
     def self.instance (dsl_file = nil)
-      if dsl_file
+      if dsl_file or ENV['RAILS_ENV'] == 'development'
         @@instance = new(dsl_file)
       else
         @@instance ||= new

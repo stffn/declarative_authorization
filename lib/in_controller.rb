@@ -10,7 +10,7 @@ module Authorization
     
     # Returns the Authorization::Engine for the current controller.
     def authorization_engine
-      @authorization_engine ||= Authorization::Engine.new
+      @authorization_engine ||= Authorization::Engine.instance
     end
     
     # If the current user meets the given privilege, permitted_to? returns true
