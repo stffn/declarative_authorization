@@ -291,8 +291,11 @@ restful_authentication:
 * Add roles field to User model: a migration and table for roles,
   +has_many+ :+roles+ in User model and a roles method that returns the roles 
   as an Array of Symbols, e.g.
-   def roles
-     (super || []).map {|r| r.title.to_sym}
+   class User < ActiveRecord::Base
+     has_many :roles
+     def roles
+       (super || []).map {|r| r.title.to_sym}
+     end
    end
 
 
