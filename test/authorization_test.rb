@@ -34,6 +34,24 @@ class AuthorizationTest < Test::Unit::TestCase
     assert !engine.permit?(:test, :context => :permissions_2)
   end
   
+  def test_invalid_user_model
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :guest do
+          has_permission_on :permissions, :to => :test
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_raise(Authorization::AuthorizationUsageError) do
+      engine.permit?(:test, :context => :permissions, :user => MockUser.new(1, 2))
+    end
+    assert_raise(Authorization::AuthorizationUsageError) do
+      engine.permit?(:test, :context => :permissions, :user => MockDataObject.new)
+    end
+  end
+  
   def test_role_hierarchy
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

@@ -205,8 +205,12 @@ module Authorization
       user = options[:user] || Authorization.current_user
       privileges = privilege.is_a?(Array) ? privilege : [privilege]
       
-      raise AuthorizationUsageError, "No user object available (#{user.inspect})" unless user
-      raise AuthorizationUsageError, "User object doesn't respond to roles" unless user.respond_to?(:roles)
+      raise AuthorizationUsageError, "No user object available (#{user.inspect})" \
+        unless user
+      raise AuthorizationUsageError, "User object doesn't respond to roles" \
+        unless user.respond_to?(:roles)
+      raise AuthorizationUsageError, "User.roles doesn't return an Array of Symbols" \
+        unless user.roles.empty? or user.roles[0].is_a?(Symbol)
       
       roles = flatten_roles((user.roles.blank? ? [:guest] : user.roles))
       privileges = flatten_privileges privileges, options[:context]
