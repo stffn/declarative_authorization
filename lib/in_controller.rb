@@ -59,12 +59,18 @@ module Authorization
       # Defines a filter to be applied according to the authorization of the
       # current user.  Requires at least one symbol corresponding to an
       # action as parameter.  The special symbol :+all+ refers to all action.
+      # The all :+all+ statement is only employed if no specific statement is
+      # present.
       #   class UserController < ActionController
       #     filter_access_to :index
       #     filter_access_to :new, :edit
       #     filter_access_to :all
       #     ...
       #   end
+      # 
+      # The default is to allow access unconditionally if no rule matches.
+      # Thus, including the +filter_access_to+ :+all+ statement is a good
+      # idea, implementing a default-deny policy.
       #   
       # When the access is denied, the method +permission_denied+ is called
       # on the current controller, if defined.  Else, a simple "you are not
