@@ -8,6 +8,8 @@ module Authorization
       base.extend(ClassMethods)
     end
     
+    DEFAULT_DENY = false
+    
     # Returns the Authorization::Engine for the current controller.
     def authorization_engine
       @authorization_engine ||= Authorization::Engine.instance
@@ -135,7 +137,6 @@ module Authorization
         context = options[:context]
         actions = args
 
-        # TODO currently: default deny; make this configurable
         # collect permits in controller array for use in one before_filter
         unless class_variable_defined?(:@@permissions)
           permissions = []
@@ -151,7 +152,7 @@ module Authorization
                         elsif !all_permissions.empty?
                           all_permissions.all? {|perm| perm.permit!(contr)}
                         else
-                          false
+                          !DEFAULT_DENY
                         end
             rescue AuthorizationError => e
               auth_exception = e

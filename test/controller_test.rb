@@ -91,6 +91,19 @@ class ControllerTest < Test::Unit::TestCase
     assert !controller.called_render
   end
   
+  def test_filter_access_unprotected_actions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+        end
+      end
+    }
+    controller = SpecificMockController.new(reader)
+    controller.request!(MockUser.new(:test_role), "unprotected_action")
+    assert !controller.called_render
+  end
+
   def test_filter_access_priv_hierarchy
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
