@@ -252,17 +252,12 @@ module Authorization
   end
   
   class AuthorizationRule
-    attr_reader :attributes, :context, :role, :privileges
+    attr_reader :attributes, :contexts, :role, :privileges
     
-    def initialize (role, privileges_or_context = [], context = nil)
+    def initialize (role, privileges = [], contexts = nil)
       @role = role
-      @privileges = Set.new
-      if privileges_or_context.is_a?(Array)
-        @context = context
-        append_privileges(privileges_or_context)
-      else
-        @context = privileges_or_context
-      end
+      @privileges = Set.new(privileges)
+      @contexts = Set.new((contexts && !contexts.is_a?(Array) ? [contexts] : contexts))
       @attributes = []
     end
     
@@ -276,7 +271,7 @@ module Authorization
     
     def matches? (roles, privs, context = nil)
       roles = [roles] unless roles.is_a?(Array)
-      @context == context and roles.include?(@role) and 
+      @contexts.include?(context) and roles.include?(@role) and 
         not (@privileges & privs).empty?
     end
   end

@@ -179,6 +179,7 @@ module Authorization
       # either in a has_permission_on block or directly in one call.
       #   role :admin
       #     has_permission_on :employees, :to => :read
+      #     has_permission_on [:employees, :orders], :to => :read
       #     has_permission_on :employees do
       #       to :create
       #       if_attribute ...
