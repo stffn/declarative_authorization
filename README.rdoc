@@ -288,15 +288,36 @@ restful_authentication:
      Authorization.current_user = current_user
    end
 
-* Add roles field to User model: a migration and table for roles,
-  +has_many+ :+roles+ in User model and a roles method that returns the roles 
-  as an Array of Symbols, e.g.
-   class User < ActiveRecord::Base
-     has_many :roles
-     def roles
-       (super || []).map {|r| r.title.to_sym}
+* Add roles field to the User model through a :+has_many+ association
+  (this is just one possible approach; you could just as easily use 
+  :+has_many+ :+through+ or a serialized roles array):
+  * create a migration for table roles 
+     class CreateRoles < ActiveRecord::Migration
+       def self.up
+         create_table "roles" do |t|
+           t.column :title, :string
+           t.references :user
+         end
+       end
+
+       def self.down
+         drop_table "roles"
+       end
      end
-   end
+
+  * create a model Role,
+     class Role < ActiveRecord::Base
+       belongs_to :user
+     end
+
+  * add +has_many+ :+roles+ to the User model and a roles method that returns the roles 
+    as an Array of Symbols, e.g.
+     class User < ActiveRecord::Base
+       has_many :role_objs, :class_name => 'Role'
+       def roles
+         (role_objs || []).map {|r| r.title.to_sym}
+       end
+     end
 
 
 == Debugging Authorization
