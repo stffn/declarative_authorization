@@ -216,7 +216,7 @@ module Authorization
       if @filter_block
         return contr.instance_eval(&@filter_block)
       end
-      context = @context || contr.class.controller_name.pluralize.to_sym
+      context = @context || contr.class.controller_name.to_sym
       object = @attribute_check ? load_object(contr, context) : nil
       privilege = @privilege || :"#{contr.action_name}"
       

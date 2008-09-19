@@ -35,7 +35,7 @@ class LoadObjectMockController < MockController
   end
   filter_access_to :view, :attribute_check => true, :load_method => :load_method
   def self.controller_name
-    "load_mock_object"
+    "load_mock_objects"
   end
   def load_method
     MockDataObject.new(:test => 2)
@@ -46,6 +46,14 @@ class AccessOverwriteController < MockController
   filter_access_to :test_action, :test_action_2, 
     :require => :test, :context => :permissions_2
   filter_access_to :test_action, :require => :test, :context => :permissions
+end
+
+class PeopleController < MockController
+  filter_access_to :all
+  action_methods :show
+  def self.controller_name
+    "people"
+  end
 end
 
 
@@ -258,6 +266,20 @@ class ControllerTest < Test::Unit::TestCase
     assert controller.called_render
     
     controller.request!(MockUser.new(:test_role), "test_action")
+    assert !controller.called_render
+  end
+  
+  def test_filter_access_people_controller
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :people, :to => :show
+        end
+      end
+    }
+    controller = PeopleController.new(reader)
+    controller.request!(MockUser.new(:test_role), "show")
     assert !controller.called_render
   end
 end

@@ -67,7 +67,7 @@ class MockController
   end
   
   def self.controller_name
-    "mock"
+    "mocks"
   end
   
   def self.before_filters

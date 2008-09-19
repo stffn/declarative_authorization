@@ -19,6 +19,20 @@ class AuthorizationTest < Test::Unit::TestCase
     assert !engine.permit?(:test, :context => :permissions, 
       :user => MockUser.new(:test_role_2))
   end
+  
+  def test_permit_context_people
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :people, :to => :test
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert engine.permit?(:test, :context => :people, 
+      :user => MockUser.new(:test_role))
+  end
 
   def test_permit_multiple_contexts
     reader = Authorization::Reader::DSLReader.new
