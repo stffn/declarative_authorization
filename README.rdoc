@@ -235,7 +235,7 @@ if a branch admin should manage only employees of his branch:
 
     authorization do
       role :branch_admin do
-        has_permission.on :employees do
+        has_permission_on :employees do
           to :manage
           # user refers to the current_user when evaluating
           if_attribute :branch => is {user.branch}
