@@ -319,6 +319,9 @@ restful_authentication:
        end
      end
 
+  * add roles to your User objects using e.g.
+     user.role_objs.create(:title => "admin")
+
 
 == Debugging Authorization
 
