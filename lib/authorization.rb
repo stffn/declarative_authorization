@@ -165,10 +165,8 @@ module Authorization
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
       attr_validator = AttributeValidator.new(user)
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
-        #p rule
-        #obligation = {}
-        rule.attributes.collect {|attr| attr.obligation(attr_validator) }
-        #obligation
+        obligation = rule.attributes.collect {|attr| attr.obligation(attr_validator) }
+        obligation.empty? ? [{}] : obligation
       end.flatten
     end
     

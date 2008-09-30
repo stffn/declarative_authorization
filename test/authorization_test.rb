@@ -52,6 +52,55 @@ class AuthorizationTest < Test::Unit::TestCase
       :user => MockUser.new(:test_role))
   end
   
+  def test_obligations_without_conditions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{}], engine.obligations(:test, :context => :permissions, 
+      :user => MockUser.new(:test_role))
+  end
+  
+  def test_obligations_with_conditions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :attr => is { user.attr }
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{:attr => [:is, 1]}], 
+      engine.obligations(:test, :context => :permissions, 
+          :user => MockUser.new(:test_role, :attr => 1))
+  end
+  
+  def test_obligations_with_conditions_and_empty
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test
+          has_permission_on :permissions, :to => :test do
+            if_attribute :attr => is { user.attr }
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{}, {:attr => [:is, 1]}], 
+      engine.obligations(:test, :context => :permissions, 
+          :user => MockUser.new(:test_role, :attr => 1))
+  end
+  
   def test_guest_user
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

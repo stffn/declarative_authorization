@@ -60,6 +60,7 @@ module Authorization
             and_conditions = []
             obligation_conditions!(nil, obligation, options[:model], 
                                    and_conditions, condition_values, joins)
+            and_conditions << "1" if and_conditions.empty?
             conditions << and_conditions.collect {|c| "#{c}"} * ' AND ' unless and_conditions.empty?
           end
 

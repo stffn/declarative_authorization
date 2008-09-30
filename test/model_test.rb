@@ -119,6 +119,28 @@ class ModelTest < Test::Unit::TestCase
     TestModel.delete_all
   end
   
+  def test_named_scope_multiple_and_empty_obligations
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :id => is { user.test_attr_value }
+          end
+          has_permission_on :test_models, :to => :read
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+    
+    test_model_1 = TestModel.create!
+    TestModel.create!
+    
+    user = MockUser.new(:test_role, :test_attr_value => test_model_1.id)
+    assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
+    TestModel.delete_all
+  end
+  
   def test_named_scope_multiple_attributes
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
