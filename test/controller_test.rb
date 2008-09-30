@@ -56,6 +56,18 @@ class PeopleController < MockController
   end
 end
 
+class CommonController < MockController
+  filter_access_to :delete, :context => :common
+  filter_access_to :all
+end
+class CommonChild1Controller < CommonController
+  filter_access_to :all, :context => :context_1
+end
+class CommonChild2Controller < CommonController
+  filter_access_to :delete
+  action_methods :show
+end
+
 
 class ControllerTest < Test::Unit::TestCase
   
@@ -280,6 +292,23 @@ class ControllerTest < Test::Unit::TestCase
     }
     controller = PeopleController.new(reader)
     controller.request!(MockUser.new(:test_role), "show")
+    assert !controller.called_render
+  end
+  
+  def test_controller_hierarchy
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :mocks, :to => [:delete, :show]
+        end
+      end
+    }
+    controller = CommonChild2Controller.new(reader)
+    #p controller.class.send(:class_variable_get, :@@permissions)
+    controller.request!(MockUser.new(:test_role), "show")
+    assert !controller.called_render
+    controller.request!(MockUser.new(:test_role), "delete")
     assert !controller.called_render
   end
 end

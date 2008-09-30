@@ -144,10 +144,9 @@ module Authorization
         actions = args
 
         # collect permits in controller array for use in one before_filter
-        unless class_variable_defined?(:@@permissions)
-          permissions = []
-          class_variable_set(:@@permissions, permissions)
+        unless filter_access_permissions?
           before_filter do |contr|
+            permissions = contr.class.all_filter_access_permissions
             all_permissions = permissions.select {|p| p.actions.include?(:all)}
             matching_permissions = permissions.select {|p| p.matches?(contr.action_name)}
             allowed = false
@@ -181,17 +180,43 @@ module Authorization
           end
         end
         
-        class_variable_get(:@@permissions).each do |perm|
+        filter_access_permissions.each do |perm|
           perm.remove_actions(actions)
         end
-        class_variable_get(:@@permissions) << 
+        filter_access_permissions << 
           ControllerPermission.new(actions, privilege, context,
                                    options[:attribute_check],
                                    options[:model],
                                    options[:load_method],
                                    filter_block)
       end
-    end 
+      
+      protected
+      # Collecting all the ControllerPermission objects from the controller
+      # hierarchy.  Permissions for actions are overwritten by calls to 
+      # filter_access_to in child controllers with the same action.
+      def all_filter_access_permissions
+        ancestors.inject([]) do |perms, mod|
+          if mod.respond_to?(:filter_access_permissions)
+            perms + 
+              mod.filter_access_permissions.collect do |p1| 
+                p1.clone.remove_actions(perms.inject(Set.new) {|actions, p2| actions + p2.actions})
+              end
+          else
+            perms
+          end
+        end
+      end
+      
+      def filter_access_permissions
+        class_variable_set(:@@declarative_authorization_permissions, {}) unless class_variable_defined?(:@@declarative_authorization_permissions)
+        class_variable_get(:@@declarative_authorization_permissions)[self.name] ||= []
+      end
+      
+      def filter_access_permissions?
+        class_variable_defined?(:@@declarative_authorization_permissions)
+      end
+    end
   end
   
   class ControllerPermission # :nodoc:
@@ -236,6 +261,7 @@ module Authorization
     
     def remove_actions (actions)
       @actions -= actions
+      self
     end
     
     private
