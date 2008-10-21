@@ -66,7 +66,7 @@ module Authorization
 
           scope_options = {}
           unless conditions.empty?
-            scope_options[:select] = "`#{options[:context]}`.*" if options[:context]
+            scope_options[:select] = "#{connection.quote_table_name(options[:context])}.*" if options[:context]
             scope_options[:conditions] = [conditions.collect {|c| "(#{c})"} * ' OR '] + condition_values
             scope_options[:joins] = joins.to_a unless joins.empty?
           end
@@ -94,9 +94,9 @@ module Authorization
             when :is
               id_obj_attr = :"#{object_attribute}_id"
               if model.columns_hash[id_obj_attr.to_s]
-                and_conditions << "`#{model.table_name}`.#{id_obj_attr} = ?"
+                and_conditions << "#{connection.quote_table_name(model.table_name)}.#{id_obj_attr} = ?"
               else
-                and_conditions << "`#{model.table_name}`.#{object_attribute} = ?"
+                and_conditions << "#{connection.quote_table_name(model.table_name)}.#{object_attribute} = ?"
               end
 
               condition_values << (value.is_a?(ActiveRecord::Base) ? value.id : value)
