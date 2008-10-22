@@ -42,7 +42,7 @@ module Authorization
   # a certain privilege is granted for the current user.
   #
   class Engine
-    attr_reader :roles
+    attr_reader :roles, :role_titles, :role_descriptions
     
     # If +reader+ is not given, a new one is created with the default
     # authorization configuration of +AUTH_DSL_FILE+.  If given, may be either
@@ -63,6 +63,9 @@ module Authorization
       @auth_rules = reader.auth_rules_reader.auth_rules
       @roles = reader.auth_rules_reader.roles
       @role_hierarchy = reader.auth_rules_reader.role_hierarchy
+
+      @role_titles = reader.auth_rules_reader.role_titles
+      @role_descriptions = reader.auth_rules_reader.role_descriptions
       
       # {[priv, ctx] => [priv, ...]}
       @rev_priv_hierarchy = {}
@@ -168,6 +171,20 @@ module Authorization
         obligation = rule.attributes.collect {|attr| attr.obligation(attr_validator) }
         obligation.empty? ? [{}] : obligation
       end.flatten
+    end
+    
+    # Returns the description for the given role.  The description may be
+    # specified with the authorization rules.  Returns +nil+ if none was
+    # given.
+    def description_for (role)
+      role_descriptions[role]
+    end
+    
+    # Returns the title for the given role.  The title may be
+    # specified with the authorization rules.  Returns +nil+ if none was
+    # given.
+    def title_for (role)
+      role_titles[role]
     end
     
     # Returns an instance of Engine, which is created if there isn't one

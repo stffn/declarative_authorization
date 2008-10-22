@@ -130,7 +130,8 @@ module Authorization
     end
 
     class AuthorizationRulesReader
-      attr_reader :roles, :role_hierarchy, :auth_rules # :nodoc:
+      attr_reader :roles, :role_hierarchy, :auth_rules,
+        :role_descriptions, :role_titles # :nodoc:
 
       def initialize # :nodoc:
         @current_role = nil
@@ -138,11 +139,15 @@ module Authorization
         @roles = []
         # higher_role => [lower_roles]
         @role_hierarchy = {}
+        @role_titles = {}
+        @role_descriptions = {}
         @auth_rules = []
       end
 
-      def append_role (role) # :nodoc:
+      def append_role (role, options = {}) # :nodoc:
         @roles << role unless @roles.include? role
+        @role_titles[role] = options[:title] if options[:title]
+        @role_descriptions[role] = options[:description] if options[:description]
       end
 
       # Defines the authorization rules for the given +role+ in the
@@ -151,8 +156,8 @@ module Authorization
       #     has_permissions_on ...
       #   end
       #
-      def role (role, &block)
-        append_role role
+      def role (role, options = {}, &block)
+        append_role role, options
         @current_role = role
         yield
       ensure
@@ -214,6 +219,26 @@ module Authorization
           # TODO ensure?
           @current_rule = nil
         end
+      end
+      
+      # Sets a description for the current role.  E.g.
+      #   role :admin
+      #     description "To be assigned to administrative personnel"
+      #     has_permission_on ...
+      #   end
+      def description (text)
+        raise DSLError, "description only allowed in role blocks" if @current_role.nil?
+        role_descriptions[@current_role] = text
+      end
+      
+      # Sets a human-readable title for the current role.  E.g.
+      #   role :admin
+      #     title "Administrator"
+      #     has_permission_on ...
+      #   end
+      def title (text)
+        raise DSLError, "title only allowed in role blocks" if @current_role.nil?
+        role_titles[@current_role] = text
       end
       
       # Used in a has_permission_on block, to may be used to specify privileges

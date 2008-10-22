@@ -312,4 +312,23 @@ class AuthorizationTest < Test::Unit::TestCase
               :user => MockUser.new(:test_role),
               :object => MockDataObject.new(:test_attr => 2))
   end
+  
+  def test_role_title_description
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role, :title => 'Test Role' do
+          description "Test Role Description"
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert engine.roles.include?(:test_role)
+    assert_equal "Test Role", engine.role_titles[:test_role]
+    assert_equal "Test Role", engine.title_for(:test_role)
+    assert_nil engine.title_for(:test_role_2)
+    assert_equal "Test Role Description", engine.role_descriptions[:test_role]
+    assert_equal "Test Role Description", engine.description_for(:test_role)
+    assert_nil engine.description_for(:test_role_2)
+  end
 end
