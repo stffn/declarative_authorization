@@ -1,6 +1,7 @@
 require 'test/unit'
 RAILS_ROOT = File.dirname(__FILE__) + '../../../../../'
 require File.dirname(__FILE__) + '/../lib/authorization.rb'
+require File.dirname(__FILE__) + '/../lib/in_controller.rb'
 
 unless defined?(ActiveRecord)
   if File.directory? RAILS_ROOT + 'config'
@@ -14,7 +15,7 @@ unless defined?(ActiveRecord)
     gem 'actionpack'; gem 'activerecord'; gem 'activesupport'
   end
 
-  %w(action_pack active_record active_support).each {|f| require f}
+  %w(action_pack action_controller active_record active_support).each {|f| require f}
 end
 
 class MockDataObject
@@ -39,47 +40,20 @@ class MockUser < MockDataObject
   end
 end
 
-class MockController
-  def initialize (reader = nil)
-    @authorization_engine = Authorization::Engine.new(reader) if reader
-    @called_render = false
-    @params = {}
+class MocksController < ActionController::Base
+  attr_accessor :current_user
+  attr_writer :authorization_engine
+  
+  def authorized?
+    !@before_filter_chain_aborted
   end
   
-  attr_reader :called_render, :action_name, :current_user, :params
-  def request! (user, action_name, params = {})
-    @called_render = false
-    @current_user = user
-    @action_name = action_name
-    @params = params
-    before_filters.each { |block| block.call(self) }
-    self
-  end
-  
-  def self.before_filter (&block)
-    before_filters << block
-  end
-  
-  @@action_methods = Set.new
-  def self.action_methods (*methods)
-    @@action_methods = methods.collect {|m| m.to_s}.to_set unless methods.empty?
-    @@action_methods
-  end
-  
-  def self.controller_name
-    "mocks"
-  end
-  
-  def self.before_filters
-    write_inheritable_attribute('before_filters', []) unless read_inheritable_attribute('before_filters')
-    read_inheritable_attribute('before_filters')
-  end
-  def before_filters
-    self.class.before_filters
-  end
-  
-  def render (*args)
-    @called_render = true;
+  def self.define_action_methods (*methods)
+    methods.each do |method|
+      define_method method do
+        render :text => 'nothing'
+      end
+    end
   end
   
   def logger (*args)
@@ -88,6 +62,27 @@ class MockController
         #p args
       end
       alias_method :info, :warn
+      def warn?; end
+      alias_method :info?, :warn?
     end.new
+  end
+end
+
+ActionController::Routing::Routes.draw do |map|
+  map.connect ':controller/:action/:id'
+end
+ActionController::Base.send :include, Authorization::AuthorizationInController
+require "action_controller/test_process"
+
+class Test::Unit::TestCase
+  def request! (user, action, reader, params = {})
+    action = action.to_sym if action.is_a?(String)
+    @controller.current_user = user
+    @controller.authorization_engine = Authorization::Engine.new(reader)
+    
+    (params.delete(:clear) || []).each do |var|
+      @controller.instance_variable_set(var, nil)
+    end
+    get action, params
   end
 end

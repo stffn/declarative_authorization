@@ -2,9 +2,13 @@ require File.join(File.dirname(__FILE__), 'test_helper.rb')
 require File.dirname(__FILE__) + '/../lib/in_controller.rb'
 require File.dirname(__FILE__) + '/../lib/helper.rb'
 
-MockController.send :include, Authorization::AuthorizationInController
 
-class HelperTest < Test::Unit::TestCase
+class HelperMocksController < MocksController
+  filter_access_to :action, :require => :show, :context => :mocks
+  define_action_methods :action
+end
+class HelperTest < ActionController::TestCase
+  tests HelperMocksController
   include Authorization::AuthorizationHelper
   attr_reader :controller
   
@@ -21,7 +25,7 @@ class HelperTest < Test::Unit::TestCase
       end
     }
     user = MockUser.new(:test_role)
-    @controller = MockController.new(reader).request!(user, :action)
+    request!(user, :action, reader)
     
     assert permitted_to?(:show, :mocks)
     assert !permitted_to?(:update, :mocks)
@@ -54,7 +58,7 @@ class HelperTest < Test::Unit::TestCase
     user = MockUser.new(:test_role, :test_attr => 1)
     mock = MockDataObject.new(:test_attr => 1)
     mock_2 = MockDataObject.new(:test_attr => 2)
-    @controller = MockController.new(reader).request!(user, :action)
+    request!(user, :action, reader)
     
     assert permitted_to?(:show, mock)
     assert permitted_to?(:show, :mocks)

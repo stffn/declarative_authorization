@@ -144,6 +144,7 @@ module Authorization
         actions = args
 
         # collect permits in controller array for use in one before_filter
+        #p filter_chain
         unless filter_access_permissions?
           before_filter do |contr|
             permissions = contr.class.all_filter_access_permissions
@@ -178,6 +179,7 @@ module Authorization
               end
             end
           end
+          #p filter_chain
         end
         
         filter_access_permissions.each do |perm|
