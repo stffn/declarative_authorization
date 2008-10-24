@@ -6,6 +6,8 @@ module Authorization
   
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
+      base.hide_action :authorization_engine, :permitted_to?,
+        :permitted_to!
     end
     
     DEFAULT_DENY = false
@@ -52,6 +54,41 @@ module Authorization
            :object => object,
            :context => context,
            :skip_attribute_test => object.nil?})
+    end
+    
+    protected
+    def filter_access_filter # :nodoc:
+      permissions = self.class.all_filter_access_permissions
+      all_permissions = permissions.select {|p| p.actions.include?(:all)}
+      matching_permissions = permissions.select {|p| p.matches?(action_name)}
+      allowed = false
+      auth_exception = nil
+      begin
+        allowed = if !matching_permissions.empty?
+                    matching_permissions.all? {|perm| perm.permit!(self)}
+                  elsif !all_permissions.empty?
+                    all_permissions.all? {|perm| perm.permit!(self)}
+                  else
+                    !DEFAULT_DENY
+                  end
+      rescue AuthorizationError => e
+        auth_exception = e
+      end
+
+      unless allowed
+        if all_permissions.empty? and matching_permissions.empty?
+          logger.warn "Permission denied: No matching filter access " +
+            "rule found for #{self.class.controller_name}.#{action_name}"
+        elsif auth_exception
+          logger.info "Permission denied: #{auth_exception}"
+        end
+        if respond_to?(:permission_denied)
+          # permission_denied needs to render or redirect
+          send(:permission_denied)
+        else
+          send(:render, :text => "You are not allowed to access this action.")
+        end
+      end
     end
     
     module ClassMethods
@@ -144,42 +181,8 @@ module Authorization
         actions = args
 
         # collect permits in controller array for use in one before_filter
-        #p filter_chain
-        unless filter_access_permissions?
-          before_filter do |contr|
-            permissions = contr.class.all_filter_access_permissions
-            all_permissions = permissions.select {|p| p.actions.include?(:all)}
-            matching_permissions = permissions.select {|p| p.matches?(contr.action_name)}
-            allowed = false
-            auth_exception = nil
-            begin
-              allowed = if !matching_permissions.empty?
-                          matching_permissions.all? {|perm| perm.permit!(contr)}
-                        elsif !all_permissions.empty?
-                          all_permissions.all? {|perm| perm.permit!(contr)}
-                        else
-                          !DEFAULT_DENY
-                        end
-            rescue AuthorizationError => e
-              auth_exception = e
-            end
-            
-            unless allowed
-              if all_permissions.empty? and matching_permissions.empty?
-                contr.logger.warn "Permission denied: No matching filter access " +
-                  "rule found for #{contr.class.controller_name}.#{contr.action_name}"
-              elsif auth_exception
-                contr.logger.info "Permission denied: #{auth_exception}"
-              end
-              if contr.respond_to?(:permission_denied)
-                # permission_denied needs to render or redirect
-                contr.send(:permission_denied)
-              else
-                contr.send(:render, :text => "You are not allowed to access this action.")
-              end
-            end
-          end
-          #p filter_chain
+        unless filter_chain.any? {|filter| filter.method == :filter_access_filter}
+          before_filter :filter_access_filter
         end
         
         filter_access_permissions.each do |perm|
@@ -193,11 +196,10 @@ module Authorization
                                    filter_block)
       end
       
-      protected
       # Collecting all the ControllerPermission objects from the controller
       # hierarchy.  Permissions for actions are overwritten by calls to 
       # filter_access_to in child controllers with the same action.
-      def all_filter_access_permissions
+      def all_filter_access_permissions # :nodoc:
         ancestors.inject([]) do |perms, mod|
           if mod.respond_to?(:filter_access_permissions)
             perms + 
@@ -210,6 +212,7 @@ module Authorization
         end
       end
       
+      protected
       def filter_access_permissions
         class_variable_set(:@@declarative_authorization_permissions, {}) unless class_variable_defined?(:@@declarative_authorization_permissions)
         class_variable_get(:@@declarative_authorization_permissions)[self.name] ||= []
