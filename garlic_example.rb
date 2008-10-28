@@ -4,7 +4,7 @@ garlic do
 
   target 'edge'
   target '2.1-stable', :branch => 'origin/2-1-stable'
-  #target '2.0.2', :tag => 'v2.0.2'
+  target '2.2.0-RC1', :tag => 'v2.2.0'
 
   all_targets do
     prepare do
@@ -12,7 +12,7 @@ garlic do
     end
 
     run do
-      cd "vendor/plugins/resources_controller" do
+      cd "vendor/plugins/declarative_authorization" do
         sh "rake"
       end
     end
