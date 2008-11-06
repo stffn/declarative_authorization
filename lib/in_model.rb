@@ -93,13 +93,19 @@ module Authorization
                                      and_conditions, condition_values, joins)
             when :is
               id_obj_attr = :"#{object_attribute}_id"
-              if model.columns_hash[id_obj_attr.to_s]
-                and_conditions << "#{connection.quote_table_name(model.table_name)}.#{id_obj_attr} = ?"
+              if model.columns_hash[id_obj_attr.to_s] or
+                  model.columns_hash[object_attribute.to_s]
+                if model.columns_hash[id_obj_attr.to_s]
+                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{id_obj_attr} = ?"
+                else
+                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{object_attribute} = ?"
+                end
+                condition_values << (value.is_a?(ActiveRecord::Base) ? value.id : value)
               else
-                and_conditions << "#{connection.quote_table_name(model.table_name)}.#{object_attribute} = ?"
+                # seems to be a has_one association, so we reverse the condition
+                obligation_conditions!(object_attribute, {:id => [:is, value.id]}, model,
+                                       and_conditions, condition_values, joins)
               end
-
-              condition_values << (value.is_a?(ActiveRecord::Base) ? value.id : value)
             else
               raise AuthorizationError, "Unknown operator #{operator.inspect}"
             end

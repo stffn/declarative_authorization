@@ -19,6 +19,10 @@ class TestModel < ActiveRecord::Base
   has_many :test_attr_throughs_with_attr, :through => :test_attrs, 
     :class_name => "TestAttrThrough", :source => :test_attr_throughs,
     :conditions => "attr = 1"
+  has_one :test_attr_has_one, :class_name => "TestAttr"
+  has_one :test_attr_throughs_with_attr_and_has_one, :through => :test_attrs,
+    :class_name => "TestAttrThrough", :source => :test_attr_throughs,
+    :conditions => "attr = 1"
 end
 
 class TestAttr < ActiveRecord::Base
@@ -309,6 +313,63 @@ class ModelTest < Test::Unit::TestCase
         role :test_role do
           has_permission_on :test_models, :to => :read do
             if_attribute :test_attr_throughs_with_attr => contains { user }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+    
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create!
+    test_model_1.test_attrs.create!(:attr => 1).test_attr_throughs.create!
+    test_model_1.test_attrs.create!(:attr => 2).test_attr_throughs.create!
+    test_model_2.test_attrs.create!(:attr => 1).test_attr_throughs.create!
+    test_model_2.test_attrs.create!(:attr => 2).test_attr_throughs.create!
+    
+    #assert_equal 1, test_model_1.test_attrs_with_attr.length
+    user = MockUser.new(:test_role,
+                        :id => test_model_1.test_attr_throughs.first.id)
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+    user = MockUser.new(:test_role,
+                        :id => test_model_1.test_attr_throughs.last.id)
+    assert_equal 0, TestModel.with_permissions_to(:read, :user => user).length
+           
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+  
+  def test_named_scope_with_is_and_has_one
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do :test_attr_has_one
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attr_has_one => is { user.test_attr }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+    
+    test_model_1 = TestModel.create!
+    test_attr_1 = test_model_1.test_attrs.create!
+    TestModel.create!.test_attrs.create!
+    
+    user = MockUser.new(:test_role, :test_attr => test_attr_1)
+    assert_equal 1, TestModel.with_permissions_to(:read, 
+      :context => :test_models, :user => user).length
+    
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+  
+  def test_named_scope_with_is_and_has_one_through_conditions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attr_throughs_with_attr_and_has_one => contains { user }
           end
         end
       end
