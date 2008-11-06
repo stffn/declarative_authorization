@@ -313,6 +313,25 @@ class AuthorizationTest < Test::Unit::TestCase
               :object => MockDataObject.new(:test_attr => 2))
   end
   
+  def test_raise_on_if_attribute_hash_on_collection
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attrs => {:attr => is {1}}
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_raise Authorization::AuthorizationUsageError do
+      engine.permit?(:test, :context => :permissions,
+                     :user => MockUser.new(:test_role),
+                     :object => MockDataObject.new(:test_attrs => [1, 2, 3]))
+    end
+  end
+  
   def test_role_title_description
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

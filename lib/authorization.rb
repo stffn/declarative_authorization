@@ -311,6 +311,11 @@ module Authorization
            "#{object.inspect} for validating attribute: #{e}"
         end
         if value.is_a?(Hash)
+          if attr_value.is_a?(Array)
+            raise AuthorizationUsageError, "Unable evaluate multiple attributes " +
+              "on a collection.  Cannot use '=>' operator on #{attr.inspect} " +
+              "(#{attr_value.inspect}) for attributes #{value.inspect}."
+          end
           validate?(attr_validator, attr_value, value)
         elsif value.is_a?(Array) and value.length == 2
           evaluated = attr_validator.evaluate(value[1])
