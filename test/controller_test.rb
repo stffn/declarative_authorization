@@ -45,6 +45,7 @@ class BasicControllerTest < ActionController::TestCase
     assert !@controller.authorized?
     
     request!(MockUser.new(:test_role_2), "test_action", reader)
+    assert_response :forbidden
     assert !@controller.authorized?
     
     request!(MockUser.new(:test_role), "show", reader)

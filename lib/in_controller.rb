@@ -86,7 +86,8 @@ module Authorization
           # permission_denied needs to render or redirect
           send(:permission_denied)
         else
-          send(:render, :text => "You are not allowed to access this action.")
+          send(:render, :text => "You are not allowed to access this action.",
+            :status => :forbidden)
         end
       end
     end
