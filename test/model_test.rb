@@ -2,6 +2,7 @@ require File.join(File.dirname(__FILE__), 'test_helper.rb')
 require File.join(File.dirname(__FILE__), '..', 'lib', 'in_model.rb')
 
 ActiveRecord::Base.send :include, Authorization::AuthorizationInModel
+#ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 options = {:adapter => 'sqlite3', :timeout => 500, :database => ':memory:'}
 ActiveRecord::Base.establish_connection(options)
@@ -18,11 +19,11 @@ class TestModel < ActiveRecord::Base
   has_many :test_attrs_with_attr, :class_name => "TestAttr", :conditions => {:attr => 1}
   has_many :test_attr_throughs_with_attr, :through => :test_attrs, 
     :class_name => "TestAttrThrough", :source => :test_attr_throughs,
-    :conditions => "attr = 1"
+    :conditions => "test_attrs.attr = 1"
   has_one :test_attr_has_one, :class_name => "TestAttr"
   has_one :test_attr_throughs_with_attr_and_has_one, :through => :test_attrs,
     :class_name => "TestAttrThrough", :source => :test_attr_throughs,
-    :conditions => "attr = 1"
+    :conditions => "test_attrs.attr = 1"
 end
 
 class TestAttr < ActiveRecord::Base
