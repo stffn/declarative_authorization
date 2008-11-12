@@ -112,6 +112,26 @@ class BasicControllerTest < ActionController::TestCase
     request!(MockUser.new(:test_role), "edit_2", reader)
     assert !@controller.authorized?
   end
+  
+  def test_existing_instance_var_remains_unchanged
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :id => is { 5 }
+          end
+        end
+      end
+    }
+    mock_object = MockDataObject.new(:id => 5)
+    @controller.send(:instance_variable_set, :"@load_mock_object",
+        mock_object)
+    request!(MockUser.new(:test_role), "edit_2", reader)
+    assert_equal mock_object, 
+      @controller.send(:instance_variable_get, :"@load_mock_object")
+    assert @controller.authorized?
+  end
 end
 
 
