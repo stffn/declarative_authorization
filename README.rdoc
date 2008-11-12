@@ -271,7 +271,7 @@ The requirements are
 * An array of role symbols returned by user.roles
 
 Of the various ways to provide these requirements, here is one way employing
-restful_authentication:
+restful_authentication.
 
 * Install restful_authentication
    cd vendor/plugins && git clone git://github.com/technoweenie/restful-authentication.git restful_authentication
@@ -322,6 +322,9 @@ restful_authentication:
   * add roles to your User objects using e.g.
      user.role_objs.create(:title => "admin")
 
+Note:  If you choose to generate an Account model for restful_authentication
+instead of a User model as described below, you have to customize the
+examples and create a ApplicationController#current_user method.
 
 == Debugging Authorization
 
