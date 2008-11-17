@@ -33,8 +33,7 @@ module Authorization
   @@ignore_access_control = false
   # For use in test cases only
   def self.ignore_access_control (state = nil) # :nodoc:
-    @@ignore_access_control = state unless state.nil?
-    ENV['RAILS_ENV'] == 'test' and @@ignore_access_control
+    false
   end
   
   # Authorization::Engine implements the reference monitor.  It may be used
