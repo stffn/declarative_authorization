@@ -40,18 +40,20 @@ module Authorization
   # get, post, put, delete each with the signature
   #   get_with(user, action, params = {}, session = {}, flash = {})
   module TestHelper
+    include Authorization::Maintenance
+    
     # Analogue to the Ruby's assert_raise method, only executing the block
     # in the context of the given user.
     def assert_raise_with_user (user, *args, &block)
       assert_raise(*args) do
-        Maintenance::with_user(user, &block)
+        with_user(user, &block)
       end
     end
     
     def request_with (user, method, xhr, action, params = {}, 
         session = {}, flash = {})
       session = session.merge({:user => user})
-      Maintenance::with_user(user) do
+      with_user(user) do
         if xhr
           xhr method, action, params, session, flash
         else
