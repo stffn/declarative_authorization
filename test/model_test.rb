@@ -417,13 +417,13 @@ class ModelTest < Test::Unit::TestCase
     }
     Authorization::Engine.instance(reader)
     
-    $current_user = MockUser.new(:test_role)
+    Authorization.current_user = MockUser.new(:test_role)
     assert(object = TestModelSecurityModel.create)
-    $current_user = MockUser.new(:test_role_restricted)
+    Authorization.current_user = MockUser.new(:test_role_restricted)
     assert_raise Authorization::NotAuthorized do
       object.update_attributes(:attr_2 => 2)
     end
-    $current_user = MockUser.new(:test_role)
+    Authorization.current_user = MockUser.new(:test_role)
     assert_nothing_raised { object.update_attributes(:attr_2 => 2) }
     object.reload
     assert_equal 2, object.attr_2 
@@ -439,10 +439,10 @@ class ModelTest < Test::Unit::TestCase
     assert_raise Authorization::AttributeAuthorizationError do
       object.update_attributes(:attr => 2)
     end
-    $current_user = MockUser.new(:test_role_unrestricted)
+    Authorization.current_user = MockUser.new(:test_role_unrestricted)
     object = TestModelSecurityModel.create :attr => 2
     object_with_find = TestModelSecurityModelWithFind.create :attr => 2
-    $current_user = MockUser.new(:test_role)
+    Authorization.current_user = MockUser.new(:test_role)
     assert_nothing_raised do
       object.class.find(object.id)
     end
@@ -460,7 +460,7 @@ class ModelTest < Test::Unit::TestCase
       object.destroy
     end
     
-    $current_user = MockUser.new(:test_role_2)
+    Authorization.current_user = MockUser.new(:test_role_2)
     assert_raise Authorization::NotAuthorized do
       TestModelSecurityModel.create
     end
@@ -482,7 +482,7 @@ class ModelTest < Test::Unit::TestCase
     
     test_attr = TestAttr.create
     test_attr.roles << :test_role
-    $current_user = test_attr
+    Authorization.current_user = test_attr
     assert(object = TestModelSecurityModel.create(:test_attrs => [test_attr]))
     assert_nothing_raised do
       object.update_attributes(:attr_2 => 2)

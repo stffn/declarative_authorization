@@ -350,4 +350,25 @@ class AuthorizationTest < Test::Unit::TestCase
     assert_equal "Test Role Description", engine.description_for(:test_role)
     assert_nil engine.description_for(:test_role_2)
   end
+  
+  def test_multithread
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test
+        end
+      end
+    }
+    
+    engine = Authorization::Engine.new(reader)
+    Authorization.current_user = MockUser.new(:test_role)
+    assert engine.permit?(:test, :context => :permissions)
+    Thread.new do
+      Authorization.current_user = MockUser.new(:test_role2)
+      assert !engine.permit?(:test, :context => :permissions)
+    end
+    assert engine.permit?(:test, :context => :permissions)
+    Authorization.current_user = nil
+  end
 end
