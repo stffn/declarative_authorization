@@ -12,10 +12,13 @@ module Authorization
   # Also, see 
   # * AuthorizationRulesReader#role,
   # * AuthorizationRulesReader#includes,
-  # * AuthorizationRulesReader#has_permission,
-  # * AuthorizationRulesReader#on,
+  # * AuthorizationRulesReader#title,
+  # * AuthorizationRulesReader#description,
+  # * AuthorizationRulesReader#has_permission_on,
   # * AuthorizationRulesReader#to,
   # * AuthorizationRulesReader#if_attribute,
+  # * AuthorizationRulesReader#contains,
+  # * AuthorizationRulesReader#is,
   # * PrivilegesReader#privilege and
   # * PrivilegesReader#includes
   # for details.
