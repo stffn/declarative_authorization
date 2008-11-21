@@ -65,4 +65,32 @@ class HelperTest < ActionController::TestCase
     assert !permitted_to?(:show, mock_2)
   end
   
+  def test_has_role
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :mocks, :to => :show
+        end
+      end
+    }
+    user = MockUser.new(:test_role)
+    request!(user, :action, reader)
+    
+    assert has_role?(:test_role)
+    assert !has_role?(:test_role2)
+    
+    block_evaled = false
+    has_role?(:test_role) do
+      block_evaled = true
+    end
+    assert block_evaled
+    
+    block_evaled = false
+    has_role?(:test_role2) do
+      block_evaled = true
+    end
+    assert !block_evaled
+  end
+  
 end

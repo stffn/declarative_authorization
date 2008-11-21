@@ -27,5 +27,25 @@ module Authorization
     def permitted_to? (privilege, object_or_sym = nil, &block)
       controller.permitted_to?(privilege, object_or_sym, &block)
     end
+  
+    # While permitted_to? is used for authorization in views, in some cases
+    # content should only be shown to some users without being concerned
+    # with authorization.  E.g. to only show the most relevant menu options 
+    # to a certain group of users.  That is what has_role? should be used for.
+    # 
+    # Examples:
+    #     <% has_role?(:sales) do %>
+    #     <%= link_to 'All contacts', contacts_path %>
+    #     <% end %>
+    #     ...
+    #     <% if has_role?(:sales) %>
+    #     <%= link_to 'Customer contacts', contacts_path %>
+    #     <% else %>
+    #     ...
+    #     <% end %>
+    # 
+    def has_role? (*roles, &block)
+      controller.has_role?(*roles, &block)
+    end
   end
 end

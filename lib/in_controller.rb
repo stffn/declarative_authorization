@@ -55,6 +55,18 @@ module Authorization
            :context => context,
            :skip_attribute_test => object.nil?})
     end
+
+    # While permitted_to? is used for authorization, in some cases
+    # content should only be shown to some users without being concerned
+    # with authorization.  E.g. to only show the most relevant menu options 
+    # to a certain group of users.  That is what has_role? should be used for.
+    def has_role? (*roles, &block)
+      result = roles.all? do |role|
+        current_user.roles.include?(role)
+      end
+      yield if result and block_given?
+      result
+    end
     
     protected
     def filter_access_filter # :nodoc:
