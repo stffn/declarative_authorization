@@ -116,11 +116,12 @@ module Authorization
       # reasons of denial.
       # 
       #   def permission_denied
-      #     respond_to do |format|
       #     flash[:error] = 'Sorry, you are not allowed to the requested page.'
-      #     format.html { redirect_to(:back) rescue redirect_to('/') }
-      #     format.xml  { head :unauthorized }
-      #     format.js   { head :unauthorized }
+      #     respond_to do |format|
+      #       format.html { redirect_to(:back) rescue redirect_to('/') }
+      #       format.xml  { head :unauthorized }
+      #       format.js   { head :unauthorized }
+      #     end
       #   end
       # 
       # By default, required privileges are infered from the action name and
@@ -214,12 +215,12 @@ module Authorization
       end
       
       protected
-      def filter_access_permissions
+      def filter_access_permissions # :nodoc:
         class_variable_set(:@@declarative_authorization_permissions, {}) unless class_variable_defined?(:@@declarative_authorization_permissions)
         class_variable_get(:@@declarative_authorization_permissions)[self.name] ||= []
       end
       
-      def filter_access_permissions?
+      def filter_access_permissions? # :nodoc:
         class_variable_defined?(:@@declarative_authorization_permissions)
       end
     end
