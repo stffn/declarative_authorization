@@ -314,6 +314,8 @@ module Authorization
             raise AuthorizationUsageError, "Unable evaluate multiple attributes " +
               "on a collection.  Cannot use '=>' operator on #{attr.inspect} " +
               "(#{attr_value.inspect}) for attributes #{value.inspect}."
+          elsif attr_value.nil?
+            raise AuthorizationError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
           end
           validate?(attr_validator, attr_value, value)
         elsif value.is_a?(Array) and value.length == 2
