@@ -282,6 +282,11 @@ module Authorization
       #   end
       # 
       # Multiple if_attribute statements are OR'ed.
+      #
+      # Arrays and fixed values may be used directly as hash values:
+      #   if_attribute :id => 1
+      #   if_attribute :id => [1,2]
+      #
       def if_attribute (attr_conditions_hash)
         raise DSLError, "if_attribute only in has_permission blocks" if @current_rule.nil?
         parse_attribute_conditions_hash!(attr_conditions_hash)
@@ -289,21 +294,22 @@ module Authorization
       end
       
       # In an if_attribute statement, is says that the value has to be exactly
-      # met by the if_attribute attribute.  For the block, see if_attribute.
+      # met by the if_attribute attribute.  For information on the block 
+      # argument, see if_attribute.
       def is (&block)
         [:is, block]
       end
       
       # In an if_attribute statement, contains says that the value has to be
       # part of the collection specified by the if_attribute attribute.
-      # For the block, see if_attribute.
+      # For information on the block argument, see if_attribute.
       def contains (&block)
         [:contains, block]
       end
       
       # In an if_attribute statement, is_in says that the value has to
       # contain the attribute value.
-      # For the block, see if_attribute.
+      # For information on the block argument, see if_attribute.
       def is_in (&block)
         [:is_in, block]
       end

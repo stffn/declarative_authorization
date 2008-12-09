@@ -215,6 +215,7 @@ class AuthorizationTest < Test::Unit::TestCase
         role :test_role do
           has_permission_on :permissions, :to => :test do
             if_attribute :test_attr => is { user.test_attr }
+            if_attribute :test_attr => 3
           end
         end
       end
@@ -223,6 +224,9 @@ class AuthorizationTest < Test::Unit::TestCase
     assert engine.permit?(:test, :context => :permissions, 
               :user => MockUser.new(:test_role, :test_attr => 1),
               :object => MockDataObject.new(:test_attr => 1))
+    assert engine.permit?(:test, :context => :permissions, 
+              :user => MockUser.new(:test_role, :test_attr => 2),
+              :object => MockDataObject.new(:test_attr => 3))
     assert((not(engine.permit?(:test, :context => :permissions, 
               :user => MockUser.new(:test_role, :test_attr => 2),
               :object => MockDataObject.new(:test_attr => 1)))))
