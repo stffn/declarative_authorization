@@ -334,8 +334,9 @@ class ModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role,
                         :id => test_model_1.test_attr_throughs.last.id)
     assert_equal 0, TestModel.with_permissions_to(:read, :user => user).length
-           
+
     TestModel.delete_all
+    TestAttrThrough.delete_all
     TestAttr.delete_all
   end
   
