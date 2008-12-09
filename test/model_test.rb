@@ -24,10 +24,23 @@ class TestModel < ActiveRecord::Base
   has_one :test_attr_throughs_with_attr_and_has_one, :through => :test_attrs,
     :class_name => "TestAttrThrough", :source => :test_attr_throughs,
     :conditions => "test_attrs.attr = 1"
+  
+  # Primary key test
+  has_many :test_attrs_with_primary_id, :class_name => "TestAttr",
+    :primary_key => :test_attr_through_id, :foreign_key => :test_attr_through_id
+  has_many :test_attr_throughs_with_primary_id, 
+    :through => :test_attrs_with_primary_id, :class_name => "TestAttrThrough",
+    :source => :n_way_join_item
+end
+
+class NWayJoinItem < ActiveRecord::Base
+  has_many :test_attrs
+  has_many :others, :through => :test_attrs, :source => :n_way_join_item
 end
 
 class TestAttr < ActiveRecord::Base
   belongs_to :test_model
+  belongs_to :n_way_join_item
   has_many :test_attr_throughs
   attr_reader :roles
   def initialize (*args)
@@ -362,6 +375,34 @@ class ModelTest < Test::Unit::TestCase
                         :id => test_model_1.test_attr_throughs.last.id)
     assert_equal 0, TestModel.with_permissions_to(:read, :user => user).length
 
+    TestModel.delete_all
+    TestAttrThrough.delete_all
+    TestAttr.delete_all
+  end
+  
+  def test_named_scope_with_contains_through_primary_key
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attr_throughs_with_primary_id => contains { user }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+    
+    test_attr_through_1 = TestAttrThrough.create!
+    test_item = NWayJoinItem.create!
+    test_model_1 = TestModel.create!(:test_attr_through_id => test_attr_through_1.id)
+    test_attr_1 = TestAttr.create!(:test_attr_through_id => test_attr_through_1.id,
+        :n_way_join_item_id => test_item.id)
+
+    user = MockUser.new(:test_role,
+                        :id => test_attr_through_1.id)
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+           
     TestModel.delete_all
     TestAttrThrough.delete_all
     TestAttr.delete_all
