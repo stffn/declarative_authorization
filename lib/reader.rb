@@ -301,6 +301,13 @@ module Authorization
         [:contains, block]
       end
       
+      # In an if_attribute statement, is_in says that the value has to
+      # contain the attribute value.
+      # For the block, see if_attribute.
+      def is_in (&block)
+        [:is_in, block]
+      end
+      
       private
       def parse_attribute_conditions_hash! (hash)
         merge_hash = {}
@@ -309,6 +316,8 @@ module Authorization
             parse_attribute_conditions_hash!(value)
           elsif !value.is_a?(Array)
             merge_hash[key] = [:is, lambda { value }]
+          elsif value.is_a?(Array) and !value[0].is_a?(Symbol)
+            merge_hash[key] = [:is_in, value]
           end
         end
         hash.merge!(merge_hash)

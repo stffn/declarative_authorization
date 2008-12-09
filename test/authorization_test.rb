@@ -248,6 +248,30 @@ class AuthorizationTest < Test::Unit::TestCase
               :object => MockDataObject.new(:test_attr => [1,2]))
   end
   
+  def test_attribute_in_array
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %|
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => is_in { [1,2] }
+            if_attribute :test_attr => [2,3]
+          end
+        end
+      end
+    |
+    engine = Authorization::Engine.new(reader)
+    assert engine.permit?(:test, :context => :permissions, 
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attr => 1))
+    assert engine.permit?(:test, :context => :permissions, 
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attr => 3))
+    assert !engine.permit?(:test, :context => :permissions, 
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attr => 4))
+  end
+  
   def test_attribute_deep
     reader = Authorization::Reader::DSLReader.new
     reader.parse %|

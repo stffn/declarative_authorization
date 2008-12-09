@@ -91,20 +91,29 @@ module Authorization
               #           {:test_models => {:id => [:is, obj.id]}}
               obligation_conditions!(object_attribute, {:id => [:is, value.id]}, model,
                                      and_conditions, condition_values, joins)
-            when :is
+            when :is, :is_in
               id_obj_attr = :"#{object_attribute}_id"
+              sql_operator = (operator == :is ? '= ?' : 'IN (?)')
               if model.columns_hash[id_obj_attr.to_s] or
                   model.columns_hash[object_attribute.to_s]
                 if model.columns_hash[id_obj_attr.to_s]
-                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{id_obj_attr} = ?"
+                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{id_obj_attr} #{sql_operator}"
                 else
-                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{object_attribute} = ?"
+                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{object_attribute} #{sql_operator}"
                 end
-                condition_values << (value.is_a?(ActiveRecord::Base) ? value.id : value)
-              else
+                condition_values << if value.is_a?(ActiveRecord::Base)
+                                      value.id
+                                    elsif value.is_a?(Array) and value[0].is_a?(ActiveRecord::Base)
+                                      value.map(&:id)
+                                    else
+                                      value
+                                    end
+              elsif operator == :is
                 # seems to be a has_one association, so we reverse the condition
                 obligation_conditions!(object_attribute, {:id => [:is, value.id]}, model,
                                        and_conditions, condition_values, joins)
+              else
+                raise AuthorizationError, "Operator #{operator.inspect} not supported with has_many attribute."
               end
             else
               raise AuthorizationError, "Unknown operator #{operator.inspect}"

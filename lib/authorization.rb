@@ -319,12 +319,18 @@ module Authorization
           end
           validate?(attr_validator, attr_value, value)
         elsif value.is_a?(Array) and value.length == 2
-          evaluated = attr_validator.evaluate(value[1])
+          evaluated = if value[1].is_a?(Proc)
+                        attr_validator.evaluate(value[1])
+                      else
+                        value[1]
+                      end
           case value[0]
           when :is
             attr_value == evaluated
           when :contains
             attr_value.include?(evaluated)
+          when :is_in
+            evaluated.include?(attr_value)
           else
             raise AuthorizationError, "Unknown operator #{value[0]}"
           end
