@@ -13,6 +13,14 @@ module Authorization
   module Maintenance
     # Disables access control for the given block.  Appropriate for
     # maintenance operation at the Rails console or in test case setup.
+    # 
+    # For use in the Rails console:
+    #  require "vendor/plugins/declarative_authorization/lib/maintenance"
+    #  include Authorization::Maintenance
+    #
+    #  without_access_control do
+    #    SomeModel.find(:first).save
+    #  end
     def without_access_control
       Authorization.ignore_access_control(true)
       yield
@@ -39,6 +47,26 @@ module Authorization
   # Defines get_with, post_with, get_by_xhr_with etc. for methods 
   # get, post, put, delete each with the signature
   #   get_with(user, action, params = {}, session = {}, flash = {})
+  #
+  # Use it by including it in your TestHelper:
+  #  require File.expand_path(File.dirname(__FILE__) + 
+  #    "/../vendor/plugins/declarative_authorization/lib/maintenance")
+  #  class Test::Unit::TestCase 
+  #    include Authorization::TestHelper
+  #    ...
+  #    
+  #    def admin
+  #      # create admin user
+  #    end
+  #  end
+  # 
+  #  class SomeControllerTest < ActionController::TestCase
+  #    def test_should_get_index
+  #      ...
+  #      get_with admin, :index, :param_1 => "param value"
+  #      ...
+  #    end
+  #  end
   module TestHelper
     include Authorization::Maintenance
     
