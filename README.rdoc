@@ -336,7 +336,14 @@ All bang methods throw exceptions which may be used to retrieve more
 information about a denied access than a Boolean value.
 
 
-== Contact
+== Help and Contact
+
+Issue tracker[http://stffn.lighthouseapp.com/projects/20733-declarative_authorization] 
+for bugs and feature requests as well as a 
+Google Group[http://groups.google.com/group/declarative_authorization] for
+discussions on the usage of the plugin.
+
+Maintained by
 
 Steffen Bartsch
 TZI, Universität Bremen, Germany
