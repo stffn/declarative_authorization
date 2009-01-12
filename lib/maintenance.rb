@@ -28,6 +28,17 @@ module Authorization
       Authorization.ignore_access_control(false)
     end
 
+    # A class method variant of without_access_control.  Thus, one can call
+    #  Authorization::Maintenance::without_access_control do
+    #    ...
+    #  end
+    def self.without_access_control
+      Authorization.ignore_access_control(true)
+      yield
+    ensure
+      Authorization.ignore_access_control(false)
+    end
+
     # Sets the current user for the declarative authorization plugin to the
     # given one for the execution of the supplied block.  Suitable for tests
     # on certain users.
