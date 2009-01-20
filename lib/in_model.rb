@@ -1,5 +1,6 @@
 # Authorization::AuthorizationInModel
 require File.dirname(__FILE__) + '/authorization.rb'
+require File.dirname(__FILE__) + '/obligation_scope.rb'
 
 module Authorization
   
@@ -20,29 +21,12 @@ module Authorization
           engine.permit!(privileges, :user => user, :skip_attribute_test => true,
                          :context => context)
 
-          scope_options = obligation_conditions(privileges, :user => user,
-            :context => context, :engine => engine, :model => parent_scope)
-          
-          ActiveRecord::NamedScope::Scope.new(parent_scope, scope_options)
+          obligation_scope_for( privileges, :user => user,
+              :context => context, :engine => engine, :model => parent_scope)
         end
         
-        # Provides an conditions hash as expected by find with conditions
-        # matching the obligations for the given privilege, context and 
-        # user.
-        # 
-        # Options:
-        # [:+user+] 
-        #   User to create the obligations for, defaults to 
-        #   Authorization.current_user
-        # [:+context+] The privilege's context
-        # [:+model+] 
-        #   Model that the obligations should be applied on,
-        #   defaults to self.
-        # [:+engine+] 
-        #   Authorization::Engine to be used for checks, defaults to
-        #   Authorization::Engine.instance.
-        #
-        def self.obligation_conditions (privileges, options = {})
+        # Builds and returns a scope with joins and conditions satisfying all obligations.
+        def self.obligation_scope_for( privileges, options = {} )
           options = {
             :user => Authorization.current_user,
             :context => nil,
@@ -50,77 +34,12 @@ module Authorization
             :engine => nil,
           }.merge(options)
           engine ||= Authorization::Engine.instance
-          
-          conditions = []
-          condition_values = []
-          joins = Set.new
 
-          engine.obligations(privileges, :user => options[:user], 
-                             :context => options[:context]).each do |obligation|
-            and_conditions = []
-            obligation_conditions!(nil, obligation, options[:model], 
-                                   and_conditions, condition_values, joins)
-            and_conditions << connection.quote("1") if and_conditions.empty?
-            conditions << and_conditions.collect {|c| "#{c}"} * ' AND ' unless and_conditions.empty?
+          scope = ObligationScope.new( options[:model], {} )
+          engine.obligations( privileges, :user => options[:user], :context => options[:context] ).each do |obligation|
+            scope.parse!( obligation )
           end
-
-          scope_options = {}
-          unless conditions.empty?
-            scope_options[:select] = "#{connection.quote_table_name(options[:context])}.*" if options[:context]
-            scope_options[:conditions] = [conditions.collect {|c| "(#{c})"} * ' OR '] + condition_values
-            scope_options[:joins] = joins.to_a unless joins.empty?
-          end
-          scope_options
-        end
-        
-        def self.obligation_conditions!(object_attribute, value, model, and_conditions,
-                                        condition_values, joins) # :nodoc:
-          if value.is_a?(Hash)
-            value.each do |object_attr, operator_val|
-              joins << object_attribute if object_attribute
-              assoc_model = object_attribute ? model.reflect_on_association(object_attribute).klass : model
-              obligation_conditions!(object_attr, operator_val, assoc_model, 
-                                     and_conditions, condition_values, joins)
-            end
-          elsif value.is_a?(Array) and value.length == 2
-            operator, value = value
-            
-            case operator
-            when :contains
-              # contains: {:test_models => [:contains, obj]} <=>
-              #           {:test_models => {:id => [:is, obj.id]}}
-              obligation_conditions!(object_attribute, {:id => [:is, value.id]}, model,
-                                     and_conditions, condition_values, joins)
-            when :is, :is_in
-              id_obj_attr = :"#{object_attribute}_id"
-              sql_operator = (operator == :is ? '= ?' : 'IN (?)')
-              if model.columns_hash[id_obj_attr.to_s] or
-                  model.columns_hash[object_attribute.to_s]
-                if model.columns_hash[id_obj_attr.to_s]
-                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{id_obj_attr} #{sql_operator}"
-                else
-                  and_conditions << "#{connection.quote_table_name(model.table_name)}.#{object_attribute} #{sql_operator}"
-                end
-                condition_values << if value.is_a?(ActiveRecord::Base)
-                                      value.id
-                                    elsif value.is_a?(Array) and value[0].is_a?(ActiveRecord::Base)
-                                      value.map(&:id)
-                                    else
-                                      value
-                                    end
-              elsif operator == :is
-                # seems to be a has_one association, so we reverse the condition
-                obligation_conditions!(object_attribute, {:id => [:is, value.id]}, model,
-                                       and_conditions, condition_values, joins)
-              else
-                raise AuthorizationError, "Operator #{operator.inspect} not supported with has_many attribute."
-              end
-            else
-              raise AuthorizationError, "Unknown operator #{operator.inspect}"
-            end
-          else
-            raise AuthorizationError, "Unexpected value element: #{value.inspect}"
-          end
+          scope
         end
 
         # Named scope for limiting query results according to the authorization
@@ -198,6 +117,5 @@ module Authorization
         end
       end
     end
-
   end
 end

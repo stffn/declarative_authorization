@@ -52,6 +52,33 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
 end
 
 class ModelTest < Test::Unit::TestCase
+  def test_named_scope_with_belongs_to_and_has_many_with_contains
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_model => { :test_attrs => contains { user.test_attr_value } }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+    
+    test_attr_1 = TestAttr.create!
+    test_model_1 = TestModel.create!
+    test_model_1.test_attrs.create!
+    
+    user = MockUser.new(:test_role, :test_attr_value => test_model_1.test_attrs.first.id )
+    assert_equal 1, TestAttr.with_permissions_to( :read, :context => :test_attrs, :user => user ).length
+    assert_equal 1, TestAttr.with_permissions_to( :read, :user => user ).length
+    assert_raise Authorization::NotAuthorized do
+      TestAttr.with_permissions_to( :update_test_attrs, :user => user )
+    end
+    TestAttr.delete_all
+    TestModel.delete_all
+  end
+  
   def test_named_scope_with_is
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

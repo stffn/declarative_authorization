@@ -28,6 +28,10 @@ class MockDataObject
     end
   end
   
+  def descends_from_active_record?
+    true
+  end
+  
   def self.table_name
     "mocks"
   end
