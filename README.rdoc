@@ -338,16 +338,25 @@ information about a denied access than a Boolean value.
 
 == Help and Contact
 
-Issue tracker[http://stffn.lighthouseapp.com/projects/20733-declarative_authorization] 
+We have an issue tracker[http://stffn.lighthouseapp.com/projects/20733-declarative_authorization] 
 for bugs and feature requests as well as a 
 Google Group[http://groups.google.com/group/declarative_authorization] for
-discussions on the usage of the plugin.
+discussions on the usage of the plugin.  You are very welcome to contribute.
+Just fork the git repository and create a new issue, send a pull request or
+contact me personally.
 
 Maintained by
 
 Steffen Bartsch
 TZI, Universität Bremen, Germany
 sbartsch at tzi.org
+
+
+== Contributors
+
+* Brian Langenfeld
+* Mark Mansour
+* Mike Vincent
 
 
 == Licence
