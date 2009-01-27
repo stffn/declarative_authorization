@@ -292,6 +292,13 @@ module Authorization
         parse_attribute_conditions_hash!(attr_conditions_hash)
         @current_rule.append_attribute Attribute.new(attr_conditions_hash)
       end
+
+      def if_permitted_to (privilege, attr_or_hash, options = {})
+        raise DSLError, "if_permitted_to only in has_permission blocks" if @current_rule.nil?
+        options[:context] ||= attr_or_hash.delete(:context) if attr_or_hash.is_a?(Hash)
+        @current_rule.append_attribute AttributeWithPermission.new(privilege,
+            attr_or_hash, options[:context])
+      end
       
       # In an if_attribute statement, is says that the value has to be exactly
       # met by the if_attribute attribute.  For information on the block 

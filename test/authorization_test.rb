@@ -100,6 +100,61 @@ class AuthorizationTest < Test::Unit::TestCase
       engine.obligations(:test, :context => :permissions, 
           :user => MockUser.new(:test_role, :attr => 1))
   end
+
+  def test_obligations_with_permissions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :attr => is { user.attr }
+          end
+          has_permission_on :permission_children, :to => :test do
+            if_permitted_to :test, :permission, :context => :permissions
+          end
+          has_permission_on :permission_children_2, :to => :test do
+            if_permitted_to :test, :permission
+          end
+          has_permission_on :permission_children_children, :to => :test do
+            if_permitted_to :test, :permission_child => :permission,
+                            :context => :permissions
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{:permission => {:attr => [:is, 1]}}],
+      engine.obligations(:test, :context => :permission_children,
+          :user => MockUser.new(:test_role, :attr => 1))
+    assert_equal [{:permission => {:attr => [:is, 1]}}],
+      engine.obligations(:test, :context => :permission_children_2,
+          :user => MockUser.new(:test_role, :attr => 1))
+    assert_equal [{:permission_child => {:permission => {:attr => [:is, 1]}}}],
+      engine.obligations(:test, :context => :permission_children_children,
+          :user => MockUser.new(:test_role, :attr => 1))
+  end
+
+  def test_obligations_with_permissions_multiple
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :attr => is { 1 }
+            if_attribute :attr => is { 2 }
+          end
+          has_permission_on :permission_children_children, :to => :test do
+            if_permitted_to :test, :permission_child => :permission
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{:permission_child => {:permission => {:attr => [:is, 1]}}},
+        {:permission_child => {:permission => {:attr => [:is, 2]}}}],
+      engine.obligations(:test, :context => :permission_children_children,
+          :user => MockUser.new(:test_role))
+  end
   
   def test_guest_user
     reader = Authorization::Reader::DSLReader.new
@@ -339,6 +394,65 @@ class AuthorizationTest < Test::Unit::TestCase
     assert engine.permit?(:test, :context => :permissions, 
               :user => MockUser.new(:test_role),
               :object => MockDataObject.new(:test_attr => 2))
+  end
+
+  class PermissionMock < MockDataObject
+    def self.table_name
+      "permissions"
+    end
+  end
+  def test_attribute_with_permissions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => 1
+          end
+          has_permission_on :permission_children, :to => :test do
+            if_permitted_to :test, :permission
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    perm_data_attr_1 = PermissionMock.new({:test_attr => 1})
+    perm_data_attr_2 = PermissionMock.new({:test_attr => 2})
+    assert engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:permission => perm_data_attr_1))
+    assert !engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:permission => perm_data_attr_2))
+  end
+
+  def test_attribute_with_deep_permissions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => 1
+          end
+          has_permission_on :permission_children, :to => :test do
+            if_permitted_to :test, :shallow_permission => :permission
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    perm_data_attr_1 = PermissionMock.new({:test_attr => 1})
+    perm_data_attr_2 = PermissionMock.new({:test_attr => 2})
+    assert engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:shallow_permission =>
+                MockDataObject.new(:permission => perm_data_attr_1)))
+    assert !engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:shallow_permission =>
+                MockDataObject.new(:permission => perm_data_attr_2)))
   end
   
   def test_raise_on_if_attribute_hash_on_collection

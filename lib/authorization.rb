@@ -109,7 +109,7 @@ module Authorization
 
       # find a authorization rule that matches for at least one of the roles and 
       # at least one of the given privileges
-      attr_validator = AttributeValidator.new(user, options[:object])
+      attr_validator = AttributeValidator.new(self, user, options[:object])
       #puts "All rules: #{@auth_rules.inspect}"
       #rules_matching_roles = @auth_rules.select {|r| roles.include?(r.role) }
       #puts "Matching for roles: #{rules_matching_roles.inspect}"
@@ -165,7 +165,7 @@ module Authorization
     def obligations (privilege, options = {})
       options = {:context => nil}.merge(options)
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
-      attr_validator = AttributeValidator.new(user)
+      attr_validator = AttributeValidator.new(self, user)
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
         obligation = rule.attributes.collect {|attr| attr.obligation(attr_validator) }
         obligation.empty? ? [{}] : obligation
@@ -198,8 +198,9 @@ module Authorization
     end
     
     class AttributeValidator # :nodoc:
-      attr_reader :user, :object
-      def initialize (user, object = nil)
+      attr_reader :user, :object, :engine
+      def initialize (engine, user, object = nil)
+        @engine = engine
         @user = user
         @object = object
       end
@@ -303,12 +304,7 @@ module Authorization
       return false unless object
       
       (hash || @conditions_hash).all? do |attr, value|
-        begin
-          attr_value = object.send(attr)
-        rescue ArgumentError, NoMethodError => e
-          raise AuthorizationUsageError, "Error when calling #{attr} on " +
-           "#{object.inspect} for validating attribute: #{e}"
-        end
+        attr_value = object_attribute_value(object, attr)
         if value.is_a?(Hash)
           if attr_value.is_a?(Array)
             raise AuthorizationUsageError, "Unable evaluate multiple attributes " +
@@ -353,6 +349,89 @@ module Authorization
         end
       end
       hash
+    end
+
+    protected
+    def object_attribute_value (object, attr)
+      begin
+        object.send(attr)
+      rescue ArgumentError, NoMethodError => e
+        raise AuthorizationUsageError, "Error when calling #{attr} on " +
+         "#{object.inspect} for validating attribute: #{e}"
+      end
+    end
+  end
+
+  # An attribute condition that uses existing rules to decide validation
+  # and create obligations.
+  class AttributeWithPermission < Attribute
+    # E.g. privilege :read, attr_or_hash either :attribute or
+    # { :attribute => :deeper_attribute }
+    def initialize (privilege, attr_or_hash, context = nil)
+      @privilege = privilege
+      @context = context
+      @attr_hash = attr_or_hash
+    end
+
+    def validate? (attr_validator, object = nil, hash_or_attr = nil)
+      object ||= attr_validator.object
+      hash_or_attr ||= @attr_hash
+      return false unless object
+
+      case hash_or_attr
+      when Symbol
+        attr_value = object_attribute_value(object, hash_or_attr)
+        attr_validator.engine.permit? @privilege, :object => attr_value, :user => attr_validator.user
+      when Hash
+        hash_or_attr.all? do |attr, sub_hash|
+          attr_value = object_attribute_value(object, attr)
+          if attr_value.nil?
+            raise AuthorizationError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
+          end
+          validate?(attr_validator, attr_value, sub_hash)
+        end
+      else
+        raise AuthorizationError, "Wrong conditions hash format: #{hash_or_attr.inspect}"
+      end
+    end
+
+    # may return an array of obligations to be OR'ed
+    def obligation (attr_validator, hash_or_attr = nil)
+      hash_or_attr ||= @attr_hash
+      case hash_or_attr
+      when Symbol
+        obligations = attr_validator.engine.obligations(@privilege,
+                          :context => @context || hash_or_attr.to_s.pluralize.to_sym,
+                          :user    => attr_validator.user)
+        obligations.collect {|obl| {hash_or_attr => obl} }
+      when Hash
+        obligations_array_attrs = []
+        obligations =
+            hash_or_attr.inject({}) do |all, pair|
+              attr, sub_hash = pair
+              all[attr] = obligation(attr_validator, sub_hash)
+              if all[attr].length > 1
+                obligations_array_attrs << attr
+              else
+                all[attr] = all[attr].first
+              end
+              all
+            end
+        obligations = [obligations]
+        obligations_array_attrs.each do |attr|
+          next_array_size = obligations.first[attr].length
+          obligations = obligations.collect do |obls|
+            (0...next_array_size).collect do |idx|
+              obls_wo_array = obls.clone
+              obls_wo_array[attr] = obls_wo_array[attr][idx]
+              obls_wo_array
+            end
+          end.flatten
+        end
+        obligations
+      else
+        raise AuthorizationError, "Wrong conditions hash format: #{hash_or_attr.inspect}"
+      end
     end
   end
   

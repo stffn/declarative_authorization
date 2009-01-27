@@ -18,6 +18,8 @@ unless defined?(ActiveRecord)
   %w(action_pack action_controller active_record active_support).each {|f| require f}
 end
 
+#require 'ruby-debug'
+
 class MockDataObject
   def initialize (attrs = {})
     attrs.each do |key, value|
