@@ -40,6 +40,7 @@ end
 
 class TestAttr < ActiveRecord::Base
   belongs_to :test_model
+  belongs_to :test_another_model, :class_name => "TestModel", :foreign_key => :test_another_model_id
   belongs_to :n_way_join_item
   has_many :test_attr_throughs
   attr_reader :roles
@@ -206,6 +207,27 @@ class ModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id)
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
+  end
+
+  def test_named_scope_multiple_belongs_to
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_model => is {user}
+            if_attribute :test_another_model => is {user}
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_attr_1 = TestAttr.create! :test_model_id => 1, :test_another_model_id => 2
+
+    user = MockUser.new(:test_role, :id => 1)
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+    TestAttr.delete_all
   end
   
   def test_named_scope_with_is_and_priv_hierarchy

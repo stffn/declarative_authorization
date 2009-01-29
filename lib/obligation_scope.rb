@@ -69,7 +69,7 @@ module Authorization
           end
         end
       elsif steps.is_a?( Array ) && steps.length == 2
-        if reflection = reflection_for( past_steps )
+        if reflection_for( past_steps )
           follow_comparison( steps, past_steps, :id )
         else
           follow_comparison( steps, past_steps[0..-2], past_steps[-1] )
@@ -148,7 +148,8 @@ module Authorization
       table_alias = reflection.table_name
       if table_aliases.values.include?( table_alias )
         max_length = reflection.active_record.connection.table_alias_length
-        table_alias = "#{reflection.name}_#{reflection.active_record.table_name}".to(max_length-1)
+        # Rails seems to pluralize reflection names
+        table_alias = "#{reflection.name.to_s.pluralize}_#{reflection.active_record.table_name}".to(max_length-1)
       end            
       while table_aliases.values.include?( table_alias )
         table_index = ((table_alias =~ /\w(_\d+?)$/) && $1 || "_1").succ
@@ -164,7 +165,8 @@ module Authorization
 
     # Returns a hash mapping paths to reflections.
     def reflections
-      @reflections ||= {}
+      # lets try to get the order of joins right
+      @reflections ||= ActiveSupport::OrderedHash.new
     end
     
     # Returns a hash mapping paths to proper table aliases to use in SQL statements.
@@ -176,53 +178,91 @@ module Authorization
     def rebuild_condition_options!
       conds = []
       binds = {}
+      used_paths = Set.new
+      delete_paths = Set.new
       obligation_conditions.each_with_index do |array, obligation_index|
         obligation, conditions = array
         obligation_conds = []
         conditions.each do |path, expressions|
           model = model_for( path )
           table_alias = table_alias_for(path)
+          parent_model = (path.length > 1 ? model_for(path[0..-2]) : @proxy_scope)
           expressions.each do |expression|
             attribute, operator, value = expression
-            attribute_name = model.columns_hash[:"#{attribute}_id"] && :"#{attribute}_id" ||
-                             model.columns_hash[attribute.to_s]     && attribute ||
-                             :id
-            bindvar = "#{table_alias}__#{attribute_name}_#{obligation_index}".to_sym
+            # prevent unnecessary joins:
+            if attribute == :id and operator == :is and parent_model.columns_hash["#{path.last}_id"]
+              attribute_name = :"#{path.last}_id"
+              attribute_table_alias = table_alias_for(path[0..-2])
+              used_paths << path[0..-2]
+              delete_paths << path
+            else
+              attribute_name = model.columns_hash["#{attribute}_id"] && :"#{attribute}_id" ||
+                               model.columns_hash[attribute.to_s]    && attribute ||
+                               :id
+              attribute_table_alias = table_alias
+              used_paths << path
+            end
+            bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
 
             attribute_value = value.respond_to?( :descends_from_active_record? ) && value.descends_from_active_record? && value.id ||
                               value.is_a?( Array ) && value[0].respond_to?( :descends_from_active_record? ) && value[0].descends_from_active_record? && value.map( &:id ) ||
                               value
             attribute_operator = case operator
-                                 when :contains, :is            : "= :#{bindvar}"
-                                 when :does_not_contain, :is_not: "<> :#{bindvar}"
-                                 when :is_in                    : "IN (:#{bindvar})"
-                                 when :is_not_in                : "NOT IN (:#{bindvar})"
+                                 when :contains, :is             then "= :#{bindvar}"
+                                 when :does_not_contain, :is_not then "<> :#{bindvar}"
+                                 when :is_in                     then "IN (:#{bindvar})"
+                                 when :is_not_in                 then "NOT IN (:#{bindvar})"
                                  end
-            obligation_conds << "#{connection.quote_table_name(table_alias)}.#{connection.quote_table_name(attribute_name)} #{attribute_operator}"
+            obligation_conds << "#{connection.quote_table_name(attribute_table_alias)}.#{connection.quote_table_name(attribute_name)} #{attribute_operator}"
             binds[bindvar] = attribute_value
           end
         end
         obligation_conds << "1=1" if obligation_conds.empty?
         conds << "(#{obligation_conds.join(' AND ')})"
       end
+      (delete_paths - used_paths).each {|path| reflections.delete(path)}
       @proxy_options[:conditions] = [ conds.join( " OR " ), binds ]
     end
     
     # Parses all of the defined obligation joins and defines the scope's :joins option.
     # TODO: Support non-linear association paths.  Right now, we just break down the longest path parsed.
     def rebuild_join_options!
-      joins = []
-      longest_path = reflections.keys.sort { |a, b| a.length <=> b.length }.last || []
-      @proxy_options[:joins] = case longest_path.length
-                               when 0: nil
-                               when 1: longest_path[0]
-                               else
-                                 hash = { longest_path[-2] => longest_path[-1] }
-                                 longest_path[0..-3].reverse.each do |elem|
-                                   hash = { elem => hash }
-                                 end
-                                 hash
-                               end
+      joins = @proxy_options[:joins] || []
+
+      reflections.keys.reverse.each do |path|
+        next if path.empty?
+        
+        existing_join = joins.find do |join|
+          join.is_a?(Symbol) ? (join == path.first) : join.key?(path.first)
+        end
+        path_join = path_to_join(path)
+
+        case [existing_join.class, path_join.class]
+        when [Symbol, Hash]
+          joins.delete(existing_join)
+          joins << path_join
+        when [Hash, Hash]
+          joins.delete(existing_join)
+          joins << path_join.deep_merge(existing_join)
+        when [NilClass, Hash], [NilClass, Symbol]
+          joins << path_join
+        end
+      end
+
+      @proxy_options[:joins] = joins
+    end
+
+    def path_to_join (path)
+      case path.length
+      when 0 then nil
+      when 1 then path[0]
+      else
+        hash = { path[-2] => path[-1] }
+        path[0..-3].reverse.each do |elem|
+          hash = { elem => hash }
+        end
+        hash
+      end
     end
   end
 end

@@ -9,6 +9,7 @@ CREATE TABLE 'test_models' (
 CREATE TABLE 'test_attrs' (
   'id' INTEGER PRIMARY KEY NOT NULL, 
   'test_model_id' integer,
+  'test_another_model_id' integer,
   'test_attr_through_id' INTEGER,
   'n_way_join_item_id' INTEGER,
   'test_model_security_model_id' integer,
