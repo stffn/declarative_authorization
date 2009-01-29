@@ -17,6 +17,7 @@ module Authorization
   # * AuthorizationRulesReader#has_permission_on,
   # * AuthorizationRulesReader#to,
   # * AuthorizationRulesReader#if_attribute,
+  # * AuthorizationRulesReader#if_permitted_to,
   # * AuthorizationRulesReader#contains,
   # * AuthorizationRulesReader#is,
   # * PrivilegesReader#privilege and
@@ -293,6 +294,31 @@ module Authorization
         @current_rule.append_attribute Attribute.new(attr_conditions_hash)
       end
 
+      # if_permitted_to allows the has_permission_on block to depend on
+      # permissions on associated objects.  By using it, the authorization
+      # rules may be a lot DRYer.  E.g.:
+      #
+      #   role :branch_manager
+      #     has_permission_on :branches, :to => :manage do
+      #       if_attribute :employees => includes { user }
+      #     end
+      #     has_permission_on :employees, :to => :read do
+      #       if_permitted_to :read, :branch
+      #       # instead of
+      #       # if_attribute :branch => { :employees => includes { user } }
+      #     end
+      #   end
+      #
+      # if_permitted_to associations may be nested as well:
+      #   if_permitted_to :read, :branch => :company
+      #
+      # Options:
+      # [:+context+]
+      #   If the context of the refered object may not be infered from the
+      #   associations name, the context may be given explicitly:
+      #     if_permitted_to :read, :home_branch, :context => :branches
+      #     if_permitted_to :read, :branch => :main_company, :context => :companies
+      #
       def if_permitted_to (privilege, attr_or_hash, options = {})
         raise DSLError, "if_permitted_to only in has_permission blocks" if @current_rule.nil?
         options[:context] ||= attr_or_hash.delete(:context) if attr_or_hash.is_a?(Hash)
