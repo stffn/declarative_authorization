@@ -228,7 +228,12 @@ module Authorization
       
       protected
       def filter_access_permissions # :nodoc:
-        class_variable_set(:@@declarative_authorization_permissions, {}) unless class_variable_defined?(:@@declarative_authorization_permissions)
+        unless filter_access_permissions?
+          ancestors[1..-1].reverse.each do |mod|
+            mod.filter_access_permissions if mod.respond_to?(:filter_access_permissions)
+          end
+        end
+        class_variable_set(:@@declarative_authorization_permissions, {}) unless filter_access_permissions?
         class_variable_get(:@@declarative_authorization_permissions)[self.name] ||= []
       end
       
