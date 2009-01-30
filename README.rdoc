@@ -243,6 +243,23 @@ if a branch admin should manage only employees of his branch:
       end
     end
 
+To reduce redundancy in has_permission_on blocks, a rule may depend on
+permissions on associated objects:
+
+    authorization do
+      role :branch_admin do
+        has_permission_on :branches, :to => :manage do
+          if_attribute :managers => contains {user}
+        end
+
+        has_permission_on :employees, :to => :manage do
+          if_permitted_to :manage, :branch
+          # instead of
+          #if_attribute :branch => {:managers => contains {user}}
+        end
+      end
+    end
+
 Lastly, not only privileges may be organized in a hierarchy but roles as well.
 Here, project manager inherit the permissions of employees.
 
@@ -252,7 +269,7 @@ Here, project manager inherit the permissions of employees.
 
 See also Authorization::Reader.
 
-= Installation of declarative_authorization and Usage
+= Installation of declarative_authorization
 
 To install simply execute in your applications root directory
   cd vendor/plugins && git clone git://github.com/stffn/declarative_authorization.git
@@ -266,6 +283,7 @@ Then,
 
 == Providing the Plugin's Requirements
 The requirements are
+* Rails >= 2.1 and Ruby >= 1.8.6, including 1.9
 * An authentication mechanism 
 * A user object returned by controller.current_user
 * An array of role symbols returned by user.roles
@@ -354,6 +372,7 @@ sbartsch at tzi.org
 
 == Contributors
 
+Thanks to
 * Brian Langenfeld
 * Mark Mansour
 * Mike Vincent
