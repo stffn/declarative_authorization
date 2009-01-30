@@ -12,10 +12,10 @@ unless defined?(ActiveRecord)
     # simply use installed gems if available
     puts 'using rubygems'
     require 'rubygems'
-    gem 'actionpack'; gem 'activerecord'; gem 'activesupport'
+    gem 'actionpack'; gem 'activerecord'; gem 'activesupport'; gem 'rails'
   end
 
-  %w(action_pack action_controller active_record active_support).each {|f| require f}
+  %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
 end
 
 begin
