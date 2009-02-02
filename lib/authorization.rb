@@ -110,13 +110,6 @@ module Authorization
       # find a authorization rule that matches for at least one of the roles and 
       # at least one of the given privileges
       attr_validator = AttributeValidator.new(self, user, options[:object])
-      #puts "All rules: #{@auth_rules.inspect}"
-      #rules_matching_roles = @auth_rules.select {|r| roles.include?(r.role) }
-      #puts "Matching for roles: #{rules_matching_roles.inspect}"
-      #puts "Matching rules for user   #{user.inspect},"
-      #puts "                   roles  #{roles.inspect},"
-      #puts "                   privs  #{privileges.inspect}:"
-      #puts "   #{matching_auth_rules(roles, privileges).inspect}"
       rules = matching_auth_rules(roles, privileges, options[:context])
       if rules.empty?
         raise NotAuthorized, "No matching rules found for #{privilege} for #{user.inspect} " +
@@ -336,10 +329,16 @@ module Authorization
           case value[0]
           when :is
             attr_value == evaluated
+          when :is_not
+            attr_value != evaluated
           when :contains
             attr_value.include?(evaluated)
+          when :does_not_contain
+            !attr_value.include?(evaluated)
           when :is_in
             evaluated.include?(attr_value)
+          when :is_not_in
+            !evaluated.include?(attr_value)
           else
             raise AuthorizationError, "Unknown operator #{value[0]}"
           end

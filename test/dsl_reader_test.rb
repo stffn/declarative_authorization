@@ -84,7 +84,12 @@ class DSLReaderTest < Test::Unit::TestCase
       authorization do
         role :test_role do
           has_permission_on :perms, :to => :test do
-            if_attribute :test_attr => is { user.test_attr }
+            if_attribute :test_attr   => is { user.test_attr }
+            if_attribute :test_attr_2 => is_not { user.test_attr }
+            if_attribute :test_attr_3 => contains { user.test_attr }
+            if_attribute :test_attr_4 => does_not_contain { user.test_attr }
+            if_attribute :test_attr_5 => is_in { user.test_attr }
+            if_attribute :test_attr_5 => is_not_in { user.test_attr }
           end
         end
       end

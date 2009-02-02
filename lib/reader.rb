@@ -7,22 +7,31 @@ module Authorization
   # constructs a data model of its contents.
   # 
   # For examples and the modelled data model, see the 
-  # README[link:files/README.html].
+  # README[link:files/README_rdoc.html].
   #
-  # Also, see 
+  # Also, see role definition methods
   # * AuthorizationRulesReader#role,
   # * AuthorizationRulesReader#includes,
   # * AuthorizationRulesReader#title,
-  # * AuthorizationRulesReader#description,
+  # * AuthorizationRulesReader#description
+  #
+  # Methods for rule definition in roles
   # * AuthorizationRulesReader#has_permission_on,
   # * AuthorizationRulesReader#to,
   # * AuthorizationRulesReader#if_attribute,
-  # * AuthorizationRulesReader#if_permitted_to,
+  # * AuthorizationRulesReader#if_permitted_to
+  #
+  # Methods to be used in if_attribute statements
   # * AuthorizationRulesReader#contains,
+  # * AuthorizationRulesReader#does_not_contain,
   # * AuthorizationRulesReader#is,
-  # * PrivilegesReader#privilege and
+  # * AuthorizationRulesReader#is_not,
+  # * AuthorizationRulesReader#is_in,
+  # * AuthorizationRulesReader#is_not_in
+  #
+  # And privilege definition methods
+  # * PrivilegesReader#privilege,
   # * PrivilegesReader#includes
-  # for details.
   #
   module Reader
     # Signals errors that occur while reading and parsing an authorization DSL
@@ -326,18 +335,28 @@ module Authorization
             attr_or_hash, options[:context])
       end
       
-      # In an if_attribute statement, is says that the value has to be exactly
-      # met by the if_attribute attribute.  For information on the block 
+      # In an if_attribute statement, is says that the value has to be
+      # met exactly by the if_attribute attribute.  For information on the block
       # argument, see if_attribute.
       def is (&block)
         [:is, block]
       end
-      
+
+      # The negation of is.
+      def is_not (&block)
+        [:is_not, block]
+      end
+
       # In an if_attribute statement, contains says that the value has to be
       # part of the collection specified by the if_attribute attribute.
       # For information on the block argument, see if_attribute.
       def contains (&block)
         [:contains, block]
+      end
+
+      # The negation of contains.
+      def does_not_contain (&block)
+        [:does_not_contain, block]
       end
       
       # In an if_attribute statement, is_in says that the value has to
@@ -345,6 +364,11 @@ module Authorization
       # For information on the block argument, see if_attribute.
       def is_in (&block)
         [:is_in, block]
+      end
+
+      # The negation of is_in.
+      def is_not_in (&block)
+        [:is_not_in, block]
       end
       
       private

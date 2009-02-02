@@ -286,6 +286,26 @@ class AuthorizationTest < Test::Unit::TestCase
               :user => MockUser.new(:test_role, :test_attr => 2),
               :object => MockDataObject.new(:test_attr => 1)))))
   end
+
+  def test_attribute_is_not
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %|
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => is_not { user.test_attr }
+          end
+        end
+      end
+    |
+    engine = Authorization::Engine.new(reader)
+    assert !engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role, :test_attr => 1),
+              :object => MockDataObject.new(:test_attr => 1))
+    assert engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role, :test_attr => 2),
+              :object => MockDataObject.new(:test_attr => 1))
+  end
   
   def test_attribute_contains
     reader = Authorization::Reader::DSLReader.new
@@ -303,6 +323,26 @@ class AuthorizationTest < Test::Unit::TestCase
               :user => MockUser.new(:test_role, :test_attr => 1),
               :object => MockDataObject.new(:test_attr => [1,2]))
     assert !engine.permit?(:test, :context => :permissions, 
+              :user => MockUser.new(:test_role, :test_attr => 3),
+              :object => MockDataObject.new(:test_attr => [1,2]))
+  end
+
+  def test_attribute_does_not_contain
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %|
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => does_not_contain { user.test_attr }
+          end
+        end
+      end
+    |
+    engine = Authorization::Engine.new(reader)
+    assert !engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role, :test_attr => 1),
+              :object => MockDataObject.new(:test_attr => [1,2]))
+    assert engine.permit?(:test, :context => :permissions,
               :user => MockUser.new(:test_role, :test_attr => 3),
               :object => MockDataObject.new(:test_attr => [1,2]))
   end
@@ -327,6 +367,26 @@ class AuthorizationTest < Test::Unit::TestCase
               :user => MockUser.new(:test_role),
               :object => MockDataObject.new(:test_attr => 3))
     assert !engine.permit?(:test, :context => :permissions, 
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attr => 4))
+  end
+
+  def test_attribute_not_in_array
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %|
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => is_not_in { [1,2] }
+          end
+        end
+      end
+    |
+    engine = Authorization::Engine.new(reader)
+    assert !engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attr => 1))
+    assert engine.permit?(:test, :context => :permissions,
               :user => MockUser.new(:test_role),
               :object => MockDataObject.new(:test_attr => 4))
   end

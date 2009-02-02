@@ -70,6 +70,9 @@ current user's branch."
 
 = Examples
 
+A fully functional example application can be found at
+http://github.com/stffn/decl_auth_demo_app
+
 == Controller
 
 If authentication is in place, enabling user-specific access control may be
