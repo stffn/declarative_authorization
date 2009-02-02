@@ -46,9 +46,9 @@ class TestAttr < ActiveRecord::Base
   belongs_to :test_another_model, :class_name => "TestModel", :foreign_key => :test_another_model_id
   belongs_to :n_way_join_item
   has_many :test_attr_throughs
-  attr_reader :roles
+  attr_reader :role_symbols
   def initialize (*args)
-    @roles = []
+    @role_symbols = []
     super(*args)
   end
 end
@@ -653,7 +653,7 @@ class ModelTest < Test::Unit::TestCase
     Authorization::Engine.instance(reader)
     
     test_attr = TestAttr.create
-    test_attr.roles << :test_role
+    test_attr.role_symbols << :test_role
     Authorization.current_user = test_attr
     assert(object = TestModelSecurityModel.create(:test_attrs => [test_attr]))
     assert_nothing_raised do

@@ -286,7 +286,7 @@ The requirements are
 * Rails >= 2.1 and Ruby >= 1.8.6, including 1.9
 * An authentication mechanism 
 * A user object returned by controller.current_user
-* An array of role symbols returned by user.roles
+* An array of role symbols returned by user.role_symbols
 
 Of the various ways to provide these requirements, here is one way employing
 restful_authentication.
@@ -299,7 +299,7 @@ restful_authentication.
   forced to log in;  if parts of your application are public, 
   +filter_access_to+ calls as described above are sufficient.
 * If you'd like to use model security, add a before_filter that sets the user 
-  globally to your ApplicationController.  Note, this is by no means thread-safe.
+  globally to your ApplicationController.  This is thread-safe.
    before_filter :set_current_user
    protected
    def set_current_user
@@ -331,18 +331,19 @@ restful_authentication.
   * add +has_many+ :+roles+ to the User model and a roles method that returns the roles 
     as an Array of Symbols, e.g.
      class User < ActiveRecord::Base
-       has_many :role_objs, :class_name => 'Role'
-       def roles
-         (role_objs || []).map {|r| r.title.to_sym}
+       has_many :roles
+       def role_symbols
+         (roles || []).map {|r| r.title.to_sym}
        end
      end
 
   * add roles to your User objects using e.g.
-     user.role_objs.create(:title => "admin")
+     user.roles.create(:title => "admin")
 
 Note:  If you choose to generate an Account model for restful_authentication
 instead of a User model as described below, you have to customize the
 examples and create a ApplicationController#current_user method.
+
 
 == Debugging Authorization
 

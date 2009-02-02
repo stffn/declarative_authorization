@@ -185,6 +185,23 @@ module Authorization
     def title_for (role)
       role_titles[role]
     end
+
+    # Returns the role symbols of the given user.
+    def roles_for (user)
+      raise AuthorizationUsageError, "User object doesn't respond to roles" \
+        if !user.respond_to?(:role_symbols) and !user.respond_to?(:roles)
+
+      Rails.logger.info("The use of user.roles is deprecated.  Please add a method " +
+          "role_symbols to your User model.") if Rails.logger and !user.respond_to?(:role_symbols)
+
+      roles = user.respond_to?(:role_symbols) ? user.role_symbols : user.roles
+
+      raise AuthorizationUsageError, "User.#{user.respond_to?(:role_symbols) ? 'role_symbols' : 'roles'} " +
+        "doesn't return an Array of Symbols (#{roles.inspect})" \
+            if !roles.is_a?(Array) or (!roles.empty? and !roles[0].is_a?(Symbol))
+
+      (roles.empty? ? [:guest] : roles)
+    end
     
     # Returns an instance of Engine, which is created if there isn't one
     # yet.  If +dsl_file+ is given, it is passed on to Engine.new and 
@@ -220,14 +237,10 @@ module Authorization
       user = options[:user] || Authorization.current_user
       privileges = privilege.is_a?(Array) ? privilege : [privilege]
       
-      raise AuthorizationUsageError, "No user object available (#{user.inspect})" \
+      raise AuthorizationUsageError, "No user object given (#{user.inspect})" \
         unless user
-      raise AuthorizationUsageError, "User object doesn't respond to roles" \
-        unless user.respond_to?(:roles)
-      raise AuthorizationUsageError, "User.roles doesn't return an Array of Symbols" \
-        unless user.roles.empty? or user.roles[0].is_a?(Symbol)
-      
-      roles = flatten_roles((user.roles.blank? ? [:guest] : user.roles))
+
+      roles = flatten_roles(roles_for(user))
       privileges = flatten_privileges privileges, options[:context]
       [user, roles, privileges]
     end
@@ -437,9 +450,9 @@ module Authorization
   
   # Represents a pseudo-user to facilitate guest users in applications
   class GuestUser
-    attr_reader :roles
+    attr_reader :role_symbols
     def initialize (roles = [:guest])
-      @roles = roles
+      @role_symbols = roles
     end
   end
 end

@@ -61,8 +61,9 @@ module Authorization
     # with authorization.  E.g. to only show the most relevant menu options 
     # to a certain group of users.  That is what has_role? should be used for.
     def has_role? (*roles, &block)
+      user_roles = authorization_engine.roles_for(current_user)
       result = roles.all? do |role|
-        current_user.roles.include?(role)
+        user_roles.include?(role)
       end
       yield if result and block_given?
       result
