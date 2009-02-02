@@ -121,6 +121,27 @@ class ModelTest < Test::Unit::TestCase
     end
     TestModel.delete_all
   end
+
+  def test_named_scope_with_not_is
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :id => is_not { user.test_attr_value }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    TestModel.create!
+
+    user = MockUser.new(:test_role, :test_attr_value => test_model_1.id)
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+    TestModel.delete_all
+  end
   
   def test_named_scope_with_empty_obligations
     reader = Authorization::Reader::DSLReader.new
@@ -339,6 +360,32 @@ class ModelTest < Test::Unit::TestCase
     TestModel.delete_all
     TestAttr.delete_all
   end
+
+  def test_named_scope_with_does_not_contain
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attrs => does_not_contain { user }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create!
+    test_model_1.test_attrs.create!
+    test_model_2.test_attrs.create!
+
+    user = MockUser.new(:test_role,
+                        :id => test_model_1.test_attrs.first.id)
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
   
   def test_named_scope_with_contains_conditions
     reader = Authorization::Reader::DSLReader.new
@@ -516,6 +563,33 @@ class ModelTest < Test::Unit::TestCase
     assert_equal 1, TestAttr.with_permissions_to(:read, 
       :context => :test_attrs, :user => user).length
     
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_not_is_in
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_model => is_not_in { [user.test_model, user.test_model_2] }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create!
+    test_model_1.test_attrs.create!
+    TestModel.create!.test_attrs.create!
+
+    user = MockUser.new(:test_role, :test_model => test_model_1,
+      :test_model_2 => test_model_2)
+    assert_equal 1, TestAttr.with_permissions_to(:read,
+      :context => :test_attrs, :user => user).length
+
     TestModel.delete_all
     TestAttr.delete_all
   end
