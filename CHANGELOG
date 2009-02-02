@@ -1,0 +1,31 @@
+** RELEASE 0.2 (February 2, 2009) **
+
+* added negative operators: is_not, not_in, does_not_contain [sb]
+
+* changed user.roles to user.role_symbols to reduce interferance with associations [sb]
+
+* Ruby 1.9 and Rails 2.3 compatibility [sb]
+
+* if_permitted_to for has_permission_on blocks for DRYer auth rules [sb]
+
+* ObligationScope rewrite of query rewriting [Brian Langenfeld]
+
+* changed exception hierarchy to begin at StandardError [sb]
+
+* :is_in operator [sb]
+
+* added has_role? helper [sb]
+
+* made plugin thread-safe [sb]
+
+* added maintenance and test helpers [sb]
+
+* changed default permission denied response to 403 Forbidden [sb]
+
+* descriptions for titles and roles [sb]
+
+* fixed for PostgreSQL [Mark Mansour]
+
+* improved DSL syntax: allow for array of contexts in has_permission_on [sb]
+
+** RELEASE 0.1 (August 22, 2008) **
