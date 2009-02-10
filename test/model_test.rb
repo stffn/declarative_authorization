@@ -740,4 +740,9 @@ class ModelTest < Test::Unit::TestCase
       TestModelSecurityModel.find(object.id)
     end
   end
+
+  def test_using_access_control
+    assert !TestModel.using_access_control?
+    assert TestModelSecurityModel.using_access_control?
+  end
 end

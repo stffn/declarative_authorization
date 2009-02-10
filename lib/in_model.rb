@@ -113,7 +113,16 @@ module Authorization
             if options[:include_read]
               def after_find; end
             end
+
+            def self.using_access_control?
+              true
+            end
           end
+        end
+
+        # Returns true if the model is using model security.
+        def self.using_access_control?
+          false
         end
       end
     end
