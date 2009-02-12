@@ -1,3 +1,9 @@
+
+* Added Model.using_access_control? to check if a model has model security activated [sb]
+
+* Changed Authorization::ObligationScope#map_table_alias_for [Brian Langenfeld]
+  * Fixed to prevent bad aliases from being produced.
+
 * Changed Authorization::Attribute#validate? [Brian Langenfeld]
   * Encountering a nil value when evaluating an attribute now raises a NilAttributeValueError, instead of an AuthorizationError.  We leave it to the caller to decide what to do about it.
 
