@@ -1,3 +1,7 @@
+
+* Changed Authorization::ObligationScope#rebuild_join_options! [Brian Langenfeld]
+  * If we're dealing with multiple obligations we have to check (i.e. ones that result in OR'd conditions), we now use :include instead of :joins for our generated scope.  This does seem like a kludge, but until ActiveRecord scopes support unions (for checking obligations individually and consolidating the results), we don't have much choice.  Something to revisit later, for sure.
+
 ** RELEASE 0.2 (February 2, 2009) **
 
 * added negative operators: is_not, not_in, does_not_contain [sb]

@@ -69,6 +69,31 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
 end
 
 class ModelTest < Test::Unit::TestCase
+  def test_named_scope_multiple_deep_ored_belongs_to
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_model => {:test_attrs => contains {user}}
+            if_attribute :test_another_model => {:test_attrs => contains {user}}
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+  
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create!
+    test_attr_1 = TestAttr.create! :test_model_id => test_model_1.id,
+                      :test_another_model_id => test_model_2.id
+  
+    user = MockUser.new(:test_role, :id => test_attr_1)
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+    TestAttr.delete_all
+    TestModel.delete_all
+  end
+  
   def test_named_scope_with_belongs_to_and_has_many_with_contains
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

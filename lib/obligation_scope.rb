@@ -152,8 +152,12 @@ module Authorization
         table_alias = "#{reflection.name.to_s.pluralize}_#{reflection.active_record.table_name}".to(max_length-1)
       end            
       while table_aliases.values.include?( table_alias )
-        table_index = ((table_alias =~ /\w(_\d+?)$/) && $1 || "_1").succ
-        table_alias = table_alias[0..-(table_index.length+1)] + table_index
+        if table_alias =~ /\w(_\d+?)$/
+          table_index = $1.succ
+          table_alias = "#{table_alias[0..-(table_index.length+1)]}_#{table_index}"
+        else
+          table_alias = "#{table_alias[0..(max_length-3)]}_2" 
+        end
       end
       table_aliases[path] = table_alias
     end
@@ -224,7 +228,7 @@ module Authorization
       @proxy_options[:conditions] = [ conds.join( " OR " ), binds ]
     end
     
-    # Parses all of the defined obligation joins and defines the scope's :joins option.
+    # Parses all of the defined obligation joins and defines the scope's :joins or :includes option.
     # TODO: Support non-linear association paths.  Right now, we just break down the longest path parsed.
     def rebuild_join_options!
       joins = @proxy_options[:joins] || []
@@ -249,7 +253,16 @@ module Authorization
         end
       end
 
-      @proxy_options[:joins] = joins
+      case obligation_conditions.length
+      when 0:
+        # No obligation conditions means we don't have to mess with joins or includes at all.
+      when 1:
+        @proxy_options[:joins] = joins
+        @proxy_options.delete( :include )
+      else
+        @proxy_options.delete( :joins )
+        @proxy_options[:include] = joins
+      end
     end
 
     def path_to_join (path)
