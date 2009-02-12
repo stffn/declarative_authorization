@@ -31,7 +31,7 @@ Plugin features
 Requirements
 * An authentication mechanism 
   * User object in Controller#current_user
-* User object needs to respond to a method :roles, which should return an 
+* User object needs to respond to a method :role_symbols that returns an 
   array of role symbols
 See below for installation instructions.
 
@@ -82,7 +82,7 @@ required for action index.  This works as a first default configuration
 for RESTful controllers, with these privileges easily handled in the
 authorization configuration, which will be described below.
 
-    class EmployeeController < ApplicationController
+    class EmployeesController < ApplicationController
       filter_access_to :all
       def index
         ...
@@ -94,7 +94,7 @@ When custom actions are added to such a controller, it helps to define more
 clearly which privileges are the respective requirements.  That is when the
 filter_access_to call may become more verbose:
 
-    class EmployeeController < ApplicationController
+    class EmployeesController < ApplicationController
       filter_access_to :all
       # this one would be included in :all, but :read seems to be
       # a more suitable privilege than :auto_complete_for_user_name
@@ -112,7 +112,7 @@ might prefer the authorization to ignore specific attribute checks as the object
 unknown at checking time, so attribute checks and thus automatic loading of
 objects needs to be enabled explicitly.
 
-    class EmployeeController < ApplicationController
+    class EmployeesController < ApplicationController
       ...
       filter_access_to :update, :attribute_check => true
       def update
@@ -135,13 +135,22 @@ Authorization::AuthorizationInController::ClassMethods.
 In views, a simple permitted_to? helper makes showing blocks according to the
 current user's privileges easy:
 
-    <% permitted_to?(:create, :employees) do %>
+    <% permitted_to? :create, :employees do %>
     <%= link_to 'New', new_employee_path %>
     <% end %>
-    ...
+
+Only giving a symbol :employees as context prevents any checks of attributes
+as there is no object to check against.  For example, in case of nested resources
+a new object may come in handy:
+
+    <% permitted_to? :create, Branch.new(:company => @company) do %>
+    <%= link_to 'New', new_company_branch_path(@company) %>
+    <% end %>
+
+Lists are straight-forward:
+
     <% for employee in @employees %>
-    ...
-    <%= link_to 'Edit', edit_employee_path(company) if permitted_to?(:update, employee) %>
+    <%= link_to 'Edit', edit_employee_path(employee) if permitted_to? :update, employee %>
     <% end %>
 
 See also Authorization::AuthorizationHelper.
@@ -234,7 +243,8 @@ Privilege hierarchies may be context-specific, e.g. applicable to :employees.
     end
 
 For more complex use cases, authorizations need to be based on attributes.  E.g.
-if a branch admin should manage only employees of his branch:
+if a branch admin should manage only employees of his branch (see 
+Authorization::Reader in the API docs for a full list of available operators):
 
     authorization do
       role :branch_admin do
@@ -272,6 +282,45 @@ Here, project manager inherit the permissions of employees.
 
 See also Authorization::Reader.
 
+== Testing
+
+declarative_authorization provides a few helpers to ease the testing with
+authorization in mind.
+
+In your test_helper.rb, to enable the helpers add
+
+    require File.expand_path(File.dirname(__FILE__) +
+        "/../vendor/plugins/declarative_authorization/lib/maintenance")
+
+    class Test::Unit::TestCase
+      include Authorization::TestHelper
+      ...
+    end
+
+Now, in unit tests, you may deactivate authorization if needed e.g. for test
+setup and assume certain identities for tests:
+
+    class EmployeeTest < ActiveSupport::TestCase
+      def test_should_read
+        without_access_control do
+          Employee.create(...)
+        end
+        assert_nothing_raised do
+          with_user(admin) do
+            Employee.find(:first)
+          end
+        end
+      end
+    end
+
+In functional tests, get, posts, etc. may be tested in the name of certain users:
+
+    get_with admin, :index
+    post_with admin, :update, :employee => {...}
+
+See Authorization::TestHelper for more information.
+
+
 = Installation of declarative_authorization
 
 To install simply execute in your applications root directory
@@ -296,11 +345,9 @@ restful_authentication.
 
 * Install restful_authentication
    cd vendor/plugins && git clone git://github.com/technoweenie/restful-authentication.git restful_authentication
-   ruby script/generate authenticated user sessions
+   cd ../.. && ruby script/generate authenticated user sessions
 * Move "include AuthenticatedSystem" to ApplicationController
-* Add +before_filter+ :+login_required+ to controllers where a user should be
-  forced to log in;  if parts of your application are public, 
-  +filter_access_to+ calls as described above are sufficient.
+* Add +filter_access_to+ calls as described above.
 * If you'd like to use model security, add a before_filter that sets the user 
   globally to your ApplicationController.  This is thread-safe.
    before_filter :set_current_user
