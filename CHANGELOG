@@ -1,3 +1,10 @@
+* Changed Authorization::Attribute#validate? [Brian Langenfeld]
+  * Encountering a nil value when evaluating an attribute now raises a NilAttributeValueError, instead of an AuthorizationError.  We leave it to the caller to decide what to do about it.
+
+* Changed Authorization::Engine#permit! [Brian Langenfeld]
+  * We now convert incoming privileges to symbols (e.g. 'read' is made equivalent to :read).  This ensures the privileges will match those defined in the authorization rules file.
+  * The method now properly infers context when checking against an association (e.g. user.posts).  We do this by leveraging ActiveRecord builder method 'new' to instantiate a proper object we can work with.
+  * When testing rules for positive results (via Authorization::Attribute#validate?), we now rescue NilAttributeValueError exceptions, simply causing the rule to return a negative result (instead of barfing).
 
 * Changed Authorization::ObligationScope#rebuild_join_options! [Brian Langenfeld]
   * If we're dealing with multiple obligations we have to check (i.e. ones that result in OR'd conditions), we now use :include instead of :joins for our generated scope.  This does seem like a kludge, but until ActiveRecord scopes support unions (for checking obligations individually and consolidating the results), we don't have much choice.  Something to revisit later, for sure.

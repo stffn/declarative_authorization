@@ -16,6 +16,9 @@ module Authorization
   # in which the application misused the plugin.  That is, if, e.g.,
   # authorization rules may not be evaluated.
   class AuthorizationUsageError < AuthorizationError ; end
+  # NilAttributeValueError is raised by Attribute#validate? when it hits a nil attribute value.
+  # The exception is raised to ensure that the entire rule is invalidated.
+  class NilAttributeValueError < AuthorizationError; end
   
   AUTH_DSL_FILE = "#{RAILS_ROOT}/config/authorization_rules.rb"
   
@@ -103,6 +106,23 @@ module Authorization
         :skip_attribute_test => false,
         :context => nil
       }.merge(options)
+      
+      # Make sure we're handling all privileges as symbols.
+      privilege = privilege.is_a?( Array ) ?
+                  privilege.flatten.collect { |priv| priv.to_sym } :
+                  privilege.to_sym
+      
+      #
+      # If the object responds to :new, we're probably working with an association collection.  Use
+      # 'new' to leverage ActiveRecord's builder functionality to obtain an object against which we
+      # can check permissions.
+      #
+      # Example: permit!( :edit, user.posts )
+      #
+      if options[:object].respond_to?( :new )
+        options[:object] = options[:object].new
+      end
+      
       options[:context] ||= options[:object] && options[:object].class.table_name.to_sym rescue NoMethodError
       
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
@@ -117,10 +137,19 @@ module Authorization
           "context #{options[:context].inspect})."
       end
       
+      # Test each rule in turn to see whether any one of them is satisfied.
       grant_permission = rules.any? do |rule|
-        options[:skip_attribute_test] or
-          rule.attributes.empty? or
-          rule.attributes.any? {|attr| attr.validate? attr_validator }
+        begin
+          options[:skip_attribute_test] or
+            rule.attributes.empty? or
+            rule.attributes.any? do |attr|
+              begin
+                attr.validate?( attr_validator )
+              rescue NilAttributeValueError => e
+                nil # Bumping up against a nil attribute value flunks the rule.
+              end
+            end
+        end
       end
       unless grant_permission
         raise AttributeAuthorizationError, "#{privilege} not allowed for #{user.inspect} on #{options[:object].inspect}."
@@ -317,7 +346,7 @@ module Authorization
               "on a collection.  Cannot use '=>' operator on #{attr.inspect} " +
               "(#{attr_value.inspect}) for attributes #{value.inspect}."
           elsif attr_value.nil?
-            raise AuthorizationError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
+            raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
           end
           validate?(attr_validator, attr_value, value)
         elsif value.is_a?(Array) and value.length == 2
