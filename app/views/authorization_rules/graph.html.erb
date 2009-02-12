@@ -1,0 +1,26 @@
+<h1>Authorization Rules Graph</h1>
+<p>Currently active rules in this application.</p>
+<p><%= navigation %></p>
+
+<% javascript_tag do %>
+    function update_graph (form) {
+        base_url = "<%= url_for :format => 'svg' %>";
+        $('graph').data = base_url + '?' + form.serialize();
+    }
+<% end %>
+<p>
+  <% form_tag do %>
+  <%#= link_to_graph "Rules" %>
+  <%#= link_to_graph "Privilege hierarchy", :type => 'priv_hierarchy' %>
+  
+  <%= select_tag "filter_roles", options_for_select([["All roles",'']] + controller.authorization_engine.roles), :onchange => 'update_graph(this.form)' %>
+  <%= select_tag "filter_contexts", options_for_select([["All contexts",'']] + controller.authorization_engine.auth_rules.collect {|ar| ar.contexts.to_a}.flatten.uniq), :onchange => 'update_graph(this.form)' %>
+  <%= check_box_tag "effective_role_privs", "1", false, :onclick => 'update_graph(this.form)'  %> <%= label_tag "effective_role_privs", "Effective privileges"  %>
+  <%= check_box_tag "privilege_hierarchy", "1", false, :onclick => 'update_graph(this.form)'  %> <%= label_tag "privilege_hierarchy", "Show full privilege hierarchy"  %>
+  <% end %>
+</p>
+<div style="margin: 1em;border:1px solid #ccc;max-width:95%">
+<object id="graph" data="<%= url_for :format => 'svg' %>" type="image/svg+xml" style="max-width:100%"/>
+</div>
+<%= button_to_function "Zoom in", '$("graph").style.maxWidth = "";$(this).toggle();$(this).next().toggle()' %>
+<%= button_to_function "Zoom out", '$("graph").style.maxWidth = "100%";$(this).toggle();$(this).previous().toggle()', :style => 'display:none' %>

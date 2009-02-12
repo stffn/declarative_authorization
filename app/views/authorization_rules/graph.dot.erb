@@ -1,0 +1,48 @@
+
+digraph rules {
+  compound = true
+  edge [arrowhead=open]
+  node [shape=box,fontname="sans-serif",fontsize="16"]
+  fontname="sans-serif";fontsize="16"
+  ranksep = "0.3"
+  //concentrate = true
+  rankdir = TB
+  {
+    node [shape=ellipse,style=filled]
+    //rank = source
+    <% @roles.each do |role| %>
+    "<%= role.inspect %>" [fillcolor="<%= role_fill_color(role) %>"]
+    <% end %>
+    <% @roles.each do |role| %>
+        <% (@role_hierarchy[role] || []).each do |lower_role| %>
+            "<%= role.inspect %>" -> "<%= lower_role.inspect %>" [constraint=false,arrowhead=empty]
+        <% end %>
+    <% end %>
+  }
+
+  <% @contexts.each do |context| %>
+    subgraph cluster_<%= context %>  {
+      label = "<%= context.inspect %>"
+      style=filled; fillcolor="#eeeeee"
+      node[fillcolor=white,style=filled]
+      <% (@context_privs[context] || []).each do |priv| %>
+      <%= priv %>_<%= context %> [label="<%= priv.inspect %>"]
+      <% end %>
+      <% (@context_privs[context] || []).each do |priv| %>
+        <% (@privilege_hierarchy[priv] || []).
+                select {|p,c| (c.nil? or c == context) and @context_privs[context].include?(p)}.
+                each do |lower_priv, c| %>
+      <%= priv %>_<%= context %> -> <%= lower_priv %>_<%= context %> [arrowhead=empty]
+        <% end %>
+      <% end %>
+      //read_conferences -> update_conferences [style=invis]
+      //create_conferences -> delete_conferences [style=invis]
+    }
+  <% end %>
+
+  <% @roles.each do |role| %>
+    <% (@role_privs[role] || []).each do |context, privilege, unconditionally| %>
+  "<%= role.inspect %>" -> <%=  privilege %>_<%= context %> [color="<%= role_color(role) %>", minlen=3<%= ", arrowhead=opendot" unless unconditionally %>]
+    <% end %>
+  <% end %>
+}

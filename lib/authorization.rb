@@ -44,7 +44,8 @@ module Authorization
   # a certain privilege is granted for the current user.
   #
   class Engine
-    attr_reader :roles, :role_titles, :role_descriptions
+    attr_reader :roles, :role_titles, :role_descriptions, :privileges,
+      :privilege_hierarchy, :auth_rules, :role_hierarchy, :rev_priv_hierarchy
     
     # If +reader+ is not given, a new one is created with the default
     # authorization configuration of +AUTH_DSL_FILE+.  If given, may be either

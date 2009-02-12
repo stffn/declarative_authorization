@@ -1,0 +1,15 @@
+<h1>Authorization Rules</h1>
+<p>Currently active rules in this application.</p>
+<p><%= navigation %></p>
+<style type="text/css">
+  pre .constant {color: #a00;}
+  pre .special {color: red;}
+  pre .operator {color: red;}
+  pre .statement {color: #00a;}
+  pre .proc {color: #0a0;}
+  pre .privilege, pre .context {font-weight: bold}
+  pre .preproc, pre .comment, pre .comment span {color: grey !important;}
+</style>
+<pre>
+<%= syntax_highlight(h(@auth_rules_script)) %>
+</pre>
