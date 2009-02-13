@@ -1,3 +1,4 @@
+* Added a authorization rules browser.  See README for more information [sb]
 
 * Added Model.using_access_control? to check if a model has model security activated [sb]
 

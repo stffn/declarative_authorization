@@ -437,8 +437,9 @@ the following lines to your authorization_rules.rb for the appropriate role:
 Then, point your browser to
   http://localhost/authorization_rules
 
-The graphical view requires Graphviz (which e.g. can be installed through the
-graphviz package under Debian and Ubuntu) and is only tested under Linux.
+The browser needs Rails 2.3 (for Engine support).  The graphical view requires 
+Graphviz (which e.g. can be installed through the graphviz package under Debian 
+and Ubuntu) and is only tested under Linux.
 
 
 = Help and Contact
