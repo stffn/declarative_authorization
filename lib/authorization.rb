@@ -38,6 +38,10 @@ module Authorization
   def self.ignore_access_control (state = nil) # :nodoc:
     false
   end
+
+  def self.activate_authorization_rules_browser? # :nodoc:
+    ::RAILS_ENV == 'development'
+  end
   
   # Authorization::Engine implements the reference monitor.  It may be used
   # for querying the permission and retrieving obligations under which

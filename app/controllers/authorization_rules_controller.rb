@@ -1,3 +1,5 @@
+if Authorization::activate_authorization_rules_browser?
+
 class AuthorizationRulesController < ApplicationController
   filter_access_to :all, :require => :read
   def index
@@ -87,3 +89,5 @@ class AuthorizationRulesController < ApplicationController
     }
   end
 end
+
+end # activate_authorization_rules_browser?
