@@ -422,7 +422,26 @@ All bang methods throw exceptions which may be used to retrieve more
 information about a denied access than a Boolean value.
 
 
-== Help and Contact
+== Authorization Browser
+
+If your authorization rules become more complex, you might be glad to use
+the authorization rules browser that comes with declarative_authorization.
+It has a syntax-highlighted and a graphical view with filtering of the current
+authorization rules.
+
+By default, it will only be available in development mode.  To use it, add
+the following lines to your authorization_rules.rb for the appropriate role:
+
+  has_permission_on :authorization_rules, :to => :read
+
+Then, point your browser to
+  http://localhost/authorization_rules
+
+The graphical view requires Graphviz (which e.g. can be installed through the
+graphviz package under Debian and Ubuntu) and is only tested under Linux.
+
+
+= Help and Contact
 
 We have an issue tracker[http://stffn.lighthouseapp.com/projects/20733-declarative_authorization] 
 for bugs and feature requests as well as a 
@@ -438,7 +457,7 @@ TZI, Universität Bremen, Germany
 sbartsch at tzi.org
 
 
-== Contributors
+= Contributors
 
 Thanks to
 * Brian Langenfeld
@@ -446,7 +465,7 @@ Thanks to
 * Mike Vincent
 
 
-== Licence
+= Licence
 
 Copyright (c) 2008 Steffen Bartsch, TZI, Universität Bremen, Germany
 released under the MIT license
