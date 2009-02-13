@@ -113,18 +113,33 @@ unknown at checking time, so attribute checks and thus automatic loading of
 objects needs to be enabled explicitly.
 
     class EmployeesController < ApplicationController
-      ...
       filter_access_to :update, :attribute_check => true
       def update
-        # @employee is already loaded from param[:id]
-        @employee ||= Employee.find(param[:id])
-        ...
+        # @employee is already loaded from param[:id] because of :attribute_check
       end
-      ...
+    end
+
+You can provide the needed object through before_filters.  This way, you have
+full control over the object that the conditions are checked against.  Just make
+sure, your before_filters occur before any of the filter_access_to calls.
+
+    class EmployeesController < ApplicationController
+      before_filter :new_employee_from_params, :only => :create
+      before_filter :new_employee, :only => [:index, :new]
+      filter_access_to :all, :attribute_check => true
+
+      def create
+        @employee.save!
+      end
+
+      protected
+      def new_employee_from_params
+        @employee = Employee.new(params[:employee])
+      end
     end
 
 If the access is denied, a +permission_denied+ method is called on the
-current_controller, if defined and the issue is logged.
+current_controller, if defined, and the issue is logged.
 For further customization of the filters and object loading, have a look at 
 the complete API documentation of filter_access_to in 
 Authorization::AuthorizationInController::ClassMethods.
@@ -143,7 +158,9 @@ Only giving a symbol :employees as context prevents any checks of attributes
 as there is no object to check against.  For example, in case of nested resources
 a new object may come in handy:
 
-    <% permitted_to? :create, Branch.new(:company => @company) do %>
+    <% permitted_to? :create, Branch.new(:company => @company) do
+            # or @company.branches.new
+            # or even @company.branches %>
     <%= link_to 'New', new_company_branch_path(@company) %>
     <% end %>
 
