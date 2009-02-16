@@ -229,6 +229,7 @@ module Authorization
         if block_given?
           @current_rule = rule
           yield
+          raise DSLError, "has_permission_on block content specifies no privileges" if rule.privileges.empty?
           # TODO ensure?
           @current_rule = nil
         end
