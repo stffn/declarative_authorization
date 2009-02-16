@@ -118,13 +118,13 @@ module Authorization
                   privilege.to_sym
       
       #
-      # If the object responds to :new, we're probably working with an association collection.  Use
-      # 'new' to leverage ActiveRecord's builder functionality to obtain an object against which we
-      # can check permissions.
+      # If the object responds to :proxy_reflection, we're probably working with
+      # an association proxy.  Use 'new' to leverage ActiveRecord's builder
+      # functionality to obtain an object against which we can check permissions.
       #
-      # Example: permit!( :edit, user.posts )
+      # Example: permit!( :edit, :object => user.posts )
       #
-      if options[:object].respond_to?( :new )
+      if options[:object].respond_to?( :proxy_reflection )
         options[:object] = options[:object].new
       end
       

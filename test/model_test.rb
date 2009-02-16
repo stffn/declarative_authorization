@@ -770,4 +770,25 @@ class ModelTest < Test::Unit::TestCase
     assert !TestModel.using_access_control?
     assert TestModelSecurityModel.using_access_control?
   end
+
+  def test_authorization_permit_association_proxy
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_model => {:content => "content" }
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.instance(reader)
+
+    test_model = TestModel.create(:content => "content")
+    assert engine.permit?(:read, :object => test_model.test_attrs,
+                          :user => MockUser.new(:test_role))
+    assert !engine.permit?(:read, :object => TestAttr.new,
+                          :user => MockUser.new(:test_role))
+    TestModel.delete_all
+  end
 end
