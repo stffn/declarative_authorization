@@ -87,7 +87,7 @@ module Authorization
             :include_read => false
           }.merge(options)
           context = (options[:context] || self.table_name).to_sym
-          
+
           class_eval do
             before_create do |object|
               Authorization::Engine.instance.permit!(:create, :object => object,

@@ -29,7 +29,8 @@ module AuthorizationRulesHelper
   
   def navigation
     link_to("Rules", authorization_rules_path) << ' | ' <<
-    link_to("Graphical view", graph_authorization_rules_path) #<< ' | ' <<
+    link_to("Graphical view", graph_authorization_rules_path) << ' | ' <<
+    link_to("Usages", authorization_usages_path) #<< ' | ' <<
   #  'Edit | ' <<
   #  link_to("XACML export", :action => 'index', :format => 'xacml')
   end
@@ -47,5 +48,37 @@ module AuthorizationRulesHelper
   
   def role_fill_color (role)
     role_color(role, true)
+  end
+
+  def auth_usage_info_classes (auth_info)
+    classes = []
+    if auth_info[:controller_permissions]
+      if auth_info[:controller_permissions][0]
+        classes << "catch-all" if auth_info[:controller_permissions][0].actions.include?(:all)
+        classes << "default-privilege" unless auth_info[:controller_permissions][0].privilege
+        classes << "default-context" unless auth_info[:controller_permissions][0].context
+        classes << "no-attribute-check" unless auth_info[:controller_permissions][0].attribute_check
+      end
+    else
+      classes << "unprotected"
+    end
+    classes * " "
+  end
+
+  def auth_usage_info_title (auth_info)
+    titles = []
+    if auth_usage_info_classes(auth_info) =~ /unprotected/
+      titles << "No filter_access_to call protects this action"
+    end
+    if auth_usage_info_classes(auth_info) =~ /no-attribute-check/
+      titles << "Action is not protected with attribute check"
+    end
+    if auth_usage_info_classes(auth_info) =~ /default-privilege/
+      titles << "Privilege set automatically from action name by :all rule"
+    end
+    if auth_usage_info_classes(auth_info) =~ /default-context/
+      titles << "Context set automatically from controller name by filter_access_to call without :context option"
+    end
+    titles * ". "
   end
 end

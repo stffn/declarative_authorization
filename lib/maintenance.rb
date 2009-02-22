@@ -49,6 +49,62 @@ module Authorization
     ensure
       Authorization.current_user = prev_user
     end
+
+    # Module for grouping usage-related helper methods
+    module Usage
+      # Delivers a hash of {ControllerClass => usage_info_hash},
+      # where usage_info_hash has the form of
+      def self.usages_by_controller
+        # load each application controller
+        begin
+          Dir.foreach(File.join(RAILS_ROOT, %w{app controllers})) do |entry|
+            if entry =~ /^\w+_controller\.rb$/
+              require File.join(RAILS_ROOT, %w{app controllers}, entry)
+            end
+          end
+        rescue Errno::ENOENT
+        end
+        controllers = []
+        ObjectSpace.each_object(Class) do |obj|
+          controllers << obj if obj.ancestors.include?(ActionController::Base) and
+                                !%w{ActionController::Base ApplicationController}.include?(obj.name)
+        end
+
+        controllers.inject({}) do |memo, controller|
+          catchall_permissions = []
+          permission_by_action = {}
+          controller.all_filter_access_permissions.each do |controller_permissions|
+            catchall_permissions << controller_permissions if controller_permissions.actions.include?(:all)
+            controller_permissions.actions.reject {|action| action == :all}.each do |action|
+              permission_by_action[action] = controller_permissions
+            end
+          end
+
+          actions = controller.public_instance_methods(false) - controller.hidden_actions
+          memo[controller] = actions.inject({}) do |actions_memo, action|
+            action_sym = action.to_sym
+            actions_memo[action_sym] =
+              if permission_by_action[action_sym]
+                {
+                  :privilege => permission_by_action[action_sym].privilege,
+                  :context   => permission_by_action[action_sym].context,
+                  :controller_permissions => [permission_by_action[action_sym]]
+                }
+              elsif !catchall_permissions.empty?
+                {
+                  :privilege => catchall_permissions[0].privilege,
+                  :context   => catchall_permissions[0].context,
+                  :controller_permissions => catchall_permissions
+                }
+              else
+                {}
+              end
+            actions_memo
+          end
+          memo
+        end
+      end
+    end
   end
   
   # TestHelper provides assert methods and controller request methods which

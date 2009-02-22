@@ -245,7 +245,7 @@ module Authorization
   end
   
   class ControllerPermission # :nodoc:
-    attr_reader :actions, :privilege, :context
+    attr_reader :actions, :privilege, :context, :attribute_check
     def initialize (actions, privilege, context, attribute_check = false, 
                     load_object_model = nil, load_object_method = nil,
                     filter_block = nil)
