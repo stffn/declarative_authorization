@@ -1,5 +1,6 @@
 require 'test/unit'
 RAILS_ROOT = File.dirname(__FILE__) + '/../../../../'
+require File.dirname(__FILE__) + '/../lib/rails_legacy.rb'
 require File.dirname(__FILE__) + '/../lib/authorization.rb'
 require File.dirname(__FILE__) + '/../lib/in_controller.rb'
 

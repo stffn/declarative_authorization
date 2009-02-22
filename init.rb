@@ -1,3 +1,4 @@
+require File.dirname(__FILE__) + "/lib/rails_legacy.rb"
 require File.dirname(__FILE__) + "/lib/helper.rb"
 require File.dirname(__FILE__) + "/lib/in_controller.rb"
 require File.dirname(__FILE__) + "/lib/in_model.rb"
