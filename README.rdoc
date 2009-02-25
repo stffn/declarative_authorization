@@ -73,6 +73,9 @@ current user's branch."
 A fully functional example application can be found at
 http://github.com/stffn/decl_auth_demo_app
 
+Details on the demonstrated methods can be found in the API docs, either
+generated yourself or at http://www.tzi.org/~sbartsch/declarative_authorization
+
 == Controller
 
 If authentication is in place, enabling user-specific access control may be
@@ -342,6 +345,9 @@ See Authorization::TestHelper for more information.
 
 To install simply execute in your applications root directory
   cd vendor/plugins && git clone git://github.com/stffn/declarative_authorization.git
+
+Alternatively, download one of the released versions from Github at
+http://github.com/stffn/declarative_authorization/downloads
 
 Then, 
 * provide the requirements as noted below, 
