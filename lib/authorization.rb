@@ -329,6 +329,10 @@ module Authorization
       @contexts.include?(context) and roles.include?(@role) and 
         not (@privileges & privs).empty?
     end
+
+    def to_long_s
+      attributes.collect {|attr| attr.to_long_s } * "; "
+    end
   end
   
   class Attribute
@@ -395,6 +399,21 @@ module Authorization
         end
       end
       hash
+    end
+
+    def to_long_s (hash = nil)
+      if hash
+        hash.inject({}) do |memo, key_val|
+          key, val = key_val
+          memo[key] = case val
+                      when Array then "#{val[0]} { #{val[1].respond_to?(:to_ruby) ? val[1].to_ruby.gsub(/^proc \{\n?(.*)\n?\}$/m, '\1') : "..."} }"
+                      when Hash then to_long_s(val)
+                      end
+          memo
+        end
+      else
+        "if_attribute #{to_long_s(@conditions_hash).inspect}"
+      end
     end
 
     protected
@@ -478,6 +497,10 @@ module Authorization
       else
         raise AuthorizationError, "Wrong conditions hash format: #{hash_or_attr.inspect}"
       end
+    end
+
+    def to_long_s
+      "if_permitted_to #{@privilege.inspect}, #{@attr_hash.inspect}"
     end
   end
   

@@ -1,5 +1,12 @@
 if Authorization::activate_authorization_rules_browser?
 
+begin
+  # for nice auth_rules output:
+  require "parse_tree"
+  require "parse_tree_extensions"
+  require "ruby2ruby"
+rescue LoadError; end
+
 class AuthorizationRulesController < ApplicationController
   filter_access_to :all, :require => :read
   def index
@@ -23,9 +30,11 @@ class AuthorizationRulesController < ApplicationController
       :effective_role_privs => true,
       :privilege_hierarchy => false,
       :filter_roles => nil,
-      :filter_contexts => nil
+      :filter_contexts => nil,
+      :highlight_privilege => nil
     }.merge(options)
-    
+
+    @highlight_privilege = options[:highlight_privilege]
     @roles = authorization_engine.roles
     @roles = @roles.select {|r| r == options[:filter_roles] } if options[:filter_roles]
     @role_hierarchy = authorization_engine.role_hierarchy
@@ -44,7 +53,7 @@ class AuthorizationRulesController < ApplicationController
         @context_privs[context] ||= []
         @context_privs[context] += auth_rule.privileges.to_a
         @context_privs[context].uniq!
-        @role_privs[auth_rule.role] += auth_rule.privileges.collect {|p| [context, p, auth_rule.attributes.empty?]}
+        @role_privs[auth_rule.role] += auth_rule.privileges.collect {|p| [context, p, auth_rule.attributes.empty?, auth_rule.to_long_s]}
       end
     end
     
@@ -85,7 +94,8 @@ class AuthorizationRulesController < ApplicationController
       :effective_role_privs => !params[:effective_role_privs].blank?,
       :privilege_hierarchy => !params[:privilege_hierarchy].blank?,
       :filter_roles => params[:filter_roles].blank? ? nil : params[:filter_roles].to_sym,
-      :filter_contexts => params[:filter_contexts].blank? ? nil : params[:filter_contexts].to_sym
+      :filter_contexts => params[:filter_contexts].blank? ? nil : params[:filter_contexts].to_sym,
+      :highlight_privilege => params[:highlight_privilege].blank? ? nil : params[:highlight_privilege].to_sym
     }
   end
 end

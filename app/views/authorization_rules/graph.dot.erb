@@ -12,6 +12,7 @@ digraph rules {
     //rank = source
     <% @roles.each do |role| %>
     "<%= role.inspect %>" [fillcolor="<%= role_fill_color(role) %>"]
+    // ,URL="javascript:set_filter({roles: '<%= role %>'})"
     <% end %>
     <% @roles.each do |role| %>
         <% (@role_hierarchy[role] || []).each do |lower_role| %>
@@ -26,7 +27,7 @@ digraph rules {
       style=filled; fillcolor="#eeeeee"
       node[fillcolor=white,style=filled]
       <% (@context_privs[context] || []).each do |priv| %>
-      <%= priv %>_<%= context %> [label="<%= priv.inspect %>"]
+      <%= priv %>_<%= context %> [label="<%= priv.inspect %>"<%= ',fontcolor="#ff0000"' if @highlight_privilege == priv %>]
       <% end %>
       <% (@context_privs[context] || []).each do |priv| %>
         <% (@privilege_hierarchy[priv] || []).
@@ -41,8 +42,8 @@ digraph rules {
   <% end %>
 
   <% @roles.each do |role| %>
-    <% (@role_privs[role] || []).each do |context, privilege, unconditionally| %>
-  "<%= role.inspect %>" -> <%=  privilege %>_<%= context %> [color="<%= role_color(role) %>", minlen=3<%= ", arrowhead=opendot" unless unconditionally %>]
+    <% (@role_privs[role] || []).each do |context, privilege, unconditionally, attribute_string| %>
+  "<%= role.inspect %>" -> <%=  privilege %>_<%= context %> [color="<%= role_color(role) %>", minlen=3<%= ", arrowhead=opendot, URL=\"javascript:\", edgetooltip=\"#{attribute_string.gsub('"','')}\"" unless unconditionally %>]
     <% end %>
   <% end %>
 }

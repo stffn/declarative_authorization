@@ -7,6 +7,19 @@
         base_url = "<%= url_for :format => 'svg' %>";
         $('graph').data = base_url + '?' + form.serialize();
     }
+
+    function set_filter (filter) {
+        for (f in filter) {
+            var select = $("filter_" + f);
+            if (select) {
+                var opt = select.down("option[value='"+ filter[f] + "']");
+                if (opt) {
+                    opt.selected = true;
+                    update_graph(select.form);
+                }
+            }
+        }
+    }
 <% end %>
 <p>
   <% form_tag do %>

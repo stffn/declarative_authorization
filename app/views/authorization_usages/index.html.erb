@@ -1,15 +1,27 @@
 <h1>Authorization Usage</h1>
+<div style="margin: 1em;border:1px solid #ccc;max-width:50%;position:fixed;right:0;display:none">
+<object id="graph" data="<%= url_for :format => 'svg' %>" type="image/svg+xml" style="max-width:100%"/>
+</div>
 <p>Filter rules in actions by controller:</p>
 <p><%= navigation %></p>
 <style type="text/css">
   .auth-usages th { text-align: left; padding-top: 1em }
   .auth-usages td { padding-right: 1em }
+  .auth-usages tr.action  { cursor: pointer }
   .auth-usages tr.unprotected  { background: #FFA399 }
   .auth-usages tr.no-attribute-check { background: #FFE599 }
   /*.auth-usages tr.catch-all td.privilege,*/
   .auth-usages tr.default-privilege td.privilege,
   .auth-usages tr.default-context td.context { color: #888888 }
 </style>
+<% javascript_tag do %>
+    function show_graph (privilege, context) {
+        base_url = "<%= graph_authorization_rules_path('svg') %>";
+        $('graph').data = base_url + '?privilege_hierarchy=1&highlight_privilege=' +
+            privilege + '&filter_contexts=' + context;
+        $('graph').up().show();
+    }
+<% end %>
 <table class="auth-usages">
   <% @auth_usages_by_controller.keys.sort {|c1, c2| c1.name <=> c2.name}.each do |controller| %>
     <% default_context = controller.controller_name.to_sym rescue nil %>
@@ -19,7 +31,7 @@
     <% @auth_usages_by_controller[controller].keys.sort {|c1, c2| c1.to_s <=> c2.to_s}.each do |action| %>
       <% auth_info = @auth_usages_by_controller[controller][action] %>
       <% first_permission = auth_info[:controller_permissions] && auth_info[:controller_permissions][0] %>
-      <tr class="<%= auth_usage_info_classes(auth_info) %>" title="<%= auth_usage_info_title(auth_info) %>">
+      <tr class="action <%= auth_usage_info_classes(auth_info) %>" title="<%= auth_usage_info_title(auth_info) %>" onclick="show_graph('<%= auth_info[:privilege] || action %>','<%= auth_info[:context] || default_context %>')">
         <td><%= h action %></td>
         <% if first_permission %>
           <td class="privilege"><%= h auth_info[:privilege] || action %></td>
