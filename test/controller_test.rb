@@ -18,12 +18,33 @@ class SpecificMocksController < MocksController
     :attribute_check => true, :model => LoadMockObject
   filter_access_to :new, :require => :test, :context => :permissions
   
+  filter_access_to [:action_group_action_1, :action_group_action_2]
   define_action_methods :test_action, :test_action_2, :show, :edit, :create,
-    :edit_2, :new, :unprotected_action
+    :edit_2, :new, :unprotected_action, :action_group_action_1, :action_group_action_2
 end
 
 class BasicControllerTest < ActionController::TestCase
   tests SpecificMocksController
+  
+  
+  def test_filter_access_to_receiving_an_explicit_array
+    reader = Authorization::Reader::DSLReader.new
+
+    reader.parse %{
+      authorization do
+        role :test_action_group_2 do
+          has_permission_on :specific_mocks, :to => :action_group_action_2
+        end
+      end
+    }
+
+    request!(MockUser.new(:test_action_group_2), "action_group_action_2", reader)
+    assert @controller.authorized?
+    request!(MockUser.new(:test_action_group_2), "action_group_action_1", reader)
+    assert !@controller.authorized?
+    request!(nil, "action_group_action_2", reader)
+    assert !@controller.authorized?
+  end
   
   def test_filter_access
     assert !@controller.class.before_filters.empty?
