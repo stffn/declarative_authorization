@@ -124,7 +124,7 @@ module Authorization
       #
       # Example: permit!( :edit, :object => user.posts )
       #
-      if options[:object].respond_to?( :proxy_reflection )
+      if options[:object].respond_to?( :proxy_reflection ) && options[:object].respond_to?( :new )
         options[:object] = options[:object].new
       end
       

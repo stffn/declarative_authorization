@@ -533,6 +533,33 @@ class ModelTest < Test::Unit::TestCase
     TestAttr.delete_all
   end
   
+  def test_permit_with_has_one_raises_no_name_error
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do :test_attr_has_one
+        role :test_role do
+          has_permission_on :test_attrs, :to => :update do
+            if_attribute :id => is { user.test_attr.id }
+          end
+        end
+      end
+    }
+    instance = Authorization::Engine.instance(reader)
+    
+    test_model = TestModel.create!
+    test_attr = test_model.create_test_attr_has_one
+    assert !test_attr.new_record?
+    
+    user = MockUser.new(:test_role, :test_attr => test_attr)
+    
+    assert_nothing_raised do
+      assert instance.permit?(:update, :user => user, :object => test_model.test_attr_has_one) 
+    end
+    
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+  
   def test_named_scope_with_is_and_has_one_through_conditions
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
