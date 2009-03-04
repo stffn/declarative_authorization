@@ -1,5 +1,5 @@
 require File.join(File.dirname(__FILE__), 'test_helper.rb')
-require File.join(File.dirname(__FILE__), '..', 'lib', 'in_model.rb')
+require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization in_model})
 
 ActiveRecord::Base.send :include, Authorization::AuthorizationInModel
 #ActiveRecord::Base.logger = Logger.new(STDOUT)

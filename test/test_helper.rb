@@ -1,8 +1,8 @@
 require 'test/unit'
-RAILS_ROOT = File.dirname(__FILE__) + '/../../../../'
-require File.dirname(__FILE__) + '/../lib/rails_legacy.rb'
-require File.dirname(__FILE__) + '/../lib/authorization.rb'
-require File.dirname(__FILE__) + '/../lib/in_controller.rb'
+RAILS_ROOT = File.join(File.dirname(__FILE__), %w{.. .. .. ..})
+require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization rails_legacy})
+require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization authorization})
+require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization in_controller})
 
 unless defined?(ActiveRecord)
   if File.directory? RAILS_ROOT + 'config'

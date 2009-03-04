@@ -1,6 +1,5 @@
 require File.join(File.dirname(__FILE__), 'test_helper.rb')
-require File.dirname(__FILE__) + '/../lib/in_controller.rb'
-require File.dirname(__FILE__) + '/../lib/helper.rb'
+require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization helper})
 
 
 class HelperMocksController < MocksController
