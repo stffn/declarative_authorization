@@ -209,7 +209,8 @@ module Authorization
       # The block form allows to describe restrictions on the permissions
       # using if_attribute.  Multiple has_permission_on statements are
       # OR'ed when evaluating the permissions.  Also, multiple if_attribute
-      # statements in one block are OR'ed.
+      # statements in one block are OR'ed.  To AND conditions, place them
+      # in one if_attribute statement.
       # 
       # Available options
       # [:+to+]
@@ -292,11 +293,20 @@ module Authorization
       #     end
       #   end
       # 
-      # Multiple if_attribute statements are OR'ed.
+      # Multiple attributes in one :if_attribute statement are AND'ed.
+      # Multiple if_attribute statements are OR'ed.  Thus, the following would
+      # require the current user either to be of the same branch AND the employee
+      # to be "changeable_by_coworker".  OR the current user has to be the
+      # employee in question.
+      #   has_permission_on :employees, :to => :manage do
+      #     if_attribute :branch => is {user.branch}, :changeable_by_coworker => true
+      #     if_attribute :id => is {user.id}
+      #   end
       #
       # Arrays and fixed values may be used directly as hash values:
-      #   if_attribute :id => 1
-      #   if_attribute :id => [1,2]
+      #   if_attribute :id   => 1
+      #   if_attribute :type => "special"
+      #   if_attribute :id   => [1,2]
       #
       def if_attribute (attr_conditions_hash)
         raise DSLError, "if_attribute only in has_permission blocks" if @current_rule.nil?
