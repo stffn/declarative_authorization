@@ -1,5 +1,7 @@
 if Authorization::activate_authorization_rules_browser?
 
+require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization authorization_rules_analyzer})
+
 begin
   # for nice auth_rules output:
   require "parse_tree"

@@ -21,6 +21,22 @@ module AuthorizationRulesHelper
     end
     rules
   end
+
+  def policy_analysis_hints (marked_up, policy_data)
+    analyzer = Authorization::Analyzer.new(controller.authorization_engine)
+    analyzer.analyze(policy_data)
+    marked_up_by_line = marked_up.split("\n")
+    reports_by_line = analyzer.reports.inject({}) do |memo, report|
+      memo[report.line] ||= []
+      memo[report.line] << report
+      memo
+    end
+    reports_by_line.each do |line, reports|
+      note = %Q{<span class="note" title="#{reports.first.type}: #{reports.first.message}">[i]</span>}
+      marked_up_by_line[line - 1] = note + marked_up_by_line[line - 1]
+    end
+    marked_up_by_line * "\n"
+  end
   
   def link_to_graph (title, options = {})
     type = options[:type] || ''

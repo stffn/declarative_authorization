@@ -9,7 +9,8 @@
   pre .proc {color: #0a0;}
   pre .privilege, pre .context {font-weight: bold}
   pre .preproc, pre .comment, pre .comment span {color: grey !important;}
+  pre .note {color: #a00; position:absolute; cursor: help }
 </style>
 <pre>
-<%= syntax_highlight(h(@auth_rules_script)) %>
+<%= policy_analysis_hints(syntax_highlight(h(@auth_rules_script)), @auth_rules_script) %>
 </pre>
