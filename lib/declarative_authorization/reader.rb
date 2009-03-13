@@ -391,7 +391,7 @@ module Authorization
           elsif !value.is_a?(Array)
             merge_hash[key] = [:is, lambda { value }]
           elsif value.is_a?(Array) and !value[0].is_a?(Symbol)
-            merge_hash[key] = [:is_in, value]
+            merge_hash[key] = [:is_in, lambda { value }]
           end
         end
         hash.merge!(merge_hash)

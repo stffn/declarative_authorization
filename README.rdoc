@@ -31,7 +31,8 @@ Plugin features
 Requirements
 * An authentication mechanism 
   * User object in Controller#current_user
-* User object needs to respond to a method :role_symbols that returns an 
+  * (For model security) Setting Authorization.current_user
+* User objects need to respond to a method :role_symbols that returns an
   array of role symbols
 See below for installation instructions.
 
@@ -362,6 +363,7 @@ The requirements are
 * An authentication mechanism 
 * A user object returned by controller.current_user
 * An array of role symbols returned by user.role_symbols
+* (For model security) Setting Authorization.current_user to the request's user
 
 Of the various ways to provide these requirements, here is one way employing
 restful_authentication.
