@@ -42,6 +42,15 @@ module Authorization
   def self.activate_authorization_rules_browser? # :nodoc:
     ::RAILS_ENV == 'development'
   end
+
+  @@dot_path = "dot"
+  def self.dot_path
+    @@dot_path
+  end
+
+  def self.dot_path= (path)
+    @@dot_path = path
+  end
   
   # Authorization::Engine implements the reference monitor.  It may be used
   # for querying the permission and retrieving obligations under which

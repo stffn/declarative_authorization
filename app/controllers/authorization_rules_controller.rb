@@ -83,7 +83,7 @@ class AuthorizationRulesController < ApplicationController
   end
   
   def dot_to_svg (dot_data)
-    gv = IO.popen("/usr/bin/dot -q -Tsvg", "w+")
+    gv = IO.popen("#{Authorization.dot_path} -q -Tsvg", "w+")
     gv.puts dot_data
     gv.close_write
     gv.read
