@@ -24,7 +24,10 @@ class TestModel < ActiveRecord::Base
   has_one :test_attr_throughs_with_attr_and_has_one, :through => :test_attrs,
     :class_name => "TestAttrThrough", :source => :test_attr_throughs,
     :conditions => "test_attrs.attr = 1"
-  
+
+  has_and_belongs_to_many :test_attr_throughs_habtm, :join_table => :test_attrs,
+      :class_name => "TestAttrThrough"
+
   # Primary key test
   # take this out for Rails prior to 2.2
   if ([Rails::VERSION::MAJOR, Rails::VERSION::MINOR] <=> [2, 2]) > -1
@@ -499,6 +502,36 @@ class ModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role,
                         :id => test_model_1.test_attr_throughs.last.id)
     assert_equal 0, TestModel.with_permissions_to(:read, :user => user).length
+
+    TestModel.delete_all
+    TestAttrThrough.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_contains_habtm
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attr_throughs_habtm => contains { user.test_attr_through_id }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create!
+    test_attr_through_1 = TestAttrThrough.create!
+    test_attr_through_2 = TestAttrThrough.create!
+    TestAttr.create! :test_model_id => test_model_1.id, :test_attr_through_id => test_attr_through_1.id
+    TestAttr.create! :test_model_id => test_model_2.id, :test_attr_through_id => test_attr_through_2.id
+
+    user = MockUser.new(:test_role,
+                        :test_attr_through_id => test_model_1.test_attr_throughs_habtm.first.id)
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+    assert_equal test_model_1, TestModel.with_permissions_to(:read, :user => user)[0]
 
     TestModel.delete_all
     TestAttrThrough.delete_all
