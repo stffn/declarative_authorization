@@ -469,7 +469,10 @@ sbartsch at tzi.org
 = Contributors
 
 Thanks to
+* Erik Dahlstrand
+* Jeremy Friesen
 * Brian Langenfeld
+* Geoff Longman
 * Mark Mansour
 * Mike Vincent
 
