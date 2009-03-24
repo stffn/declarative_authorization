@@ -254,9 +254,9 @@ module Authorization
       end
 
       case obligation_conditions.length
-      when 0:
+      when 0 then
         # No obligation conditions means we don't have to mess with joins or includes at all.
-      when 1:
+      when 1 then
         @proxy_options[:joins] = joins
         @proxy_options.delete( :include )
       else
