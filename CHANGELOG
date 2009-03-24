@@ -1,3 +1,5 @@
+* Added #has_role_with_hierarchy? method to retrieve explicit and calculated roles [jeremyf]
+
 * Added handling of Authorization::AuthorizationInController::ClassMethods.filter_access_to parameters that are of the form [:show, :update] instead of just :show, :update. [jeremyf]
 
 * Added a authorization rules browser.  See README for more information [sb]

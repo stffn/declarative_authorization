@@ -239,6 +239,11 @@ module Authorization
       (roles.empty? ? [:guest] : roles)
     end
     
+    # Returns the role symbols and inherritted role symbols for the given user
+    def roles_with_hierarchy_for(user)
+      flatten_roles(roles_for(user))
+    end
+    
     # Returns an instance of Engine, which is created if there isn't one
     # yet.  If +dsl_file+ is given, it is passed on to Engine.new and 
     # a new instance is always created.

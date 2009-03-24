@@ -47,5 +47,10 @@ module Authorization
     def has_role? (*roles, &block)
       controller.has_role?(*roles, &block)
     end
+    
+    # As has_role? except checks all roles included in the role hierarchy
+    def has_role_with_hierarchy?(*roles, &block)
+      controller.has_role_with_hierarchy?(*roles, &block)
+    end
   end
 end
