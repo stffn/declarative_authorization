@@ -460,12 +460,15 @@ module Authorization
       case hash_or_attr
       when Symbol
         attr_value = object_attribute_value(object, hash_or_attr)
+        if attr_value.nil?
+          raise NilAttributeValueError, "Attribute #{hash_or_attr.inspect} is nil in #{object.inspect}."
+        end
         attr_validator.engine.permit? @privilege, :object => attr_value, :user => attr_validator.user
       when Hash
         hash_or_attr.all? do |attr, sub_hash|
           attr_value = object_attribute_value(object, attr)
           if attr_value.nil?
-            raise AuthorizationError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
+            raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
           end
           validate?(attr_validator, attr_value, sub_hash)
         end
