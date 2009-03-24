@@ -1,6 +1,12 @@
 * Added #has_role_with_hierarchy? method to retrieve explicit and calculated roles [jeremyf]
 
+* Added a simple rules analyzer to help improve authorization rules [sb]
+
+* Gemified plugin.  Needed to restructure the lib path contents [sb]
+
 * Added handling of Authorization::AuthorizationInController::ClassMethods.filter_access_to parameters that are of the form [:show, :update] instead of just :show, :update. [jeremyf]
+
+* Added authorization usage helper for checking filter_access_to usage in controllers [sb]
 
 * Added a authorization rules browser.  See README for more information [sb]
 
