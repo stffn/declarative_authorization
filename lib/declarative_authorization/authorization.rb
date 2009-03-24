@@ -201,7 +201,7 @@ module Authorization
     def obligations (privilege, options = {})
       options = {:context => nil}.merge(options)
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
-      attr_validator = AttributeValidator.new(self, user)
+      attr_validator = AttributeValidator.new(self, user, nil, options[:context])
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
         obligation = rule.attributes.collect {|attr| attr.obligation(attr_validator) }
         obligation.empty? ? [{}] : obligation
@@ -256,11 +256,12 @@ module Authorization
     end
     
     class AttributeValidator # :nodoc:
-      attr_reader :user, :object, :engine
-      def initialize (engine, user, object = nil)
+      attr_reader :user, :object, :engine, :context
+      def initialize (engine, user, object = nil, context = nil)
         @engine = engine
         @user = user
         @object = object
+        @context = context
       end
       
       def evaluate (value_block)
@@ -472,6 +473,8 @@ module Authorization
           end
           validate?(attr_validator, attr_value, sub_hash)
         end
+      when NilClass
+        attr_validator.engine.permit? @privilege, :object => object, :user => attr_validator.user
       else
         raise AuthorizationError, "Wrong conditions hash format: #{hash_or_attr.inspect}"
       end
@@ -511,6 +514,10 @@ module Authorization
           end.flatten
         end
         obligations
+      when NilClass
+        attr_validator.engine.obligations(@privilege,
+            :context => attr_validator.context,
+            :user    => attr_validator.user)
       else
         raise AuthorizationError, "Wrong conditions hash format: #{hash_or_attr.inspect}"
       end

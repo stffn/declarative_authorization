@@ -332,6 +332,18 @@ module Authorization
       # if_permitted_to associations may be nested as well:
       #   if_permitted_to :read, :branch => :company
       #
+      # To check permissions based on the current object, the attribute has to
+      # be left out:
+      #   has_permission_on :branches, :to => :manage do
+      #     if_attribute :employees => includes { user }
+      #   end
+      #   has_permission_on :branches, :to => :paint_green do
+      #     if_permitted_to :update
+      #   end
+      # Normally, one would merge those rules into one.  Deviding makes sense
+      # if additional if_attribute are used in the second rule or those rules
+      # are applied to different roles.
+      #
       # Options:
       # [:+context+]
       #   If the context of the refered object may not be infered from the
@@ -339,9 +351,11 @@ module Authorization
       #     if_permitted_to :read, :home_branch, :context => :branches
       #     if_permitted_to :read, :branch => :main_company, :context => :companies
       #
-      def if_permitted_to (privilege, attr_or_hash, options = {})
+      def if_permitted_to (privilege, attr_or_hash = nil, options = {})
         raise DSLError, "if_permitted_to only in has_permission blocks" if @current_rule.nil?
         options[:context] ||= attr_or_hash.delete(:context) if attr_or_hash.is_a?(Hash)
+        # only :context option in attr_or_hash:
+        attr_or_hash = nil if attr_or_hash.is_a?(Hash) and attr_or_hash.empty?
         @current_rule.append_attribute AttributeWithPermission.new(privilege,
             attr_or_hash, options[:context])
       end

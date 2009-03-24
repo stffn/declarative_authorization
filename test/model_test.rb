@@ -754,6 +754,55 @@ class ModelTest < Test::Unit::TestCase
     TestModel.delete_all
     TestAttr.delete_all
   end
+
+  def test_named_scope_with_if_permitted_to_nil
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attrs => contains { user }
+          end
+          has_permission_on :test_attrs, :to => :read do
+            if_permitted_to :read, :test_model
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_attr_1 = TestAttr.create!
+
+    user = MockUser.new(:test_role, :id => test_attr_1.id)
+    assert_equal 0, TestAttr.with_permissions_to(:read, :user => user).length
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_if_permitted_to_self
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attrs => contains { user }
+          end
+          has_permission_on :test_models, :to => :update do
+            if_permitted_to :read
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_attr_1 = test_model_1.test_attrs.create!
+    test_attr_2 = TestAttr.create!
+
+    user = MockUser.new(:test_role, :id => test_attr_1.id)
+    assert_equal 1, TestModel.with_permissions_to(:update, :user => user).length
+    TestAttr.delete_all
+    TestModel.delete_all
+  end
   
   def test_model_security
     reader = Authorization::Reader::DSLReader.new

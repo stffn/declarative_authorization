@@ -1,3 +1,5 @@
+* Improved if_permitted_to syntax:  if the attribute is left out, permissions are checked on for the current object
+
 * Added #has_role_with_hierarchy? method to retrieve explicit and calculated roles [jeremyf]
 
 * Added a simple rules analyzer to help improve authorization rules [sb]

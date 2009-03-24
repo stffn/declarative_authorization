@@ -541,6 +541,58 @@ class AuthorizationTest < Test::Unit::TestCase
               :user => MockUser.new(:test_role),
               :object => MockDataObject.new(:permission => nil))
   end
+
+  def test_attribute_with_permissions_on_self
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => 1
+          end
+          has_permission_on :permissions, :to => :another_test do
+            if_permitted_to :test
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    perm_data_attr_1 = PermissionMock.new({:test_attr => 1})
+    perm_data_attr_2 = PermissionMock.new({:test_attr => 2})
+    assert engine.permit?(:another_test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => perm_data_attr_1)
+    assert !engine.permit?(:another_test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => perm_data_attr_2)
+  end
+
+  def test_attribute_with_permissions_on_self_with_context
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => 1
+          end
+          has_permission_on :permissions, :to => :another_test do
+            if_permitted_to :test, :context => :permissions
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    perm_data_attr_1 = PermissionMock.new({:test_attr => 1})
+    perm_data_attr_2 = PermissionMock.new({:test_attr => 2})
+    assert engine.permit?(:another_test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => perm_data_attr_1)
+    assert !engine.permit?(:another_test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => perm_data_attr_2)
+  end
   
   def test_raise_on_if_attribute_hash_on_collection
     reader = Authorization::Reader::DSLReader.new
