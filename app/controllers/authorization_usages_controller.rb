@@ -16,4 +16,6 @@ class AuthorizationUsagesController < ApplicationController
   end
 end
 
+else
+class AuthorizationUsagesController < ApplicationController; end
 end # activate_authorization_rules_browser?
