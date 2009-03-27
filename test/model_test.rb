@@ -928,4 +928,50 @@ class ModelTest < Test::Unit::TestCase
                           :user => MockUser.new(:test_role))
     TestModel.delete_all
   end
+  
+  def test_multiple_roles_with_has_many_through_sql_error
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role_1 do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attr_throughs_habtm => contains { user.test_attr_through_id }
+          end
+        end
+        
+        role :test_role_2 do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attr_throughs_with_attr => contains { user }
+          end
+        end
+
+      end
+    }
+    Authorization::Engine.instance(reader)
+    
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create!
+    test_model_1.test_attrs.create!(:attr => 1).test_attr_throughs.create!
+    test_model_1.test_attrs.create!(:attr => 2).test_attr_throughs.create!
+    test_model_2.test_attrs.create!(:attr => 1).test_attr_throughs.create!
+    test_model_2.test_attrs.create!(:attr => 2).test_attr_throughs.create!
+    
+    begin
+      user = MockUser.new(:test_role_1, :test_role_2,
+                          :id => test_model_1.test_attr_throughs.first.id, :test_attr_through_id => test_model_1.test_attr_throughs_habtm.first.id)  
+      assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+    
+    
+      user = MockUser.new(:test_role_1, :test_role_2,
+                          :id => test_model_1.test_attr_throughs.last.id, :test_attr_through_id => test_model_2.test_attr_throughs_habtm.first.id)
+      assert_equal 0, TestModel.with_permissions_to(:read, :user => user).length
+    rescue Exception => ex
+      puts ex.message
+      fail("should have generated valid sql")
+    ensure
+      TestModel.delete_all
+      TestAttrThrough.delete_all
+      TestAttr.delete_all
+    end
+  end
 end
