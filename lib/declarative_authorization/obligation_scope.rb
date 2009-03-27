@@ -208,9 +208,6 @@ module Authorization
             end
             bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
 
-            attribute_value = value.respond_to?( :descends_from_active_record? ) && value.descends_from_active_record? && value.id ||
-                              value.is_a?( Array ) && value[0].respond_to?( :descends_from_active_record? ) && value[0].descends_from_active_record? && value.map( &:id ) ||
-                              value
             attribute_operator = case operator
                                  when :contains, :is             then "= :#{bindvar}"
                                  when :does_not_contain, :is_not then "<> :#{bindvar}"
@@ -218,7 +215,7 @@ module Authorization
                                  when :is_not_in                 then "NOT IN (:#{bindvar})"
                                  end
             obligation_conds << "#{connection.quote_table_name(attribute_table_alias)}.#{connection.quote_table_name(attribute_name)} #{attribute_operator}"
-            binds[bindvar] = attribute_value
+            binds[bindvar] = attribute_value(value)
           end
         end
         obligation_conds << "1=1" if obligation_conds.empty?
@@ -226,6 +223,12 @@ module Authorization
       end
       (delete_paths - used_paths).each {|path| reflections.delete(path)}
       @proxy_options[:conditions] = [ conds.join( " OR " ), binds ]
+    end
+
+    def attribute_value (value)
+      value.respond_to?( :descends_from_active_record? ) && value.descends_from_active_record? && value.id ||
+        value.is_a?( Array ) && value[0].respond_to?( :descends_from_active_record? ) && value[0].descends_from_active_record? && value.map( &:id ) ||
+        value
     end
     
     # Parses all of the defined obligation joins and defines the scope's :joins or :includes option.
