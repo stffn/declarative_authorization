@@ -1,5 +1,14 @@
 require File.join(File.dirname(__FILE__), 'test_helper.rb')
-require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization authorization_rules_analyzer})
+
+auth_analyzer_loadable = false
+begin
+  require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization authorization_rules_analyzer})
+  auth_analyzer_loadable = true
+rescue
+  puts "Could not load Authorization::Analyzer.  Disabling AuthorizationRulesAnalyzerTest."
+end
+
+if auth_analyzer_loadable
 
 class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
 
@@ -121,3 +130,5 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
     [engine, analyzer]
   end
 end
+
+end # Authorization::Analyzer was loaded
