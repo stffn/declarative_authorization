@@ -246,15 +246,13 @@ module Authorization
 
         case [existing_join.class, path_join.class]
         when [Symbol, Hash]
-          joins.delete(existing_join)
-          joins << path_join
+            joins[joins.index(existing_join)] = path_join
         when [Hash, Hash]
-          joins.delete(existing_join)
-          joins << path_join.deep_merge(existing_join)
+          joins[joins.index(existing_join)] = path_join.deep_merge(existing_join)
         when [NilClass, Hash], [NilClass, Symbol]
           joins << path_join
         end
-      end
+        end
 
       case obligation_conditions.length
       when 0 then
