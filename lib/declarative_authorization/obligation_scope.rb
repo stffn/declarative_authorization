@@ -236,7 +236,7 @@ module Authorization
     def rebuild_join_options!
       joins = @proxy_options[:joins] || []
 
-      reflections.keys.reverse.each do |path|
+      reflections.keys.each do |path|
         next if path.empty?
         
         existing_join = joins.find do |join|
