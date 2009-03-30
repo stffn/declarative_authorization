@@ -3,8 +3,8 @@ module AuthorizationRulesHelper
     regexps = {
       :constant => [/(:)(\w+)/], 
       :proc => ['role', 'authorization', 'privileges'],
-      :statement => ['has_permission_on', 'if_attribute', 'includes', 'privilege', 'to'],
-      :operator => ['is', 'contains'],
+      :statement => ['has_permission_on', 'if_attribute', 'if_permitted_to', 'includes', 'privilege', 'to'],
+      :operator => ['is', 'contains', 'is_in', 'is_not', 'is_not_in', 'intersects'],
       :special => ['user', 'true', 'false'],
       :preproc => ['do', 'end', /()(=&gt;)/, /()(\{)/, /()(\})/, /()(\[)/, /()(\])/],
       :comment => [/()(#.*$)/]#,
@@ -27,12 +27,13 @@ module AuthorizationRulesHelper
     analyzer.analyze(policy_data)
     marked_up_by_line = marked_up.split("\n")
     reports_by_line = analyzer.reports.inject({}) do |memo, report|
-      memo[report.line] ||= []
-      memo[report.line] << report
+      memo[report.line || 1] ||= []
+      memo[report.line || 1] << report
       memo
     end
     reports_by_line.each do |line, reports|
-      note = %Q{<span class="note" title="#{reports.first.type}: #{reports.first.message}">[i]</span>}
+      text = reports.collect {|report| "#{report.type}: #{report.message}"} * " "
+      note = %Q{<span class="note" title="#{h text}">[i]</span>}
       marked_up_by_line[line - 1] = note + marked_up_by_line[line - 1]
     end
     marked_up_by_line * "\n"

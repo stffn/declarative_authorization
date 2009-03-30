@@ -311,14 +311,18 @@ module Authorization
   end
   
   class AuthorizationRule
-    attr_reader :attributes, :contexts, :role, :privileges, :join_operator
+    attr_reader :attributes, :contexts, :role, :privileges, :join_operator,
+        :source_file, :source_line
     
-    def initialize (role, privileges = [], contexts = nil, join_operator = :or)
+    def initialize (role, privileges = [], contexts = nil, join_operator = :or,
+          options = {})
       @role = role
       @privileges = Set.new(privileges)
       @contexts = Set.new((contexts && !contexts.is_a?(Array) ? [contexts] : contexts))
       @join_operator = join_operator
       @attributes = []
+      @source_file = options[:source_file]
+      @source_line = options[:source_line]
     end
     
     def append_privileges (privs)

@@ -229,8 +229,10 @@ module Authorization
         privs = options[:to] 
         privs = [privs] unless privs.is_a?(Array)
         raise DSLError, "has_permission_on either needs a block or :to option" if !block_given? and privs.empty?
-        
-        rule = AuthorizationRule.new(@current_role, privs, context, options[:join_by])
+
+        file, line = file_and_line_number_from_call_stack
+        rule = AuthorizationRule.new(@current_role, privs, context, options[:join_by],
+                   :source_file => file, :source_line => line)
         @auth_rules << rule
         if block_given?
           @current_rule = rule
@@ -424,6 +426,12 @@ module Authorization
           end
         end
         hash.merge!(merge_hash)
+      end
+      
+      def file_and_line_number_from_call_stack
+        caller_parts = caller(2).first.split(':')
+        [caller_parts[0] == "(eval)" ? nil : caller_parts[0],
+          caller_parts[1] && caller_parts[1].to_i]
       end
     end
   end
