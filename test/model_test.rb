@@ -992,4 +992,38 @@ class ModelTest < Test::Unit::TestCase
     TestModel.delete_all
     TestAttr.delete_all
   end
+
+  def test_named_scope_with_ored_rules_and_reoccuring_tables
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_another_model => { :content => 'test_1_2' },
+                :test_model => { :content => 'test_1_1' }
+          end
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_another_model => { :content => 'test_2_2' },
+                :test_model => { :test_attrs => contains {user.test_attr} }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_attr_1 = TestAttr.create!(
+        :test_model => TestModel.create!(:content => 'test_1_1'),
+        :test_another_model => TestModel.create!(:content => 'test_1_2')
+      )
+    test_attr_2 = TestAttr.create!(
+        :test_model => TestModel.create!(:content => 'test_2_1'),
+        :test_another_model => TestModel.create!(:content => 'test_2_2')
+      )
+    test_attr_2.test_model.test_attrs.create!
+
+    user = MockUser.new(:test_role, :test_attr => test_attr_2.test_model.test_attrs.last)
+    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
 end

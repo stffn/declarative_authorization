@@ -234,6 +234,7 @@ module Authorization
     # Parses all of the defined obligation joins and defines the scope's :joins or :includes option.
     # TODO: Support non-linear association paths.  Right now, we just break down the longest path parsed.
     def rebuild_join_options!
+      #joins = (@proxy_options[:joins] || []) + (@proxy_options[:includes] || [])
       joins = @proxy_options[:joins] || []
 
       reflections.keys.each do |path|
@@ -246,13 +247,13 @@ module Authorization
 
         case [existing_join.class, path_join.class]
         when [Symbol, Hash]
-            joins[joins.index(existing_join)] = path_join
+          joins[joins.index(existing_join)] = path_join
         when [Hash, Hash]
           joins[joins.index(existing_join)] = path_join.deep_merge(existing_join)
         when [NilClass, Hash], [NilClass, Symbol]
           joins << path_join
         end
-        end
+      end
 
       case obligation_conditions.length
       when 0 then
