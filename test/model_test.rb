@@ -47,7 +47,11 @@ end
 class TestAttr < ActiveRecord::Base
   belongs_to :test_model
   belongs_to :test_another_model, :class_name => "TestModel", :foreign_key => :test_another_model_id
+  belongs_to :test_a_third_model, :class_name => "TestModel", :foreign_key => :test_a_third_model_id
   belongs_to :n_way_join_item
+  belongs_to :test_attr
+  belongs_to :branch
+  belongs_to :company
   has_many :test_attr_throughs
   attr_reader :role_symbols
   def initialize (*args)
@@ -69,6 +73,20 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
   has_many :test_attrs
   using_access_control :include_read => true, 
     :context => :test_model_security_models
+end
+
+class Branch < ActiveRecord::Base
+  has_many :test_attrs
+  belongs_to :company
+end
+class Company < ActiveRecord::Base
+  has_many :test_attrs
+  has_many :branches
+  belongs_to :country
+end
+class Country < ActiveRecord::Base
+  has_many :test_models
+  has_many :companies
 end
 
 class ModelTest < Test::Unit::TestCase
@@ -1022,6 +1040,43 @@ class ModelTest < Test::Unit::TestCase
     test_attr_2.test_model.test_attrs.create!
 
     user = MockUser.new(:test_role, :test_attr => test_attr_2.test_model.test_attrs.last)
+    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_many_ored_rules_and_reoccuring_tables
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :branch => { :company => { :country => { 
+                :test_models => contains { user.test_model } 
+              }} }
+            if_attribute :company => { :country => {
+                :test_models => contains { user.test_model }
+              }}
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    country = Country.create!(:name => 'country_1')
+    country.test_models.create!
+    test_attr_1 = TestAttr.create!(
+        :branch => Branch.create!(:name => 'branch_1',
+            :company => Company.create!(:name => 'company_1',
+                :country => country))
+      )
+    test_attr_2 = TestAttr.create!(
+        :company => Company.create!(:name => 'company_2',
+            :country => country)
+      )
+
+    user = MockUser.new(:test_role, :test_model => country.test_models.first)
+
     assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
     TestAttr.delete_all

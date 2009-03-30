@@ -48,7 +48,7 @@ module Authorization
       @current_obligation = obligation
       obligation_conditions[@current_obligation] ||= {}
       follow_path( obligation )
-      
+
       rebuild_condition_options!
       rebuild_join_options!
     end
@@ -133,7 +133,7 @@ module Authorization
         parent.reflect_on_association( path.last )
       end
       raise "invalid path #{path.inspect}" if reflection.nil?
-      
+
       reflections[path] = reflection
       map_table_alias_for( path )  # Claim a table alias for the path.
       
@@ -234,24 +234,23 @@ module Authorization
     # Parses all of the defined obligation joins and defines the scope's :joins or :includes option.
     # TODO: Support non-linear association paths.  Right now, we just break down the longest path parsed.
     def rebuild_join_options!
-      #joins = (@proxy_options[:joins] || []) + (@proxy_options[:includes] || [])
-      joins = @proxy_options[:joins] || []
+      joins = (@proxy_options[:joins] || []) + (@proxy_options[:includes] || [])
 
       reflections.keys.each do |path|
         next if path.empty?
-        
-        existing_join = joins.find do |join|
-          join.is_a?(Symbol) ? (join == path.first) : join.key?(path.first)
-        end
-        path_join = path_to_join(path)
 
-        case [existing_join.class, path_join.class]
-        when [Symbol, Hash]
-          joins[joins.index(existing_join)] = path_join
-        when [Hash, Hash]
-          joins[joins.index(existing_join)] = path_join.deep_merge(existing_join)
-        when [NilClass, Hash], [NilClass, Symbol]
-          joins << path_join
+        existing_join = joins.find do |join|
+          existing_path = join_to_path(join)
+          min_length = [existing_path.length, path.length].min
+          existing_path.first(min_length) == path.first(min_length)
+        end
+
+        if existing_join
+          if join_to_path(existing_join).length < path.length
+            joins[joins.index(existing_join)] = path_to_join(path)
+          end
+        else
+          joins << path_to_join(path)
         end
       end
 
@@ -277,6 +276,15 @@ module Authorization
           hash = { elem => hash }
         end
         hash
+      end
+    end
+
+    def join_to_path (join)
+      case join
+      when Symbol
+        [join]
+      when Hash
+        [join.keys.first] + join_to_path(join[join.keys.first])
       end
     end
   end
