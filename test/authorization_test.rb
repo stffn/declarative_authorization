@@ -390,6 +390,42 @@ class AuthorizationTest < Test::Unit::TestCase
               :user => MockUser.new(:test_role),
               :object => MockDataObject.new(:test_attr => 4))
   end
+
+  def test_attribute_intersects_with
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attrs => intersects_with { [1,2] }
+          end
+        end
+        role :test_role_2 do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attrs => intersects_with { 1 }
+          end
+        end
+      end
+    }
+
+    engine = Authorization::Engine.new(reader)
+    assert_raise Authorization::AuthorizationUsageError do
+      engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attrs => 1 ))
+    end
+    assert_raise Authorization::AuthorizationUsageError do
+      engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role_2),
+              :object => MockDataObject.new(:test_attrs => [1, 2] ))
+    end
+    assert engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attrs => [1,3] ))
+    assert !engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attrs => [3,4] ))
+  end
   
   def test_attribute_deep
     reader = Authorization::Reader::DSLReader.new

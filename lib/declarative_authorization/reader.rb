@@ -24,6 +24,7 @@ module Authorization
   # Methods to be used in if_attribute statements
   # * AuthorizationRulesReader#contains,
   # * AuthorizationRulesReader#does_not_contain,
+  # * AuthorizationRulesReader#intersects_with,
   # * AuthorizationRulesReader#is,
   # * AuthorizationRulesReader#is_not,
   # * AuthorizationRulesReader#is_in,
@@ -379,9 +380,18 @@ module Authorization
         [:contains, block]
       end
 
-      # The negation of contains.
+      # The negation of contains.  Currently, query rewriting is disabled
+      # for does_not_contain.
       def does_not_contain (&block)
         [:does_not_contain, block]
+      end
+
+      # In an if_attribute statement, intersects_with requires that at least
+      # one of the values has to be part of the collection specified by the
+      # if_attribute attribute.  The value block needs to evaluate to an
+      # Enumerable.  For information on the block argument, see if_attribute.
+      def intersects_with (&block)
+        [:intersects_with, block]
       end
       
       # In an if_attribute statement, is_in says that the value has to

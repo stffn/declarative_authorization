@@ -586,6 +586,38 @@ class ModelTest < Test::Unit::TestCase
       TestAttr.delete_all
     end
   end
+
+  def test_named_scope_with_intersects_with
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attrs => intersects_with { user.test_attrs }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create!
+    test_model_1.test_attrs.create!
+    test_model_1.test_attrs.create!
+    test_model_1.test_attrs.create!
+    test_model_2.test_attrs.create!
+
+    user = MockUser.new(:test_role,
+                        :test_attrs => [test_model_1.test_attrs.first, TestAttr.create!])
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+
+    user = MockUser.new(:test_role,
+                        :test_attrs => [TestAttr.create!])
+    assert_equal 0, TestModel.with_permissions_to(:read, :user => user).length
+
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
   
   def test_named_scope_with_is_and_has_one
     reader = Authorization::Reader::DSLReader.new

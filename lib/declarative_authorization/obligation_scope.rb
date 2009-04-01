@@ -211,8 +211,9 @@ module Authorization
             attribute_operator = case operator
                                  when :contains, :is             then "= :#{bindvar}"
                                  when :does_not_contain, :is_not then "<> :#{bindvar}"
-                                 when :is_in                     then "IN (:#{bindvar})"
+                                 when :is_in, :intersects_with   then "IN (:#{bindvar})"
                                  when :is_not_in                 then "NOT IN (:#{bindvar})"
+                                 else raise AuthorizationUsageError, "Unknown operator: #{operator}"
                                  end
             obligation_conds << "#{connection.quote_table_name(attribute_table_alias)}.#{connection.quote_table_name(attribute_name)} #{attribute_operator}"
             binds[bindvar] = attribute_value(value)

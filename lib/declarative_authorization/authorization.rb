@@ -385,13 +385,45 @@ module Authorization
           when :is_not
             attr_value != evaluated
           when :contains
-            attr_value.include?(evaluated)
+            begin
+              attr_value.include?(evaluated)
+            rescue NoMethodError => e
+              raise AuthorizationUsageError, "Operator contains requires a " +
+                  "subclass of Enumerable as attribute value, got: #{attr_value.inspect} " +
+                  "contains #{evaluated.inspect}: #{e}"
+            end
           when :does_not_contain
-            !attr_value.include?(evaluated)
+            begin
+              !attr_value.include?(evaluated)
+            rescue NoMethodError => e
+              raise AuthorizationUsageError, "Operator does_not_contain requires a " +
+                  "subclass of Enumerable as attribute value, got: #{attr_value.inspect} " +
+                  "does_not_contain #{evaluated.inspect}: #{e}"
+            end
+          when :intersects_with
+            begin
+              !(evaluated.to_set & attr_value.to_set).empty?
+            rescue NoMethodError => e
+              raise AuthorizationUsageError, "Operator intersects_with requires " +
+                  "subclasses of Enumerable, got: #{attr_value.inspect} " +
+                  "intersects_with #{evaluated.inspect}: #{e}"
+            end
           when :is_in
-            evaluated.include?(attr_value)
+            begin
+              evaluated.include?(attr_value)
+            rescue NoMethodError => e
+              raise AuthorizationUsageError, "Operator is_in requires a " +
+                  "subclass of Enumerable as value, got: #{attr_value.inspect} " +
+                  "is_in #{evaluated.inspect}: #{e}"
+            end
           when :is_not_in
-            !evaluated.include?(attr_value)
+            begin
+              !evaluated.include?(attr_value)
+            rescue NoMethodError => e
+              raise AuthorizationUsageError, "Operator is_not_in requires a " +
+                  "subclass of Enumerable as value, got: #{attr_value.inspect} " +
+                  "is_not_in #{evaluated.inspect}: #{e}"
+            end
           else
             raise AuthorizationError, "Unknown operator #{value[0]}"
           end
