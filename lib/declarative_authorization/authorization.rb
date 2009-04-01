@@ -156,7 +156,7 @@ module Authorization
         begin
           options[:skip_attribute_test] or
             rule.attributes.empty? or
-            rule.attributes.any? do |attr|
+            rule.attributes.send(rule.join_operator == :and ? :all? : :any?) do |attr|
               begin
                 attr.validate?( attr_validator )
               rescue NilAttributeValueError => e
@@ -203,8 +203,15 @@ module Authorization
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
       attr_validator = AttributeValidator.new(self, user, nil, options[:context])
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
-        obligation = rule.attributes.collect {|attr| attr.obligation(attr_validator) }
-        obligation.empty? ? [{}] : obligation
+        obligations = rule.attributes.collect {|attr| attr.obligation(attr_validator) }
+        if rule.join_operator == :and and !obligations.empty?
+          merged_obligation = obligations.first
+          obligations[1..-1].each do |obligation|
+            merged_obligation = merged_obligation.deep_merge(obligation)
+          end
+          obligations = [merged_obligation]
+        end
+        obligations.empty? ? [{}] : obligations
       end.flatten
     end
     
@@ -322,12 +329,13 @@ module Authorization
   end
   
   class AuthorizationRule
-    attr_reader :attributes, :contexts, :role, :privileges
+    attr_reader :attributes, :contexts, :role, :privileges, :join_operator
     
-    def initialize (role, privileges = [], contexts = nil)
+    def initialize (role, privileges = [], contexts = nil, join_operator = :or)
       @role = role
       @privileges = Set.new(privileges)
       @contexts = Set.new((contexts && !contexts.is_a?(Array) ? [contexts] : contexts))
+      @join_operator = join_operator
       @attributes = []
     end
     

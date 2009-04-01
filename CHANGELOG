@@ -1,3 +1,5 @@
+* New option :join_by for has_permission_on to allow AND'ing of statements in one has_permission_on block
+
 * Allow using_access_control to be called directly on ActiveRecord::Base, globally enabling model security
 
 * New operator:  intersects_with, comparing two Enumerables in if_attribute

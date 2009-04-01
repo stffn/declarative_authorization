@@ -82,6 +82,42 @@ class AuthorizationTest < Test::Unit::TestCase
       engine.obligations(:test, :context => :permissions, 
           :user => MockUser.new(:test_role, :attr => 1))
   end
+
+  def test_obligations_with_anded_conditions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test, :join_by => :and do
+            if_attribute :attr => is { user.attr }
+            if_attribute :attr_2 => is { user.attr_2 }
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{:attr => [:is, 1], :attr_2 => [:is, 2]}],
+      engine.obligations(:test, :context => :permissions,
+          :user => MockUser.new(:test_role, :attr => 1, :attr_2 => 2))
+  end
+
+  def test_obligations_with_deep_anded_conditions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test, :join_by => :and do
+            if_attribute :attr => { :deeper_attr => is { user.deeper_attr }}
+            if_attribute :attr => { :deeper_attr_2 => is { user.deeper_attr_2 }}
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{:attr => { :deeper_attr => [:is, 1], :deeper_attr_2 => [:is, 2] } }],
+      engine.obligations(:test, :context => :permissions,
+          :user => MockUser.new(:test_role, :deeper_attr => 1, :deeper_attr_2 => 2))
+  end
   
   def test_obligations_with_conditions_and_empty
     reader = Authorization::Reader::DSLReader.new
@@ -628,6 +664,58 @@ class AuthorizationTest < Test::Unit::TestCase
     assert !engine.permit?(:another_test, :context => :permissions,
               :user => MockUser.new(:test_role),
               :object => perm_data_attr_2)
+  end
+
+  def test_attribute_with_permissions_and_anded_rules
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => 1
+          end
+          has_permission_on :permission_children, :to => :test, :join_by => :and do
+            if_permitted_to :test, :permission
+            if_attribute :test_attr => 1
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    perm_data_attr_1 = PermissionMock.new({:test_attr => 1})
+    perm_data_attr_2 = PermissionMock.new({:test_attr => 2})
+    assert engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:permission => perm_data_attr_1, :test_attr => 1))
+    assert !engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:permission => perm_data_attr_2, :test_attr => 1))
+    assert !engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:permission => perm_data_attr_1, :test_attr => 2))
+  end
+
+  def test_attribute_with_anded_rules
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test, :join_by => :and do
+            if_attribute :test_attr => 1
+            if_attribute :test_attr_2 => 2
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    assert engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attr => 1, :test_attr_2 => 2))
+    assert !engine.permit?(:test, :context => :permissions,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:test_attr => 1, :test_attr_2 => 3))
   end
   
   def test_raise_on_if_attribute_hash_on_collection

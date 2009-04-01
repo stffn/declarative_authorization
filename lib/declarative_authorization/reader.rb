@@ -210,23 +210,27 @@ module Authorization
       # The block form allows to describe restrictions on the permissions
       # using if_attribute.  Multiple has_permission_on statements are
       # OR'ed when evaluating the permissions.  Also, multiple if_attribute
-      # statements in one block are OR'ed.  To AND conditions, place them
-      # in one if_attribute statement.
+      # statements in one block are OR'ed if no :+join_by+ option is given
+      # (see below).  To AND conditions, either set :+join_by+ to :and or place
+      # them in one if_attribute statement.
       # 
       # Available options
       # [:+to+]
       #   A symbol or an array of symbols representing the privileges that
       #   should be granted in this statement.
+      # [:+join_by+]
+      #   Join operator to logically connect the constraint statements inside
+      #   of the has_permission_on block.  May be :+and+ or :+or+.  Defaults to :+or+.
       #
       def has_permission_on (context, options = {}, &block)
         raise DSLError, "has_permission_on only allowed in role blocks" if @current_role.nil?
-        options = {:to => []}.merge(options)
+        options = {:to => [], :join_by => :or}.merge(options)
         
         privs = options[:to] 
         privs = [privs] unless privs.is_a?(Array)
         raise DSLError, "has_permission_on either needs a block or :to option" if !block_given? and privs.empty?
         
-        rule = AuthorizationRule.new(@current_role, privs, context)
+        rule = AuthorizationRule.new(@current_role, privs, context, options[:join_by])
         @auth_rules << rule
         if block_given?
           @current_rule = rule
@@ -295,7 +299,8 @@ module Authorization
       #   end
       # 
       # Multiple attributes in one :if_attribute statement are AND'ed.
-      # Multiple if_attribute statements are OR'ed.  Thus, the following would
+      # Multiple if_attribute statements are OR'ed if the join operator for the
+      # has_permission_on block isn't explicitly set.  Thus, the following would
       # require the current user either to be of the same branch AND the employee
       # to be "changeable_by_coworker".  OR the current user has to be the
       # employee in question.
