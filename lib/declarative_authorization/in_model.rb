@@ -76,6 +76,10 @@ module Authorization
         #   
         # If an operation is not permitted, a Authorization::AuthorizationError
         # is raised.
+        #
+        # To activate model security on all models, call using_access_control
+        # on ActiveRecord::Base
+        #   ActiveRecord::Base.using_access_control
         # 
         # Available options
         # [:+context+] Specify context different from the models table name.
@@ -86,28 +90,19 @@ module Authorization
             :context => nil,
             :include_read => false
           }.merge(options)
-          context = (options[:context] || self.table_name).to_sym
 
           class_eval do
-            before_create do |object|
-              Authorization::Engine.instance.permit!(:create, :object => object,
-                :context => context)
+            [:create, :update, [:destroy, :delete]].each do |action, privilege|
+              send(:"before_#{action}") do |object|
+                Authorization::Engine.instance.permit!(privilege || action,
+                  :object => object, :context => options[:context])
+              end
             end
-            
-            before_update do |object|
-              Authorization::Engine.instance.permit!(:update, :object => object,
-                :context => context)
-            end
-            
-            before_destroy do |object|
-              Authorization::Engine.instance.permit!(:delete, :object => object,
-                :context => context)
-            end
-            
-            # only called if after_find is implemented
+
+            # after_find is only called if after_find is implemented
             after_find do |object|
               Authorization::Engine.instance.permit!(:read, :object => object,
-                :context => context)
+                :context => options[:context])
             end
             
             if options[:include_read]

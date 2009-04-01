@@ -1,3 +1,5 @@
+* Allow using_access_control to be called directly on ActiveRecord::Base, globally enabling model security
+
 * New operator:  intersects_with, comparing two Enumerables in if_attribute
 
 * Improved if_permitted_to syntax:  if the attribute is left out, permissions are checked on for the current object
