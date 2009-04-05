@@ -776,4 +776,26 @@ class AuthorizationTest < Test::Unit::TestCase
     assert engine.permit?(:test, :context => :permissions)
     Authorization.current_user = nil
   end
+
+  def test_clone
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :attr => { :sub_attr => is { user } }
+            if_permitted_to :read, :attr_2 => :attr_3
+            if_permitted_to :read, :attr_2
+          end
+        end
+      end
+    }
+
+    engine = Authorization::Engine.new(reader)
+    cloned_engine = engine.clone
+    assert_not_equal engine.auth_rules[0].contexts.object_id,
+        cloned_engine.auth_rules[0].contexts.object_id
+    assert_not_equal engine.auth_rules[0].attributes[0].send(:instance_variable_get, :@conditions_hash)[:attr].object_id,
+        cloned_engine.auth_rules[0].attributes[0].send(:instance_variable_get, :@conditions_hash)[:attr].object_id
+  end
 end

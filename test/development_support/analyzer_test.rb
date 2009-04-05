@@ -1,11 +1,11 @@
-require File.join(File.dirname(__FILE__), 'test_helper.rb')
+require File.join(File.dirname(__FILE__), %w{.. test_helper.rb})
 
 auth_analyzer_loadable = false
 begin
-  require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization authorization_rules_analyzer})
+  require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support analyzer})
   auth_analyzer_loadable = true
 rescue
-  puts "Could not load Authorization::Analyzer.  Disabling AuthorizationRulesAnalyzerTest."
+  puts "Could not load Authorization::DevelopmentSupport::Analyzer.  Disabling AuthorizationRulesAnalyzerTest."
 end
 
 if auth_analyzer_loadable
@@ -190,7 +190,7 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
       end
     }
 
-    priv = Authorization::Analyzer::Privilege.for_sym(:test, analyzer)
+    priv = Authorization::DevelopmentSupport::AbstractAnalyzer::Privilege.for_sym(:test, analyzer)
     assert_equal 2, priv.rules.length
   end
 
@@ -219,7 +219,7 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
     reader.parse rules
     engine = Authorization::Engine.new(reader)
 
-    analyzer = Authorization::Analyzer.new(engine)
+    analyzer = Authorization::DevelopmentSupport::Analyzer.new(engine)
     analyzer.analyze rules
 
     [engine, analyzer]

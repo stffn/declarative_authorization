@@ -93,6 +93,14 @@ module Authorization
         end
       end
     end
+
+    def initialize_copy (from) # :nodoc:
+      [
+        :privileges, :privilege_hierarchy, :roles, :role_hierarchy, :role_titles,
+        :role_descriptions, :rev_priv_hierarchy
+      ].each {|attr| instance_variable_set(:"@#{attr}", from.send(attr).clone) }
+      @auth_rules = from.auth_rules.collect {|rule| rule.clone}
+    end
     
     # Returns true if privilege is met by the current user.  Raises
     # AuthorizationError otherwise.  +privilege+ may be given with or
@@ -324,6 +332,12 @@ module Authorization
       @source_file = options[:source_file]
       @source_line = options[:source_line]
     end
+
+    def initialize_copy (from)
+      @privileges = @privileges.clone
+      @contexts = @contexts.clone
+      @attributes = @attributes.collect {|attribute| attribute.clone }
+    end
     
     def append_privileges (privs)
       @privileges.merge(privs)
@@ -373,6 +387,10 @@ module Authorization
     # { :object_attribute => { :attr => ... } }
     def initialize (conditions_hash)
       @conditions_hash = conditions_hash
+    end
+
+    def initialize_copy (from)
+      @conditions_hash = deep_hash_clone(@conditions_hash)
     end
     
     def validate? (attr_validator, object = nil, hash = nil)
@@ -489,6 +507,20 @@ module Authorization
          "#{object.inspect} for validating attribute: #{e}"
       end
     end
+
+    def deep_hash_clone (hash)
+      hash.inject({}) do |memo, (key, val)|
+        memo[key] = case val
+                    when Hash
+                      deep_hash_clone(val)
+                    when NilClass, Symbol
+                      val
+                    else
+                      val.clone
+                    end
+        memo
+      end
+    end
   end
 
   # An attribute condition that uses existing rules to decide validation
@@ -500,6 +532,10 @@ module Authorization
       @privilege = privilege
       @context = context
       @attr_hash = attr_or_hash
+    end
+
+    def initialize_copy (from)
+      @attr_hash = deep_hash_clone(@attr_hash) if @attr_hash.is_a?(Hash)
     end
 
     def validate? (attr_validator, object = nil, hash_or_attr = nil)
