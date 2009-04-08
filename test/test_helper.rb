@@ -48,6 +48,10 @@ class MockUser < MockDataObject
     options = roles.last.is_a?(::Hash) ? roles.pop : {}
     super(options.merge(:role_symbols => roles))
   end
+
+  def initialize_copy (other)
+    @role_symbols = @role_symbols.clone
+  end
 end
 
 class MocksController < ActionController::Base

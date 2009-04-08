@@ -8,13 +8,14 @@ module Authorization
         @engine = engine
       end
 
-      def roles
-        rules_by_role = engine.auth_rules.inject({}) do |memo, rule|
+      def roles (specific_engine = nil)
+        specific_engine ||= engine
+        rules_by_role = specific_engine.auth_rules.inject({}) do |memo, rule|
           memo[rule.role] ||= []
           memo[rule.role] << rule
           memo
         end
-        engine.roles.collect do |role|
+        specific_engine.roles.collect do |role|
           Role.new(role, (rules_by_role[role] || []).
                 collect {|rule| Rule.new(rule, self)})
         end
@@ -44,13 +45,14 @@ module Authorization
 
       class Rule
         @@rule_objects = {}
-        delegate :source_line, :source_file, :to => :@rule
+        delegate :source_line, :source_file, :contexts, :to => :@rule
+        attr_reader :rule
         def initialize (rule, analyzer)
           @rule = rule
           @analyzer = analyzer
         end
         def privileges
-          PrivilegesSet.new(@rule.privileges.collect {|privilege| Privilege.for_sym(privilege, @analyzer) })
+          PrivilegesSet.new(self, @analyzer, @rule.privileges.collect {|privilege| Privilege.for_sym(privilege, @analyzer) })
         end
 
         def self.for_sym (rule_sym, analyzer)
@@ -98,8 +100,36 @@ module Authorization
       end
 
       class PrivilegesSet < Set
+        def initialize (*args)
+          if args.length > 2
+            @rule = args.shift
+            @analyzer = args.shift
+          end
+          super(*args)
+        end
+        def include? (privilege)
+          if privilege.is_a?(Symbol)
+            super(privilege_from_symbol(privilege))
+          else
+            super
+          end
+        end
+        def delete (privilege)
+          @rule.rule.privileges.delete(privilege.to_sym)
+          if privilege.is_a?(Symbol)
+            super(privilege_from_symbol(privilege))
+          else
+            super
+          end
+        end
+
         def intersects? (privileges)
           intersection(privileges).length > 0
+        end
+
+        private
+        def privilege_from_symbol (privilege_sym)
+          Privilege.for_sym(privilege_sym, @analyzer)
         end
       end
     end
