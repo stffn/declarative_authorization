@@ -1,0 +1,33 @@
+<h2>Suggestion</h2>
+
+<% if @approaches.length > 0 %>
+  <% if @approaches.first.changes.empty? %>
+    <p>No changes necessary.</p>
+  <% else %>
+    <p>Suggested changes (<%= link_to_function "show", "show_graph('#{serialize_changes(@approaches.first)}', '#{serialize_relevant_roles(@approaches.first)}')" %>):</p>
+    <ul>
+      <% @approaches.first.changes.each do |step| %>
+        <li><%= describe_step(step) %></li>
+      <% end %>
+    </ul>
+  <% end %>
+<% else %>
+  <p><strong>No approach found.</strong></p>
+<% end %>
+
+<% if @approaches.length > 1 %>
+  <p><a href="#" onclick="$(this).up().hide();$('more-suggestions').show();return false">Show other <%= pluralize(@approaches.length - 1, 'approach') %></a></p>
+  <div id="more-suggestions" style="display:none">
+    <% @approaches[1..-1].each_with_index do |approach, index| %>
+      <p>
+        <%= (index + 2).ordinalize %> best approach (<%= pluralize(approach.changes.length, 'step') %>, <%= link_to_function "show", "show_graph('#{serialize_changes(approach)}', '#{serialize_relevant_roles(approach)}')" %>)
+        <%#= approach.inspect %>
+        <ul>
+          <% approach.changes.each do |step| %>
+            <li><%= describe_step(step) %></li>
+          <% end %>
+        </ul>
+      </p>
+    <% end %>
+  </div>
+<% end %>

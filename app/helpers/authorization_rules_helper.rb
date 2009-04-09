@@ -23,7 +23,7 @@ module AuthorizationRulesHelper
   end
 
   def policy_analysis_hints (marked_up, policy_data)
-    analyzer = Authorization::Analyzer.new(controller.authorization_engine)
+    analyzer = Authorization::DevelopmentSupport::Analyzer.new(controller.authorization_engine)
     analyzer.analyze(policy_data)
     marked_up_by_line = marked_up.split("\n")
     reports_by_line = analyzer.reports.inject({}) do |memo, report|
@@ -46,6 +46,7 @@ module AuthorizationRulesHelper
   
   def navigation
     link_to("Rules", authorization_rules_path) << ' | ' <<
+    link_to("Edit", change_authorization_rules_path) << ' | ' <<
     link_to("Graphical view", graph_authorization_rules_path) << ' | ' <<
     link_to("Usages", authorization_usages_path) #<< ' | ' <<
   #  'Edit | ' <<
@@ -53,18 +54,74 @@ module AuthorizationRulesHelper
   end
   
   def role_color (role, fill = false)
-    fill_colors = %w{#ffdddd #ddffdd #ddddff #ffffdd #ffddff #ddffff}
-    colors = %w{#dd0000 #00dd00 #0000dd #dddd00 #dd00dd #00dddd}
-    @@role_colors ||= {}
-    @@role_colors[role] ||= begin
-      idx = @@role_colors.length % colors.length
-      [colors[idx], fill_colors[idx]]
+    if @has_changes
+      if has_changed(:add_role, role)
+        fill ? '#ddffdd' : '#000000'
+      elsif has_changed(:remove_role, role)
+        fill ? '#ffdddd' : '#000000'
+      else
+        fill ? '#ffffff' : '#000000'
+      end
+    else
+      fill_colors = %w{#ffdddd #ddffdd #ddddff #ffffdd #ffddff #ddffff}
+      colors = %w{#dd0000 #00dd00 #0000dd #dddd00 #dd00dd #00dddd}
+      @@role_colors ||= {}
+      @@role_colors[role] ||= begin
+        idx = @@role_colors.length % colors.length
+        [colors[idx], fill_colors[idx]]
+      end
+      @@role_colors[role][fill ? 1 : 0]
     end
-    @@role_colors[role][fill ? 1 : 0]
   end
   
   def role_fill_color (role)
     role_color(role, true)
+  end
+
+  def privilege_color (privilege, context, role)
+    has_changed(:add_privilege, privilege, context, role) ? '#00dd00' :
+        (has_changed(:remove_privilege, privilege, context, role) ? '#dd0000' :
+          role_color(role))
+  end
+
+  def available_privileges
+    controller.authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq.map(&:to_s).sort
+  end
+  def available_contexts
+    controller.authorization_engine.auth_rules.collect {|rule| rule.contexts.to_a}.flatten.uniq.map(&:to_s).sort
+  end
+  def describe_step (step)
+    case step[0]
+    when :add_privilege
+      "Add privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong> to role <strong>#{h step[3].to_sym.inspect}</strong>"
+    when :add_role
+      "New role <strong>#{h step[1].to_sym.inspect}</strong>"
+    when :assign_role_to_user
+      "Assign role <strong>#{h step[1].to_sym.inspect}</strong> to <strong>#{h readable_step_info(step[2])}</strong>"
+    else
+      step.collect {|info| readable_step_info(info) }.map {|str| h str } * ', '
+    end
+  end
+  
+  def readable_step_info (info)
+    case info
+    when Symbol   then info.inspect
+    when User     then info.login
+    else               info.to_sym.inspect
+    end
+  end
+
+  def serialize_changes (approach)
+    approach.changes.collect {|step| step.collect {|info| readable_step_info(info) } * ','} * ';'
+  end
+
+  def serialize_relevant_roles (approach)
+    {:filter_roles => (Authorization::DevelopmentSupport::AnalyzerEngine.relevant_roles(approach.engine, approach.users).
+        map(&:to_sym) + [:new_role_for_change_analyzer]).uniq}.to_param
+  end
+
+  def has_changed (*args)
+    @changes && @changes[args[0]] && @changes[args[0]].include?(args[1..-1])
   end
 
   def auth_usage_info_classes (auth_info)

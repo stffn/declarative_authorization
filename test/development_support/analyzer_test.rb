@@ -190,8 +190,32 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
       end
     }
 
-    priv = Authorization::DevelopmentSupport::AbstractAnalyzer::Privilege.for_sym(:test, analyzer)
+    priv = Authorization::DevelopmentSupport::AnalyzerEngine::Privilege.for_sym(:test, engine)
     assert_equal 2, priv.rules.length
+  end
+
+  def test_relevant_roles
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+        end
+        role :test_role_2 do
+          includes :test_role
+        end
+        role :test_role_3 do
+        end
+        role :test_role_4 do
+        end
+        role :irrelevant_role do
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    users = [MockUser.new(:test_role_2, :test_role_3), MockUser.new(:test_role_4)]
+    relevant_roles = Authorization::DevelopmentSupport::AnalyzerEngine.relevant_roles(engine, users)
+    assert_equal 4, relevant_roles.length
   end
 
   def test_analyze_for_proposed_privilege_hierarchy

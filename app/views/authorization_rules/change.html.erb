@@ -1,0 +1,93 @@
+<h1>Edit Authorization Rules</h1>
+<p>Change analyzer.</p>
+<p><%= navigation %></p>
+<div style="display:none" class="graph-layer">
+<%= link_to_function "Hide", "$(this).up().hide()" %><br/>
+<object id="graph" data="" type="image/svg+xml" style="max-width: 98%"/>
+</div>
+
+<style type="text/css">
+  .graph-layer {
+    background: white; border:1px solid #ccc;
+    max-height: 30%; position:fixed; z-index: 20;
+    left:2%; bottom: 2%; right: 2%;
+  }
+  .action-options label { display: block; float: left; width: 7em; padding-bottom: 0.5em }
+  .action-options select { float: left; }
+  .action-options br { clear: both; }
+  .action-options { margin-bottom: 2em }
+  .change-options { margin-bottom: 1em }
+  .change-options td { padding-right: 1em; padding-left: 0.5em }
+  .change-options thead td { border-bottom: 1px solid lightgrey }
+  .change-options thead td.choose { text-align: center; font-weight: bold }
+  .submit input { font-weight: bold; font-size: 120% }
+  #suggest-result { 
+    position: absolute; left: 60%; right: 10px;
+    border-left: 2px solid grey;
+    padding-left: 1em;
+    z-index: 10;
+  }
+</style>
+<% javascript_tag do %>
+    function show_graph (changes, filter_roles_params, filter_context) {
+        base_url = "<%= graph_authorization_rules_path('svg') %>";
+        $('graph').data = base_url + '?changes=' + encodeURIComponent(changes) +
+            '&' + filter_roles_params +
+            (filter_context ? '&filter_contexts=' + encodeURIComponent(filter_context) : '');
+        $('graph').up().show();
+    }
+<% end %>
+
+<div id="suggest-result" style="display:none"></div>
+
+<form>
+<h2>1. Specify Action</h2>
+<p class="action-options">
+  <label>Action</label>
+  <%= select_tag :goal, options_for_select([:add, :remove]) %>
+  <br/>
+  <label>Privilege</label>
+  <%= select_tag :privilege, options_for_select(available_privileges) %>
+  <br/>
+  <label>On</label>
+  <%= select_tag :context, options_for_select(available_contexts) %>
+  <br/>
+</p>
+
+<h2>2. Choose Restrictions</h2>
+<table class="change-options">
+  <thead>
+    <tr>
+      <td>User</td>
+      <td>Current roles</td>
+      <td class="choose">?</td>
+      <td class="choose">Yes</td>
+      <td class="choose">No</td>
+    </tr>
+  </thead>
+  <tbody>
+    <% @users.each do |user| %>
+      <tr>
+        <td style="font-weight:bold"><%=h user.login %></td>
+        <td><%=h user.role_symbols * ', ' %></td>
+        <td><%= radio_button_tag "user[#{user.id}][permission]", "undetermined", true %></td>
+        <td><%= radio_button_tag "user[#{user.id}][permission]", "yes" %></td>
+        <td><%= radio_button_tag "user[#{user.id}][permission]", "no" %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p class="submit">
+  <%=
+    submit_to_remote "analyze", "Suggest Changes",
+      :url => suggest_change_authorization_rules_path, :method => :get,
+      :update => {:success => 'suggest-result'},
+      :before => '$("suggest-result").innerHTML = "Searching..."; $("suggest-result").show()',
+      :failure => '$("suggest-result").innerHTML = "Error while searching."'
+  %>
+</p>
+</form>
+
+
+

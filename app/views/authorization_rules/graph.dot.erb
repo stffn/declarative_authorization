@@ -43,7 +43,7 @@ digraph rules {
 
   <% @roles.each do |role| %>
     <% (@role_privs[role] || []).each do |context, privilege, unconditionally, attribute_string| %>
-  "<%= role.inspect %>" -> <%=  privilege %>_<%= context %> [color="<%= role_color(role) %>", minlen=3<%= ", arrowhead=opendot, URL=\"javascript:\", edgetooltip=\"#{attribute_string.gsub('"','')}\"" unless unconditionally %>]
+  "<%= role.inspect %>" -> <%=  privilege %>_<%= context %> [color="<%= privilege_color(privilege, context, role) %>", minlen=3<%= ", arrowhead=opendot, URL=\"javascript:\", edgetooltip=\"#{attribute_string.gsub('"','')}\"" unless unconditionally %>]
     <% end %>
   <% end %>
 }

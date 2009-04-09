@@ -88,6 +88,34 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
     #assert_equal :test_role_2, approaches.first.target.to_sym
   end
 
+  def test_adding_permission_with_new_role_complex
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :lower_role do
+        end
+        role :test_role do
+          includes :lower_role
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeAnalyzer.new(engine)
+
+    user_to_extend_permissions = MockUser.new(:test_role)
+    another_user = MockUser.new(:test_role)
+
+    approaches = analyzer.find_approaches_for(:add, :permission, :on => :permissions,
+        :to => :read, :users => [another_user, user_to_extend_permissions]) do
+      assert permit?(:read, :context => :permissions, :user => users[1])
+      assert !permit?(:read, :context => :permissions, :user => users[0])
+    end
+
+    assert_not_equal 0, approaches.length
+    #assert_equal :role, approaches.first.target_type
+    #assert_equal :test_role_2, approaches.first.target.to_sym
+  end
+
   def test_removing_permission
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

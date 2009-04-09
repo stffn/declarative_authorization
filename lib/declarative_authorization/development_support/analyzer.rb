@@ -15,6 +15,8 @@ module Authorization
 
     # Ideas for improvement
     # * moving rules up in the role hierarchy
+    # * merging roles
+    # * role hierarchy
     #
     class Analyzer < AbstractAnalyzer
       def analyze (rules)

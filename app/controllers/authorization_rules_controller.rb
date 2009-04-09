@@ -1,6 +1,7 @@
 if Authorization::activate_authorization_rules_browser?
 
-require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization authorization_rules_analyzer})
+require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support analyzer})
+require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support change_analyzer})
 
 begin
   # for nice auth_rules output:
@@ -28,6 +29,44 @@ class AuthorizationRulesController < ApplicationController
     end
   end
 
+  def change
+    # TODO not generic enough
+    @users = User.all
+    @users.sort! {|a, b| a.login <=> b.login }
+  end
+
+  def suggest_change
+    users_permission = params[:user].inject({}) do |memo, (user_id, data)|
+      if data[:permission] != "undetermined"
+        begin
+          memo[User.find(user_id)] = (data[:permission] == 'yes')
+        rescue ActiveRecord::NotFound
+        end
+      end
+      memo
+    end
+
+    users_keys = users_permission.keys
+    analyzer = Authorization::DevelopmentSupport::ChangeAnalyzer.new(authorization_engine)
+    
+    privilege = params[:privilege].to_sym
+    context = params[:context].to_sym
+    @context = context
+    @approaches = analyzer.find_approaches_for(params[:goal].to_sym,
+        :permission, :on => context, :to => privilege, :users => users_keys) do
+      users.each_with_index do |user, idx|
+        args = [privilege, {:context => context, :user => user}]
+        assert(users_permission[users_keys[idx]] ? permit?(*args) : !permit?(*args))
+      end
+    end
+
+    respond_to do |format|
+      format.js do
+        render :partial => 'suggestion'
+      end
+    end
+  end
+
   private
   def auth_to_dot (options = {})
     options = {
@@ -36,21 +75,35 @@ class AuthorizationRulesController < ApplicationController
       :only_relevant_contexts => true,
       :filter_roles => nil,
       :filter_contexts => nil,
-      :highlight_privilege => nil
+      :highlight_privilege => nil,
+      :changes => nil
     }.merge(options)
 
+    @has_changes = options[:changes] && !options[:changes].empty?
     @highlight_privilege = options[:highlight_privilege]
-    @roles = authorization_engine.roles
-    @roles = @roles.select {|r| r == options[:filter_roles] } if options[:filter_roles]
-    @role_hierarchy = authorization_engine.role_hierarchy
-    @privilege_hierarchy = authorization_engine.privilege_hierarchy
+
+    engine = authorization_engine.clone
+
+    filter_roles_flattened = nil
+    if options[:filter_roles]
+      filter_roles_flattened = options[:filter_roles].collect do |role_sym|
+        Authorization::DevelopmentSupport::AnalyzerEngine::Role.for_sym(role_sym, engine).
+            ancestors.map(&:to_sym) + [role_sym]
+      end.flatten.uniq
+    end
+
+    @changes = replay_changes(engine, options[:changes]) if options[:changes]
+    @roles = engine.roles
+    @roles = @roles.select {|r| filter_roles_flattened.include?(r) } if options[:filter_roles]
+    @role_hierarchy = engine.role_hierarchy
+    @privilege_hierarchy = engine.privilege_hierarchy
     
-    @contexts = authorization_engine.auth_rules.
+    @contexts = engine.auth_rules.
                     collect {|ar| ar.contexts.to_a}.flatten.uniq
     @contexts = @contexts.select {|c| c == options[:filter_contexts] } if options[:filter_contexts]
     @context_privs = {}
     @role_privs = {}
-    authorization_engine.auth_rules.each do |auth_rule|
+    engine.auth_rules.each do |auth_rule|
       @role_privs[auth_rule.role] ||= []
       auth_rule.contexts.
             select {|c| options[:filter_contexts].nil? or c == options[:filter_contexts]}.
@@ -88,6 +141,17 @@ class AuthorizationRulesController < ApplicationController
     
     render_to_string :template => 'authorization_rules/graph.dot.erb', :layout => false
   end
+
+  def replay_changes (engine, changes)
+    changes.inject({}) do |memo, info|
+      case info[0]
+      when :add_privilege, :add_role
+        Authorization::DevelopmentSupport::AnalyzerEngine.apply_change(engine, info)
+      end
+      (memo[info[0]] ||= Set.new) << info[1..-1]
+      memo
+    end
+  end
   
   def dot_to_svg (dot_data)
     gv = IO.popen("#{Authorization.dot_path} -q -Tsvg", "w+")
@@ -102,10 +166,21 @@ class AuthorizationRulesController < ApplicationController
     {
       :effective_role_privs => !params[:effective_role_privs].blank?,
       :privilege_hierarchy => !params[:privilege_hierarchy].blank?,
-      :filter_roles => params[:filter_roles].blank? ? nil : params[:filter_roles].to_sym,
+      :filter_roles => params[:filter_roles].blank? ? nil : (params[:filter_roles].is_a?(Array) ? params[:filter_roles].map(&:to_sym) : [params[:filter_roles].to_sym]),
       :filter_contexts => params[:filter_contexts].blank? ? nil : params[:filter_contexts].to_sym,
-      :highlight_privilege => params[:highlight_privilege].blank? ? nil : params[:highlight_privilege].to_sym
+      :highlight_privilege => params[:highlight_privilege].blank? ? nil : params[:highlight_privilege].to_sym,
+      :changes => deserialize_changes(params[:changes])
     }
+  end
+
+  def deserialize_changes (changes)
+    if changes
+      changes.split(';').collect do |info|
+        info.split(',').collect do |info_part|
+          info_part[0,1] == ':' ? info_part[1..-1].to_sym : info_part
+        end
+      end
+    end
   end
 end
 

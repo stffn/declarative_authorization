@@ -5,28 +5,27 @@ module Authorization
   module DevelopmentSupport
     # Ideas for improvement
     # * Algorithm
-    #   * analyze tests for conflicts
+    #   * Plan by tackling each condition separately
     #     * e.g. two users have a permission through the same role,
     #       one should lose that
     #   * Consider privilege hierarchy
     #   * Consider merging, splitting roles, role hierarchies
-    #   * Consider adding privilege to existing rules
+    #   * Add privilege to existing rules
     # * Features
-    #   * UI for selecting intention, defining success tests,
-    #     reviewing and choosing best option
-    #   * Show consequences from changes:
-    #     * compare graphs (new edges, removed edges)
-    # * AI: decision tree, heuristic (backtracking?);
+    #   * Show consequences from changes: which users are affected,
+    #     show users in graph
+    #   * restructure GUI layout: more room for analyzing suggestions
+    # * AI: planning: ADL-like, actions with preconditions and effects
     # * Removing need of intention
     # * Evaluation of approaches with Analyzer algorithms
     # * Consider constraints
     #
+    # NOTE:
+    # * user.clone needs to clone role_symbols
+    # * user.role_symbols needs to respond to <<
+    # * user.login is needed
+    #
     class ChangeAnalyzer < AbstractAnalyzer
-      attr_reader :engine
-
-      def initialize (engine)
-        @engine = engine
-      end
 
       def find_approaches_for (change_action, type, options, &tests)
         raise ArgumentError, "Missing options" if !options[:on] or !options[:to]
@@ -48,7 +47,7 @@ module Authorization
         viable_approaches = []
         approach_checker = ApproachChecker.new(self, tests)
 
-        starting_candidate = Approach.new(self, @engine, options[:users], [])
+        starting_candidate = Approach.new(@engine, options[:users], [])
         if starting_candidate.check(approach_checker)
           viable_approaches << starting_candidate
         else
@@ -61,6 +60,9 @@ module Authorization
               options[:on], strategy)
           step_count += 1
         end
+
+        # remove subsets
+
         viable_approaches.sort!
       end
 
@@ -92,22 +94,28 @@ module Authorization
 
       class Approach
         attr_reader :steps, :engine, :users
-        def initialize (analyzer, engine, users, steps)
-          @analyzer, @engine, @users, @steps = analyzer, engine, users, steps
+        def initialize (engine, users, steps)
+          @engine, @users, @steps = engine, users, steps
         end
 
         def check (approach_checker)
           res = approach_checker.check(@engine, @users)
           @failed_test_count = approach_checker.failed_test_count
+          #puts "CHECKING #{inspect} (#{res}, #{sort_value})"
           res
         end
 
         def clone_for_step (*step_params)
-          self.class.new(@analyzer, @engine.clone, @users.clone, @steps + [step_params])
+          self.class.new(@engine.clone, @users.clone, @steps + [Step.new(step_params)])
         end
 
         def changes
           @steps.select {|step| step.length > 1}
+        end
+
+        def subset? (other_approach)
+          other_approach.changes.length >= changes.length &&
+              changes.all? {|step| other_approach.changes.any? {|step_2| step_2.eql?(step)} }
         end
 
         def state_hash
@@ -121,16 +129,31 @@ module Authorization
         end
 
         def sort_value
-          (changes.length + 1) * (@failed_test_count.to_i + 1)
+          (changes.length + 1) + steps.length / 2 + (@failed_test_count.to_i + 1)
         end
 
         def inspect
-          "Approach (#{state_hash}): Roles: #{@analyzer.roles(@engine).map(&:to_sym).inspect}; " +
-              "Users: #{@users.map(&:role_symbols).inspect}"
+          "Approach (#{state_hash}): Steps: #{changes.map(&:inspect) * ', '}"# +
+             # "\n  Roles: #{AnalyzerEngine.roles(@engine).map(&:to_sym).inspect}; " +
+             # "\n  Users: #{@users.map(&:role_symbols).inspect}"
         end
 
         def <=> (other)
           sort_value <=> other.sort_value
+        end
+      end
+
+      class Step < Array
+        def eql? (other)
+          other.is_a?(Array) && other.length == length &&
+              (0...length).all? {|idx| self[idx].class == other[idx].class &&
+                  ((self[idx].respond_to?(:to_sym) && self[idx].to_sym == other[idx].to_sym) ||
+                   (self[idx].respond_to?(:login) && self[idx].login == other[idx].login) ||
+                   self[idx] == other[idx] ) }
+        end
+
+        def inspect
+          collect {|info| info.respond_to?(:to_sym) ? info.to_sym : (info.respond_to?(:login) ? info.login : info.class.name)}.inspect
         end
       end
 
@@ -154,15 +177,14 @@ module Authorization
         case next_in_strategy
         when :add_role
           # ensure non-existent name
-          role_symbol = :new_role_for_change_analyzer
-          unless candidate.engine.roles.include?(role_symbol)
-            approach = candidate.clone_for_step(:add_role, role_symbol)
-            approach.engine.roles << role_symbol
+          approach = candidate.clone_for_step(:add_role, :new_role_for_change_analyzer)
+          if AnalyzerEngine.apply_change(approach.engine, approach.changes.last)
+            #AnalyzerEngine.apply_change(approach.engine, [:add_privilege, privilege, context, :new_role_for_change_analyzer])
             new_approaches << approach
           end
         when :assign_role_to_user
           candidate.users.each do |user|
-            roles(candidate.engine).each do |role|
+            relevant_roles(candidate).each do |role|
               next if user.role_symbols.include?(role.to_sym)
               approach = candidate.clone_for_step(:assign_role_to_user, role, user)
               # beware of shallow copies!
@@ -186,23 +208,15 @@ module Authorization
             end
           end
         when :add_privilege
-          roles(candidate.engine).each do |role|
+          relevant_roles(candidate).each do |role|
             approach = candidate.clone_for_step(:add_privilege, privilege, context, role)
-            approach.engine.auth_rules << AuthorizationRule.new(role.to_sym,
-                [privilege], [context])
+            AnalyzerEngine.apply_change(approach.engine, approach.changes.last)
             new_approaches << approach
           end
         when :remove_privilege
-          roles(candidate.engine).each do |role|
+          relevant_roles(candidate).each do |role|
             approach = candidate.clone_for_step(:remove_privilege, privilege, context, role)
-            rule_with_priv = roles(approach.engine).
-                find {|cloned_role| cloned_role.to_sym == role.to_sym}.
-                rules.find do |rule|
-              rule.contexts.include?(context) and rule.privileges.include?(privilege)
-            end
-            if rule_with_priv
-              rule_with_priv.privileges.delete(privilege)
-              approach.engine.auth_rules.delete(rule_with_priv) if rule_with_priv.privileges.empty?
+            if AnalyzerEngine.apply_change(approach.engine, approach.changes.last)
               new_approaches << approach
             end
           end
@@ -212,14 +226,24 @@ module Authorization
 
         new_approaches.each do |new_approach|
           if new_approach.check(approach_checker)
-            viable_approaches << new_approach unless viable_approaches.find {|v_a| v_a.state_hash == new_approach.state_hash}
+            unless viable_approaches.any? {|viable_approach| viable_approach.subset?(new_approach) }
+              #puts "New: #{new_approach.changes.inspect}\n  #{viable_approaches.map(&:changes).inspect}"
+              viable_approaches.delete_if {|viable_approach| new_approach.subset?(viable_approach)}
+              viable_approaches << new_approach unless viable_approaches.find {|v_a| v_a.state_hash == new_approach.state_hash}
+            end
           else
             candidates << new_approach
           end
         end
 
         candidates.sort!
-        #p candidates.map(&:sort_value)
+      end
+
+      def relevant_roles (approach)
+        #return AnalyzerEngine.roles(approach.engine)
+        (AnalyzerEngine.relevant_roles(approach.engine, approach.users) +
+            (approach.engine.roles.include?(:new_role_for_change_analyzer) ?
+               [AnalyzerEngine::Role.for_sym(:new_role_for_change_analyzer, approach.engine)] : [])).uniq
       end
     end
   end
