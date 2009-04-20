@@ -1,10 +1,13 @@
-* New option :join_by for has_permission_on to allow AND'ing of statements in one has_permission_on block
 
-* Allow using_access_control to be called directly on ActiveRecord::Base, globally enabling model security
+** RELEASE 0.3 (April 20, 2009) **
 
-* New operator:  intersects_with, comparing two Enumerables in if_attribute
+* New option :join_by for has_permission_on to allow AND'ing of statements in one has_permission_on block [sb]
 
-* Improved if_permitted_to syntax:  if the attribute is left out, permissions are checked on for the current object
+* Allow using_access_control to be called directly on ActiveRecord::Base, globally enabling model security [sb]
+
+* New operator:  intersects_with, comparing two Enumerables in if_attribute [sb]
+
+* Improved if_permitted_to syntax:  if the attribute is left out, permissions are checked on for the current object [sb]
 
 * Added #has_role_with_hierarchy? method to retrieve explicit and calculated roles [jeremyf]
 
