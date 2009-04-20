@@ -33,6 +33,7 @@ class AuthorizationRulesController < ApplicationController
     options = {
       :effective_role_privs => true,
       :privilege_hierarchy => false,
+      :only_relevant_contexts => true,
       :filter_roles => nil,
       :filter_contexts => nil,
       :highlight_privilege => nil
@@ -60,7 +61,7 @@ class AuthorizationRulesController < ApplicationController
         @role_privs[auth_rule.role] += auth_rule.privileges.collect {|p| [context, p, auth_rule.attributes.empty?, auth_rule.to_long_s]}
       end
     end
-    
+
     if options[:effective_role_privs]
       @roles.each do |role|
         @role_privs[role] ||= []
@@ -68,6 +69,10 @@ class AuthorizationRulesController < ApplicationController
           @role_privs[role].concat(@role_privs[lower_role]).uniq!
         end
       end
+    end
+
+    if options[:only_relevant_contexts]
+      @contexts.delete_if {|context| @roles.all? {|role| !@role_privs[role] || !@role_privs[role].any? {|info| info[0] == context}}}
     end
     
     if options[:privilege_hierarchy]
