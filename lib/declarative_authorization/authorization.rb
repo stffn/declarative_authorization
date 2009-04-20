@@ -143,7 +143,7 @@ module Authorization
 
       # find a authorization rule that matches for at least one of the roles and 
       # at least one of the given privileges
-      attr_validator = AttributeValidator.new(self, user, options[:object])
+      attr_validator = AttributeValidator.new(self, user, options[:object], privilege, options[:context])
       rules = matching_auth_rules(roles, privileges, options[:context])
       if rules.empty?
         raise NotAuthorized, "No matching rules found for #{privilege} for #{user.inspect} " +
@@ -152,20 +152,7 @@ module Authorization
       end
       
       # Test each rule in turn to see whether any one of them is satisfied.
-      grant_permission = rules.any? do |rule|
-        begin
-          options[:skip_attribute_test] or
-            rule.attributes.empty? or
-            rule.attributes.send(rule.join_operator == :and ? :all? : :any?) do |attr|
-              begin
-                attr.validate?( attr_validator )
-              rescue NilAttributeValueError => e
-                nil # Bumping up against a nil attribute value flunks the rule.
-              end
-            end
-        end
-      end
-      unless grant_permission
+      if !options[:skip_attribute_test] and !rules.any? {|rule| rule.validate?(attr_validator)}
         raise AttributeAuthorizationError, "#{privilege} not allowed for #{user.inspect} on #{options[:object].inspect}."
       end
       true
@@ -201,17 +188,9 @@ module Authorization
     def obligations (privilege, options = {})
       options = {:context => nil}.merge(options)
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
-      attr_validator = AttributeValidator.new(self, user, nil, options[:context])
+      attr_validator = AttributeValidator.new(self, user, nil, privilege, options[:context])
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
-        obligations = rule.attributes.collect {|attr| attr.obligation(attr_validator) }
-        if rule.join_operator == :and and !obligations.empty?
-          merged_obligation = obligations.first
-          obligations[1..-1].each do |obligation|
-            merged_obligation = merged_obligation.deep_merge(obligation)
-          end
-          obligations = [merged_obligation]
-        end
-        obligations.empty? ? [{}] : obligations
+        rule.obligations(attr_validator)
       end.flatten
     end
     
@@ -263,11 +242,12 @@ module Authorization
     end
     
     class AttributeValidator # :nodoc:
-      attr_reader :user, :object, :engine, :context
-      def initialize (engine, user, object = nil, context = nil)
+      attr_reader :user, :object, :engine, :context, :privilege
+      def initialize (engine, user, object = nil, privilege = nil, context = nil)
         @engine = engine
         @user = user
         @object = object
+        @privilege = privilege
         @context = context
       end
       
@@ -281,15 +261,16 @@ module Authorization
     def user_roles_privleges_from_options(privilege, options)
       options = {
         :user => nil,
-        :context => nil
+        :context => nil,
+        :user_roles => nil
       }.merge(options)
       user = options[:user] || Authorization.current_user
       privileges = privilege.is_a?(Array) ? privilege : [privilege]
       
-      raise AuthorizationUsageError, "No user object given (#{user.inspect})" \
-        unless user
+      raise AuthorizationUsageError, "No user object given (#{user.inspect}) or " +
+        "set through Authorization.current_user" unless user
 
-      roles = flatten_roles(roles_for(user))
+      roles = options[:user_roles] || flatten_roles(roles_for(user))
       privileges = flatten_privileges privileges, options[:context]
       [user, roles, privileges]
     end
@@ -351,6 +332,29 @@ module Authorization
       roles = [roles] unless roles.is_a?(Array)
       @contexts.include?(context) and roles.include?(@role) and 
         not (@privileges & privs).empty?
+    end
+
+    def validate? (attr_validator)
+      @attributes.empty? or
+        @attributes.send(@join_operator == :and ? :all? : :any?) do |attr|
+          begin
+            attr.validate?(attr_validator)
+          rescue NilAttributeValueError => e
+            nil # Bumping up against a nil attribute value flunks the rule.
+          end
+        end
+    end
+
+    def obligations (attr_validator)
+      obligations = @attributes.collect {|attr| attr.obligation(attr_validator) }
+      if @join_operator == :and and !obligations.empty?
+        merged_obligation = obligations.first
+        obligations[1..-1].each do |obligation|
+          merged_obligation = merged_obligation.deep_merge(obligation)
+        end
+        obligations = [merged_obligation]
+      end
+      obligations.empty? ? [{}] : obligations
     end
 
     def to_long_s

@@ -17,7 +17,7 @@ module Authorization
           
           user = options[:user] || Authorization.current_user
 
-          engine = Authorization::Engine.instance
+          engine = options[:engine] || Authorization::Engine.instance
           engine.permit!(privileges, :user => user, :skip_attribute_test => true,
                          :context => context)
 
@@ -33,7 +33,7 @@ module Authorization
             :model => self,
             :engine => nil,
           }.merge(options)
-          engine ||= Authorization::Engine.instance
+          engine = options[:engine] || Authorization::Engine.instance
 
           scope = ObligationScope.new( options[:model], {} )
           engine.obligations( privileges, :user => options[:user], :context => options[:context] ).each do |obligation|
