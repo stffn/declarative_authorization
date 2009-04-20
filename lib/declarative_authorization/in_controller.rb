@@ -123,7 +123,7 @@ module Authorization
       # action as parameter.  The special symbol :+all+ refers to all action.
       # The all :+all+ statement is only employed if no specific statement is
       # present.
-      #   class UserController < ActionController
+      #   class UserController < ApplicationController
       #     filter_access_to :index
       #     filter_access_to :new, :edit
       #     filter_access_to :all
@@ -152,6 +152,25 @@ module Authorization
       # the controller name.  Thus, in UserController :+edit+ requires
       # :+edit+ +users+.  To specify required privilege, use the option :+require+
       #   filter_access_to :new, :create, :require => :create, :context => :users
+      #
+      # Without the :+attribute_check+ option, no constraints from the
+      # authorization rules are enforced because for some actions (collections,
+      # +new+, +create+), there is no object to evaluate conditions against.  To
+      # allow attribute checks on all actions, it is a common pattern to provide
+      # custom objects through +before_filters+:
+      #   class BranchesController < ApplicationController
+      #     before_filter :load_company
+      #     before_filter :new_branch_from_company_and_params,
+      #       :only => [:index, :new, :create]
+      #     filter_access_to :all, :attribute_check => true
+      #
+      #     protected
+      #     def new_branch_from_company_and_params
+      #       @branch = @company.branches.new(params[:branch])
+      #     end
+      #   end
+      # NOTE: +before_filters+ need to be defined before the first
+      # +filter_access_to+ call.
       #   
       # For further customization, a custom filter expression may be formulated
       # in a block, which is then evaluated in the context of the controller
@@ -174,11 +193,13 @@ module Authorization
       #   The privilege's context, defaults to controller_name, pluralized.
       # [:+attribute_check+]
       #   Enables the check of attributes defined in the authorization rules.
-      #   Defaults to false.  If enabled, filter_access_to will try to load
-      #   a context object employing either 
-      #   * the method from the :+load_method+ option or 
+      #   Defaults to false.  If enabled, filter_access_to will use a context
+      #   object from one of the following sources (in that order):
+      #   * the method from the :+load_method+ option,
+      #   * an instance variable named after the singular of the context
+      #     (by default from the controller name, e.g. @post for PostsController),
       #   * a find on the context model, using +params+[:id] as id value.
-      #   Any of these loading methods will only be employed if :+attribute_check+
+      #   Any of these methods will only be employed if :+attribute_check+
       #   is enabled.
       # [:+model+] 
       #   The data model to load a context object from.  Defaults to the
