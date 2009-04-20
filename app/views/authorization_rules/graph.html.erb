@@ -26,8 +26,8 @@
   <%#= link_to_graph "Rules" %>
   <%#= link_to_graph "Privilege hierarchy", :type => 'priv_hierarchy' %>
   
-  <%= select_tag "filter_roles", options_for_select([["All roles",'']] + controller.authorization_engine.roles), :onchange => 'update_graph(this.form)' %>
-  <%= select_tag "filter_contexts", options_for_select([["All contexts",'']] + controller.authorization_engine.auth_rules.collect {|ar| ar.contexts.to_a}.flatten.uniq), :onchange => 'update_graph(this.form)' %>
+  <%= select_tag "filter_roles", options_for_select([["All roles",'']] + controller.authorization_engine.roles.map(&:to_s).sort), :onchange => 'update_graph(this.form)' %>
+  <%= select_tag "filter_contexts", options_for_select([["All contexts",'']] + controller.authorization_engine.auth_rules.collect {|ar| ar.contexts.to_a}.flatten.uniq.map(&:to_s).sort), :onchange => 'update_graph(this.form)' %>
   <%= check_box_tag "effective_role_privs", "1", false, :onclick => 'update_graph(this.form)'  %> <%= label_tag "effective_role_privs", "Effective privileges"  %>
   <%= check_box_tag "privilege_hierarchy", "1", false, :onclick => 'update_graph(this.form)'  %> <%= label_tag "privilege_hierarchy", "Show full privilege hierarchy"  %>
   <% end %>
