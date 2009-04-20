@@ -344,11 +344,15 @@ See Authorization::TestHelper for more information.
 
 = Installation of declarative_authorization
 
-To install simply execute in your applications root directory
-  cd vendor/plugins && git clone git://github.com/stffn/declarative_authorization.git
-
-Alternatively, download one of the released versions from Github at
-http://github.com/stffn/declarative_authorization/downloads
+One of three options to install the plugin:
+* Install by Gem:  Add to your environment.rb in the initializer block:
+    config.gem "stffn-declarative_authorization", :lib => "declarative_authorization"
+  And call from your application's root directory
+    rake gems:install
+* Alternatively, to install from github, execute in your application's root directory
+    cd vendor/plugins && git clone git://github.com/stffn/declarative_authorization.git
+* Or, download one of the released versions from Github at
+  http://github.com/stffn/declarative_authorization/downloads
 
 Then, 
 * provide the requirements as noted below, 
@@ -361,8 +365,8 @@ Then,
 The requirements are
 * Rails >= 2.1 and Ruby >= 1.8.6, including 1.9
 * An authentication mechanism 
-* A user object returned by controller.current_user
-* An array of role symbols returned by user.role_symbols
+* A user object returned by Controller#current_user
+* An array of role symbols returned by User#role_symbols
 * (For model security) Setting Authorization.current_user to the request's user
 
 Of the various ways to provide these requirements, here is one way employing
@@ -416,7 +420,7 @@ restful_authentication.
      user.roles.create(:title => "admin")
 
 Note:  If you choose to generate an Account model for restful_authentication
-instead of a User model as described below, you have to customize the
+instead of a User model as described above, you have to customize the
 examples and create a ApplicationController#current_user method.
 
 
@@ -447,7 +451,7 @@ Then, point your browser to
 
 The browser needs Rails 2.3 (for Engine support).  The graphical view requires 
 Graphviz (which e.g. can be installed through the graphviz package under Debian 
-and Ubuntu) and is only tested under Linux.
+and Ubuntu) and has only been tested under Linux.
 
 
 = Help and Contact
