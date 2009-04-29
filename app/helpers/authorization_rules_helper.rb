@@ -46,7 +46,7 @@ module AuthorizationRulesHelper
   
   def navigation
     link_to("Rules", authorization_rules_path) << ' | ' <<
-    link_to("Edit", change_authorization_rules_path) << ' | ' <<
+    link_to("Change Supporter", change_authorization_rules_path) << ' | ' <<
     link_to("Graphical view", graph_authorization_rules_path) << ' | ' <<
     link_to("Usages", authorization_usages_path) #<< ' | ' <<
   #  'Edit | ' <<
@@ -93,11 +93,16 @@ module AuthorizationRulesHelper
   def describe_step (step)
     case step[0]
     when :add_privilege
+      #logger.debug(step.inspect)
       "Add privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong> to role <strong>#{h step[3].to_sym.inspect}</strong>"
+    when :remove_privilege
+      "Remove privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong> from role <strong>#{h step[3].to_sym.inspect}</strong>"
     when :add_role
       "New role <strong>#{h step[1].to_sym.inspect}</strong>"
     when :assign_role_to_user
       "Assign role <strong>#{h step[1].to_sym.inspect}</strong> to <strong>#{h readable_step_info(step[2])}</strong>"
+    when :remove_role_from_user
+      "Remove role <strong>#{h step[1].to_sym.inspect}</strong> from <strong>#{h readable_step_info(step[2])}</strong>"
     else
       step.collect {|info| readable_step_info(info) }.map {|str| h str } * ', '
     end
@@ -112,7 +117,8 @@ module AuthorizationRulesHelper
   end
 
   def serialize_changes (approach)
-    approach.changes.collect {|step| step.collect {|info| readable_step_info(info) } * ','} * ';'
+    changes = approach.changes.collect {|step| step.to_a.first.is_a?(Enumerable) ? step.to_a : [step.to_a]}
+    changes.collect {|multi_step| multi_step.collect {|step| step.collect {|info| readable_step_info(info) } * ','}}.flatten * ';'
   end
 
   def serialize_relevant_roles (approach)

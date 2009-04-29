@@ -218,6 +218,33 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
     assert_equal 4, relevant_roles.length
   end
 
+  def test_roles_for_privilege
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :higher_role do
+          includes :lower_role
+        end
+        role :lower_role do
+          has_permission_on :test_2, :to => :read
+        end
+        role :test_role do
+          has_permission_on :test, :to => :read
+        end
+        role :irrelevant_role_1 do
+        end
+        role :irrelevant_role_2 do
+        end
+        role :irrelevant_role_3 do
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    assert_equal 1, Authorization::DevelopmentSupport::AnalyzerEngine::Role.all_for_privilege(:read, :test, engine).length
+    assert_equal 2, Authorization::DevelopmentSupport::AnalyzerEngine::Role.all_for_privilege(:read, :test_2, engine).length
+  end
+
   def test_analyze_for_proposed_privilege_hierarchy
     engine, analyzer = engine_analyzer_for %{
       authorization do

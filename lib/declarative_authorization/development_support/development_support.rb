@@ -22,15 +22,7 @@ module Authorization
     module AnalyzerEngine
 
       def self.roles (engine)
-        rules_by_role = engine.auth_rules.inject({}) do |memo, rule|
-          memo[rule.role] ||= []
-          memo[rule.role] << rule
-          memo
-        end
-        engine.roles.collect do |role|
-          Role.new(role, (rules_by_role[role] || []).
-                collect {|rule| Rule.new(rule, engine)}, engine)
-        end
+        Role.all(engine)
       end
 
       def self.relevant_roles (engine, users)
@@ -57,29 +49,35 @@ module Authorization
           end
         when :add_privilege
           privilege, context, role = change[1,3]
-          if rule_for_permission(engine, privilege, context, role)
+          role = Role.for_sym(role.to_sym, engine)
+          privilege = Privilege.for_sym(privilege.to_sym, engine)
+          if ([privilege] + privilege.ancestors).any? {|ancestor_privilege| !role.rules_for_permission(ancestor_privilege, context).empty?}
             false
           else
             engine.auth_rules << AuthorizationRule.new(role.to_sym,
-                [privilege], [context])
+                [privilege.to_sym], [context])
             true
           end
         when :remove_privilege
           privilege, context, role = change[1,3]
-          rule_with_priv = rule_for_permission(engine, privilege, context, role)
-          if rule_with_priv
-            rule_with_priv.privileges.delete(privilege)
-            engine.auth_rules.delete(rule_with_priv) if rule_with_priv.privileges.empty?
-            true
-          else
+          role = Role.for_sym(role.to_sym, engine)
+          privilege = Privilege.for_sym(privilege.to_sym, engine)
+          rules_with_priv = role.rules_for_permission(privilege, context)
+          if rules_with_priv.empty?
             false
+          else
+            rules_with_priv.each do |rule|
+              rule.rule.privileges.delete(privilege.to_sym)
+              engine.auth_rules.delete(rule.rule) if rule.rule.privileges.empty?
+            end
+            true
           end
         end
       end
 
       class Role
         @@role_objects = {}
-        attr_reader :role, :rules
+        attr_reader :role
         def initialize (role, rules, engine)
           @role = role
           @rules = rules
@@ -93,11 +91,28 @@ module Authorization
           @rules.empty? ? nil : @rules.first.source_file
         end
 
+        # ancestors' privileges are included in in the current role
         def ancestors (role_symbol = nil)
           role_symbol ||= @role
           (@engine.role_hierarchy[role_symbol] || []).
-              collect {|lower_priv| ancestors(lower_priv) }.flatten +
+              collect {|lower_role| ancestors(lower_role) }.flatten +
             (role_symbol == @role ? [] : [Role.for_sym(role_symbol, @engine)])
+        end
+        def descendants (role_symbol = nil)
+          role_symbol ||= @role
+          (@engine.rev_role_hierarchy[role_symbol] || []).
+              collect {|higher_role| descendants(higher_role) }.flatten +
+            (role_symbol == @role ? [] : [Role.for_sym(role_symbol, @engine)])
+        end
+
+        def rules
+          @rules ||= @engine.auth_rules.select {|rule| rule.role == @role}.
+              collect {|rule| Rule.new(rule, @engine)}
+        end
+        def rules_for_permission (privilege, context)
+          rules.select do |rule|
+            rule.matches?([@role], [privilege.to_sym], context)
+          end
         end
 
         def to_sym
@@ -106,11 +121,29 @@ module Authorization
         def self.for_sym (role_sym, engine)
           @@role_objects[[role_sym, engine]] ||= new(role_sym, nil, engine)
         end
+
+        def self.all (engine)
+          rules_by_role = engine.auth_rules.inject({}) do |memo, rule|
+            memo[rule.role] ||= []
+            memo[rule.role] << rule
+            memo
+          end
+          engine.roles.collect do |role|
+            new(role, (rules_by_role[role] || []).
+                  collect {|rule| Rule.new(rule, engine)}, engine)
+          end
+        end
+        def self.all_for_privilege (privilege, context, engine)
+          privilege = privilege.is_a?(Symbol) ? Privilege.for_sym(privilege, engine) : privilege
+          privilege_symbols = ([privilege] + privilege.ancestors).map(&:to_sym)
+          all(engine).select {|role| role.rules.any? {|rule| rule.matches?([role.to_sym], privilege_symbols, context)}}.
+              collect {|role| [role] + role.descendants}.flatten.uniq
+        end
       end
 
       class Rule
         @@rule_objects = {}
-        delegate :source_line, :source_file, :contexts, :to => :@rule
+        delegate :source_line, :source_file, :contexts, :matches?, :to => :@rule
         attr_reader :rule
         def initialize (rule, engine)
           @rule = rule
@@ -131,11 +164,20 @@ module Authorization
           @engine = engine
         end
 
+        # Ancestor privileges are higher in the hierarchy.
+        # Doesn't take context into account.
         def ancestors (priv_symbol = nil)
           priv_symbol ||= @privilege
           # context-specific?
           (@engine.rev_priv_hierarchy[[priv_symbol, nil]] || []).
-              collect {|lower_priv| ancestors(lower_priv) }.flatten +
+              collect {|higher_priv| ancestors(higher_priv) }.flatten +
+            (priv_symbol == @privilege ? [] : [Privilege.for_sym(priv_symbol, @engine)])
+        end
+        def descendants (priv_symbol = nil)
+          priv_symbol ||= @privilege
+          # context-specific?
+          (@engine.privilege_hierarchy[priv_symbol] || []).
+              collect {|lower_priv, context| descendants(lower_priv) }.flatten +
             (priv_symbol == @privilege ? [] : [Privilege.for_sym(priv_symbol, @engine)])
         end
 

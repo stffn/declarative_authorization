@@ -18,6 +18,8 @@ module Authorization
     # * merging roles
     # * role hierarchy
     #
+    # Mergeable Rules:  respect if_permitted_to hash
+    #
     class Analyzer < AbstractAnalyzer
       def analyze (rules)
         sexp_array = RubyParser.new.parse(rules)

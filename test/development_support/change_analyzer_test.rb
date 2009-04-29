@@ -2,7 +2,7 @@ require File.join(File.dirname(__FILE__), %w{.. test_helper.rb})
 require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support change_analyzer})
 
 
-class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
+class ChangeAnalyzerTest < Test::Unit::TestCase
 
   # TODO further tests
   # * more than one new role, privilege necessary

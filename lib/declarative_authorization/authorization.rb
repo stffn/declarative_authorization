@@ -58,7 +58,8 @@ module Authorization
   #
   class Engine
     attr_reader :roles, :role_titles, :role_descriptions, :privileges,
-      :privilege_hierarchy, :auth_rules, :role_hierarchy, :rev_priv_hierarchy
+      :privilege_hierarchy, :auth_rules, :role_hierarchy, :rev_priv_hierarchy,
+      :rev_role_hierarchy
     
     # If +reader+ is not given, a new one is created with the default
     # authorization configuration of +AUTH_DSL_FILE+.  If given, may be either
@@ -92,12 +93,18 @@ module Authorization
           @rev_priv_hierarchy[val] << key
         end
       end
+      @rev_role_hierarchy = {}
+      @role_hierarchy.each do |higher_role, lower_roles|
+        lower_roles.each do |role|
+          (@rev_role_hierarchy[role] ||= []) << higher_role
+        end
+      end
     end
 
     def initialize_copy (from) # :nodoc:
       [
         :privileges, :privilege_hierarchy, :roles, :role_hierarchy, :role_titles,
-        :role_descriptions, :rev_priv_hierarchy
+        :role_descriptions, :rev_priv_hierarchy, :rev_role_hierarchy
       ].each {|attr| instance_variable_set(:"@#{attr}", from.send(attr).clone) }
       @auth_rules = from.auth_rules.collect {|rule| rule.clone}
     end

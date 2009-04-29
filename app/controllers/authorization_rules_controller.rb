@@ -1,7 +1,7 @@
 if Authorization::activate_authorization_rules_browser?
 
 require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support analyzer})
-require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support change_analyzer})
+require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support change_supporter})
 
 begin
   # for nice auth_rules output:
@@ -47,13 +47,12 @@ class AuthorizationRulesController < ApplicationController
     end
 
     users_keys = users_permission.keys
-    analyzer = Authorization::DevelopmentSupport::ChangeAnalyzer.new(authorization_engine)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(authorization_engine)
     
     privilege = params[:privilege].to_sym
     context = params[:context].to_sym
     @context = context
-    @approaches = analyzer.find_approaches_for(params[:goal].to_sym,
-        :permission, :on => context, :to => privilege, :users => users_keys) do
+    @approaches = analyzer.find_approaches_for(:users => users_keys) do
       users.each_with_index do |user, idx|
         args = [privilege, {:context => context, :user => user}]
         assert(users_permission[users_keys[idx]] ? permit?(*args) : !permit?(*args))
@@ -62,7 +61,7 @@ class AuthorizationRulesController < ApplicationController
 
     respond_to do |format|
       format.js do
-        render :partial => 'suggestion'
+        render :partial => 'suggestions'
       end
     end
   end

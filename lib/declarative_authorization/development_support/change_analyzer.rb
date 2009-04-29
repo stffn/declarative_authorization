@@ -145,6 +145,9 @@ module Authorization
 
       class Step < Array
         def eql? (other)
+          # TODO use approach.users.index(self[idx]) ==
+          #    other.approach.users.index(other[idx])
+          # instead of user.login
           other.is_a?(Array) && other.length == length &&
               (0...length).all? {|idx| self[idx].class == other[idx].class &&
                   ((self[idx].respond_to?(:to_sym) && self[idx].to_sym == other[idx].to_sym) ||

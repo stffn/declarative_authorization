@@ -1,5 +1,4 @@
-<h1>Edit Authorization Rules</h1>
-<p>Change analyzer.</p>
+<h1>Suggestions on Authorization Rules Change</h1>
 <p><%= navigation %></p>
 <div style="display:none" class="graph-layer">
 <%= link_to_function "Hide", "$(this).up().hide()" %><br/>
@@ -41,11 +40,8 @@
 <div id="suggest-result" style="display:none"></div>
 
 <form>
-<h2>1. Specify Action</h2>
+<h2>1. Specify Permission to Change</h2>
 <p class="action-options">
-  <label>Action</label>
-  <%= select_tag :goal, options_for_select([:add, :remove]) %>
-  <br/>
   <label>Privilege</label>
   <%= select_tag :privilege, options_for_select(available_privileges) %>
   <br/>
