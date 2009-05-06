@@ -1,0 +1,12 @@
+<% javascript_tag do %>
+    function show_graph (privilege, context) {
+        base_url = "<%= graph_authorization_rules_path('svg') %>";
+        $('graph').data = base_url + '?privilege_hierarchy=1&highlight_privilege=' +
+            privilege + '&filter_contexts=' + context;
+        $('graph').up().show();
+    }
+<% end %>
+<div id="graph-container" style="display:none">
+<%= link_to_function "Hide", "$('graph-container').hide()" %><br/>
+<object id="graph" data="" type="image/svg+xml" style="max-width:100%"/>
+</div>

@@ -4,7 +4,7 @@
   <% if @approaches.first.changes.empty? %>
     <p>No changes necessary.</p>
   <% else %>
-    <p>Suggested changes (<%= link_to_function "show", "show_graph('#{serialize_changes(@approaches.first)}', '#{serialize_relevant_roles(@approaches.first)}')" %>):</p>
+    <p>Suggested changes (<%= link_to_function "show", "show_suggest_graph('#{serialize_changes(@approaches.first)}', '#{serialize_relevant_roles(@approaches.first)}')" %>):</p>
     <%= render "suggestion", :object => @approaches.first %>
   <% end %>
 <% else %>
@@ -16,7 +16,7 @@
   <div id="more-suggestions" style="display:none">
     <% @approaches[1..-1].each_with_index do |approach, index| %>
       <p>
-        <%= (index + 2).ordinalize %> best approach (<%= pluralize(approach.changes.length, 'step') %>, <%= link_to_function "show", "show_graph('#{serialize_changes(approach)}', '#{serialize_relevant_roles(approach)}')" %>)
+        <%= (index + 2).ordinalize %> best approach (<%= pluralize(approach.changes.length, 'step') %>, <%= link_to_function "show", "show_suggest_graph('#{serialize_changes(approach)}', '#{serialize_relevant_roles(approach)}')" %>)
         <%= render "suggestion", :object => approach %>
       </p>
     <% end %>

@@ -33,6 +33,18 @@ class AuthorizationRulesController < ApplicationController
     # TODO not generic enough
     @users = User.all
     @users.sort! {|a, b| a.login <=> b.login }
+    
+    @privileges = authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq
+    @privilege = params[:privilege].to_sym rescue @privileges.first
+    @contexts = authorization_engine.auth_rules.collect {|rule| rule.contexts.to_a}.flatten.uniq
+    @context = params[:context].to_sym rescue @contexts.first
+
+    respond_to do |format|
+      format.html
+      format.js do
+        render :partial => 'change'
+      end
+    end
   end
 
   def suggest_change

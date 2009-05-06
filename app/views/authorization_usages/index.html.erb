@@ -1,7 +1,5 @@
 <h1>Authorization Usage</h1>
-<div style="margin: 1em;border:1px solid #ccc;max-width:50%;position:fixed;right:0;display:none">
-<object id="graph" data="" type="image/svg+xml" style="max-width:100%"/>
-</div>
+<%= render 'authorization_rules/show_graph' %>
 <p>Filter rules in actions by controller:</p>
 <p><%= navigation %></p>
 <style type="text/css">
@@ -13,15 +11,8 @@
   /*.auth-usages tr.catch-all td.privilege,*/
   .auth-usages tr.default-privilege td.privilege,
   .auth-usages tr.default-context td.context { color: #888888 }
+  #graph-container {margin: 1em; border:1px solid #ccc; max-width:50%; position:fixed; right:0;}
 </style>
-<% javascript_tag do %>
-    function show_graph (privilege, context) {
-        base_url = "<%= graph_authorization_rules_path('svg') %>";
-        $('graph').data = base_url + '?privilege_hierarchy=1&highlight_privilege=' +
-            privilege + '&filter_contexts=' + context;
-        $('graph').up().show();
-    }
-<% end %>
 <table class="auth-usages">
   <% @auth_usages_by_controller.keys.sort {|c1, c2| c1.name <=> c2.name}.each do |controller| %>
     <% default_context = controller.controller_name.to_sym rescue nil %>

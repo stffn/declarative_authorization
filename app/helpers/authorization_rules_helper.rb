@@ -84,12 +84,6 @@ module AuthorizationRulesHelper
           role_color(role))
   end
 
-  def available_privileges
-    controller.authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq.map(&:to_s).sort
-  end
-  def available_contexts
-    controller.authorization_engine.auth_rules.collect {|rule| rule.contexts.to_a}.flatten.uniq.map(&:to_s).sort
-  end
   def describe_step (step)
     case step[0]
     when :add_privilege

@@ -1,0 +1,51 @@
+<form>
+<h2>1. Choose permission to change</h2>
+<p class="action-options">
+  <label>Privilege</label>
+  <%= select_tag :privilege, options_for_select(@privileges.map(&:to_s).sort, @privilege.to_s) %>
+  <br/>
+  <label>On</label>
+  <%= select_tag :context, options_for_select(@contexts.map(&:to_s).sort, @context.to_s) %>
+  <br/>
+  <%= link_to_function "Current permissions", "show_current_permissions()", :class => 'unimportant' %>
+</p>
+
+<h2>2. Whose permission should be changed?</h2>
+<table class="change-options">
+  <thead>
+    <tr>
+      <td>User</td>
+      <td>Current roles</td>
+      <td class="choose">?</td>
+      <td class="choose">Yes</td>
+      <td class="choose">No</td>
+    </tr>
+  </thead>
+  <tbody>
+    <% @users.each do |user| %>
+      <tr class="<%= controller.authorization_engine.permit?(@privilege, :context => @context, :user => user, :skip_attribute_test => true) ? 'permitted' : 'not-permitted' %>">
+        <td style="font-weight:bold"><%=h user.login %></td>
+        <td><%=h user.role_symbols * ', ' %></td>
+        <td><%= radio_button_tag "user[#{user.id}][permission]", "undetermined", true %></td>
+        <td class="yes"><%= radio_button_tag "user[#{user.id}][permission]", "yes" %></td>
+        <td class="no"><%= radio_button_tag "user[#{user.id}][permission]", "no" %></td>
+      </tr>
+    <% end %>
+    <tr>
+      <td colspan="5" style="text-align:right; padding-top:0.5em" class="unimportant">
+        <span style="background: #FFE599;">&nbsp; &nbsp;</span> Current permission
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="submit">
+  <%=
+    submit_to_remote "analyze", "Suggest Changes",
+      :url => suggest_change_authorization_rules_path, :method => :get,
+      :update => {:success => 'suggest-result'},
+      :before => '$("suggest-result").innerHTML = "Searching..."; $("suggest-result").show()',
+      :failure => '$("suggest-result").innerHTML = "Error while searching."'
+  %>
+</p>
+</form>

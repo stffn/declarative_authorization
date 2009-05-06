@@ -16,6 +16,7 @@ module Authorization
     #   * Add privilege to existing rules
     # * Features
     #   * Improve review facts: impact, affected users count
+    #   * let users disapprove changes and don't suggest them again
     #   * group similar candidates
     #   * show users in graph
     #   * restructure GUI layout: more room for analyzing suggestions
