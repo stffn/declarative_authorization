@@ -112,7 +112,11 @@ module AuthorizationRulesHelper
 
   def serialize_changes (approach)
     changes = approach.changes.collect {|step| step.to_a.first.is_a?(Enumerable) ? step.to_a : [step.to_a]}
-    changes.collect {|multi_step| multi_step.collect {|step| step.collect {|info| readable_step_info(info) } * ','}}.flatten * ';'
+    changes.collect {|multi_step| multi_step.collect {|step| serialize_action(step) }}.flatten * ';'
+  end
+
+  def serialize_action (step)
+    step.collect {|info| readable_step_info(info) } * ','
   end
 
   def serialize_relevant_roles (approach)

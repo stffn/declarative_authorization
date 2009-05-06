@@ -16,7 +16,6 @@ module Authorization
     #   * Add privilege to existing rules
     # * Features
     #   * Improve review facts: impact, affected users count
-    #   * let users disapprove changes and don't suggest them again
     #   * group similar candidates
     #   * show users in graph
     #   * restructure GUI layout: more room for analyzing suggestions
@@ -45,6 +44,7 @@ module Authorization
     class ChangeSupporter < AbstractAnalyzer
 
       def find_approaches_for (options, &tests)
+        @prohibited_actions = options[:prohibited_actions] || []
 
         @seen_states = Set.new
 
@@ -219,6 +219,11 @@ module Authorization
           [:abstract]
         end
 
+        def resembles? (spec)
+          min_length = [spec.length, to_a.length].min
+          to_a[0,min_length] == spec[0,min_length]
+        end
+
         def self.readable_info (info)
           if info.respond_to?(:to_sym)
             info.to_sym.inspect
@@ -243,6 +248,14 @@ module Authorization
 
         def to_a
           @actions.inject([]) {|memo, action| memo += action.to_a.first.is_a?(Enumerable) ? action.to_a : [action.to_a]; memo }
+        end
+
+        def resembles? (spec)
+          @actions.any? {|action| action.resembles?(spec) } or
+            to_a.any? do |array|
+              min_length = [spec.length, array.length].min
+              array[0,min_length] == spec[0,min_length]
+            end
         end
       end
 
@@ -328,6 +341,10 @@ module Authorization
           other.is_a?(RemoveRoleFromUserAction) and
               other.user.login == @user.login and
               other.role == @role
+        end
+
+        def resembles? (spec)
+          super(spec[0,2]) and spec[2] == @user.login
         end
 
         def to_a
@@ -504,21 +521,13 @@ module Authorization
         abstract_actions.each do |abstract_action|
           abstract_action.specific_actions(candidate).each do |specific_action|
             child_candidate = candidate.clone
-            if !child_candidate.reverse_of_previous?(specific_action) and
+            if !@prohibited_actions.any? {|spec| specific_action.resembles?(spec) } and
+                  !child_candidate.reverse_of_previous?(specific_action) and
                   child_candidate.apply(specific_action)
               child_candidates << child_candidate
             end
           end
         end
-
-        #if @seen_states.include?([candidate.state_hash, next_in_strategy])
-        #  puts "SKIPPING #{next_in_strategy}; #{candidate.inspect}"
-        #end
-        #return if @seen_states.include?([candidate.state_hash, next_in_strategy])
-        #@seen_states << [candidate.state_hash, next_in_strategy]
-
-
-        #puts "#{next_in_strategy} on #{candidate.inspect}"
 
         child_candidates.each do |child_candidate|
           if child_candidate.check(approach_checker)

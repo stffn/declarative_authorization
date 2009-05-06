@@ -31,9 +31,22 @@
     left:2%; bottom: 2%; right: 2%;
   }
   #graph-container { margin: 1em; border:1px solid #ccc; max-width:50%; position:fixed; right:0; }
-  .unimportant { color: grey }
+  .unimportant, .remove { color: grey }
+  .remove { cursor: pointer }
 </style>
 <% javascript_tag do %>
+    function suggest_changes () {
+        $("suggest-result").innerHTML = "Searching...";
+        $("suggest-result").show();
+        new Ajax.Updater({success: 'suggest-result'}, '<%= suggest_change_authorization_rules_path %>', {
+            method: 'get',
+            onFailure: function(request) {
+                $("suggest-result").innerHTML = "Error while searching."
+            },
+            parameters: $('change').down('form').serialize()
+        });
+    }
+
     function show_suggest_graph (changes, filter_roles_params, filter_context) {
         base_url = "<%= graph_authorization_rules_path('svg') %>";
         $('suggest-graph').data = base_url + '?changes=' + encodeURIComponent(changes) +
@@ -43,27 +56,46 @@
     }
 
     document.observe('dom:loaded', function() {
-      install_select_observers();
+      install_change_observers();
     });
 
-    function install_select_observers () {
+    function install_change_observers () {
         $$('#change select').each(function (el) {
             el.observe('change', function (event) {
                 new Ajax.Updater({success: 'change'}, '<%= url_for %>', {
                   parameters: { context: $F('context'), privilege: $F('privilege') },
                   method: 'get',
                   onComplete: function () {
-                      install_select_observers();
+                      install_change_observers();
                       if ($('graph-container').visible())
                         show_current_permissions();
                   }
                 });
             });
         });
+        $('prohibited_actions').observe('click', function (event) {
+          var target = event.findElement();
+          if (target.hasClassName('remove')) {
+            target.up().remove();
+            if ($('prohibited_actions').childElements().length == 0)
+              $('prohibited_actions').previous().hide();
+            suggest_changes();
+          }
+        });
     }
 
     function show_current_permissions () {
         show_graph($F('privilege'), $F('context'));
+    }
+
+    var prohibited_action_template =
+        new Template('<li>#{description} <span class="remove">[x]</span><input type="hidden" name="prohibited_action[]" value="#{action}"></li>');
+    function prohibit_action (action, description) {
+      $('prohibited_actions').previous().show();
+      $('prohibited_actions').insert(
+          {bottom: prohibited_action_template.evaluate({action: action, description: description}) }
+      );
+      suggest_changes();
     }
 <% end %>
 

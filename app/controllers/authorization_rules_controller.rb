@@ -58,13 +58,18 @@ class AuthorizationRulesController < ApplicationController
       memo
     end
 
+    prohibited_actions = (params[:prohibited_action] || []).collect do |spec|
+      deserialize_changes(spec).flatten
+    end
+    logger.debug(prohibited_actions.inspect)
+
     users_keys = users_permission.keys
     analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(authorization_engine)
     
     privilege = params[:privilege].to_sym
     context = params[:context].to_sym
     @context = context
-    @approaches = analyzer.find_approaches_for(:users => users_keys) do
+    @approaches = analyzer.find_approaches_for(:users => users_keys, :prohibited_actions => prohibited_actions) do
       users.each_with_index do |user, idx|
         args = [privilege, {:context => context, :user => user}]
         assert(users_permission[users_keys[idx]] ? permit?(*args) : !permit?(*args))

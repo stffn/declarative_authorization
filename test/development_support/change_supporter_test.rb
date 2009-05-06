@@ -439,4 +439,54 @@ class ChangeSupporterTest < Test::Unit::TestCase
     # solutions: remove user-role assignment for first user
     assert approaches.any? {|approach| !approach.users.first.role_symbols.include?(:test_role) }
   end
+
+  def test_prohibited_actions_role_to_user
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :read
+        end
+        role :test_role_2 do
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_extend_permissions = MockUser.new(:test_role_2)
+
+    approaches = analyzer.find_approaches_for(:users => [user_to_extend_permissions],
+                    :prohibited_actions => [[:assign_role_to_user, :test_role, user_to_extend_permissions.login]]) do #, 'other_attendee'
+      assert permit?(:read, :context => :permissions, :user => users.first)
+    end
+
+    assert_not_equal 0, approaches.length
+    assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignRoleToUserAction}}
+  end
+
+  def test_prohibited_actions_permission_to_role
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :read
+        end
+        role :test_role_2 do
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_extend_permissions = MockUser.new(:test_role_2)
+
+    approaches = analyzer.find_approaches_for(:users => [user_to_extend_permissions],
+                    :prohibited_actions => [[:add_privilege, :read, :permissions, :test_role_2]]) do #, 'other_attendee'
+      assert permit?(:read, :context => :permissions, :user => users.first)
+    end
+
+    assert_not_equal 0, approaches.length
+    assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignPrivilegeToRoleAction}}
+  end
 end

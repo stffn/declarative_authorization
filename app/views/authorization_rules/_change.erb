@@ -39,13 +39,10 @@
   </tbody>
 </table>
 
+<h2 style="display:none">Prohibited actions</h2>
+<ul id="prohibited_actions"></ul>
+
 <p class="submit">
-  <%=
-    submit_to_remote "analyze", "Suggest Changes",
-      :url => suggest_change_authorization_rules_path, :method => :get,
-      :update => {:success => 'suggest-result'},
-      :before => '$("suggest-result").innerHTML = "Searching..."; $("suggest-result").show()',
-      :failure => '$("suggest-result").innerHTML = "Error while searching."'
-  %>
+  <%= button_to_function "Suggest Changes", "suggest_changes()" %>
 </p>
 </form>
