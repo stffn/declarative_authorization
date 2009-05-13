@@ -82,6 +82,7 @@ module Authorization
 
       @role_titles = reader.auth_rules_reader.role_titles
       @role_descriptions = reader.auth_rules_reader.role_descriptions
+      @reader = reader
       
       # {[priv, ctx] => [priv, ...]}
       @rev_priv_hierarchy = {}
