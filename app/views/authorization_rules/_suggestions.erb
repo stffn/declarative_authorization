@@ -4,7 +4,7 @@
   <% if @approaches.first.changes.empty? %>
     <p>No changes necessary.</p>
   <% else %>
-    <p>Suggested changes (<%= link_to_function "show", "show_suggest_graph('#{serialize_changes(@approaches.first)}', '#{serialize_relevant_roles(@approaches.first)}')" %>):</p>
+    <p>Suggested changes (<%= link_to_function "show", "show_suggest_graph('#{serialize_changes(@approaches.first)}', '#{serialize_relevant_roles(@approaches.first)}', '#{@context}', relevant_user_ids())" %>):</p>
     <%= render "suggestion", :object => @approaches.first %>
   <% end %>
 <% else %>
@@ -12,11 +12,11 @@
 <% end %>
 
 <% if @approaches.length > 1 %>
-  <p><a href="#" onclick="$(this).up().hide();$('more-suggestions').show();return false">Show other <%= pluralize(@approaches.length - 1, 'approach') %></a></p>
-  <div id="more-suggestions" style="display:none">
+  <p <%= !params[:show_all] ? '' : 'style="display: none"' %>><a href="#" onclick="$(this).up().hide();$('more-suggestions').show();return false">Show other <%= pluralize(@approaches.length - 1, 'approach') %></a></p>
+  <div id="more-suggestions" <%= params[:show_all] ? '' : 'style="display: none"' %>>
     <% @approaches[1..-1].each_with_index do |approach, index| %>
       <p>
-        <%= (index + 2).ordinalize %> best approach (<%= pluralize(approach.changes.length, 'step') %>, <%= link_to_function "show", "show_suggest_graph('#{serialize_changes(approach)}', '#{serialize_relevant_roles(approach)}')" %>)
+        <%= (index + 2).ordinalize %> best approach (<%= pluralize(approach.changes.length, 'step') %>, <%= link_to_function "show", "show_suggest_graph('#{serialize_changes(approach)}', '#{serialize_relevant_roles(approach)}', '#{@context}', relevant_user_ids())" %>)
         <%= render "suggestion", :object => approach %>
       </p>
     <% end %>

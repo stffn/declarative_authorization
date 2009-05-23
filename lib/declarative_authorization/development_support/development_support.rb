@@ -51,7 +51,7 @@ module Authorization
           privilege, context, role = change[1,3]
           role = Role.for_sym(role.to_sym, engine)
           privilege = Privilege.for_sym(privilege.to_sym, engine)
-          if ([privilege] + privilege.ancestors).any? {|ancestor_privilege| !role.rules_for_permission(ancestor_privilege, context).empty?}
+          if ([privilege] + privilege.ancestors).any? {|ancestor_privilege| ([role] + role.ancestors).any? {|ancestor_role| !ancestor_role.rules_for_permission(ancestor_privilege, context).empty?}}
             false
           else
             engine.auth_rules << AuthorizationRule.new(role.to_sym,

@@ -60,7 +60,7 @@ module AuthorizationRulesHelper
       elsif has_changed(:remove_role, role)
         fill ? '#ffdddd' : '#000000'
       else
-        fill ? '#ffffff' : '#000000'
+        fill ? '#ddddff' : '#000000'
       end
     else
       fill_colors = %w{#ffdddd #ddffdd #ddddff #ffffdd #ffddff #ddffff}
@@ -84,22 +84,43 @@ module AuthorizationRulesHelper
           role_color(role))
   end
 
-  def describe_step (step)
+  def describe_step (step, options = {})
+    options = {:with_removal => false}.merge(options)
+
     case step[0]
     when :add_privilege
-      #logger.debug(step.inspect)
-      "Add privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong> to role <strong>#{h step[3].to_sym.inspect}</strong>"
+      dont_assign = prohibit_link(step[0,3],
+          "Add privilege <strong>#{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}</strong> to any role",
+          "Don't suggest adding #{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}.", options)
+      "Add privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong>#{dont_assign} to role <strong>#{h step[3].to_sym.inspect}</strong>"
     when :remove_privilege
-      "Remove privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong> from role <strong>#{h step[3].to_sym.inspect}</strong>"
+      dont_remove = prohibit_link(step[0,3], 
+          "Remove privilege <strong>#{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}</strong> from any role", 
+          "Don't suggest removing #{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}.", options)
+      "Remove privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong>#{dont_remove} from role <strong>#{h step[3].to_sym.inspect}</strong>"
     when :add_role
       "New role <strong>#{h step[1].to_sym.inspect}</strong>"
     when :assign_role_to_user
-      "Assign role <strong>#{h step[1].to_sym.inspect}</strong> to <strong>#{h readable_step_info(step[2])}</strong>"
+      dont_assign = prohibit_link(step[0,2],
+          "Assign role <strong>#{h step[1].to_sym.inspect}</strong> to any user",
+          "Don't suggest assigning #{h step[1].to_sym.inspect}.", options)
+      "Assign role <strong>#{h step[1].to_sym.inspect}</strong>#{dont_assign} to <strong>#{h readable_step_info(step[2])}</strong>"
     when :remove_role_from_user
-      "Remove role <strong>#{h step[1].to_sym.inspect}</strong> from <strong>#{h readable_step_info(step[2])}</strong>"
+      dont_remove = prohibit_link(step[0,2],
+          "Remove role <strong>#{h step[1].to_sym.inspect}</strong> from any user",
+          "Don't suggest removing #{h step[1].to_sym.inspect}.", options)
+      "Remove role <strong>#{h step[1].to_sym.inspect}</strong>#{dont_remove} from <strong>#{h readable_step_info(step[2])}</strong>"
     else
       step.collect {|info| readable_step_info(info) }.map {|str| h str } * ', '
-    end
+    end + prohibit_link(step, options[:with_removal] ? "#{escape_javascript(describe_step(step))}" : '',
+                        "Don't suggest this action.", options)
+  end
+
+  def prohibit_link (step, text, title, options)
+    options[:with_removal] ?
+          ' ' + link_to_function("[x]", "prohibit_action('#{serialize_action(step)}', '#{text}')",
+                    :class => 'unimportant', :title => title) :
+          ''
   end
   
   def readable_step_info (info)

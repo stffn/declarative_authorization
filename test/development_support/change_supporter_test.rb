@@ -217,6 +217,37 @@ class ChangeSupporterTest < Test::Unit::TestCase
     assert approaches.any? {|approach| approach.changes.first.class == Authorization::DevelopmentSupport::ChangeSupporter::AddPrivilegeAndAssignRoleToUserAction}
   end
 
+  def test_adding_permission_with_assigning_role_and_adding_permission_with_hierarchy
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :higher_role do
+          includes :test_role
+        end
+        role :test_role do
+          has_permission_on :permissions, :to => :manage
+        end
+      end
+      privileges do
+        privilege :manage, :includes => [:create, :read]
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_extend_permissions = MockUser.new
+
+    approaches = analyzer.find_approaches_for(:users => [user_to_extend_permissions]) do
+      assert permit?(:read, :context => :permissions, :user => users.first)
+    end
+
+    # Don't try to assign any permissions to higher_role, it already has the
+    # necessary permissions through the hierarchies
+    assert !approaches.any? {|approach|
+      approach.steps.first.class == Authorization::DevelopmentSupport::ChangeSupporter::AddPrivilegeAndAssignRoleToUserAction
+    }
+  end
+
   def test_removing_permission
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -440,6 +471,32 @@ class ChangeSupporterTest < Test::Unit::TestCase
     assert approaches.any? {|approach| !approach.users.first.role_symbols.include?(:test_role) }
   end
 
+  def test_no_superset_approaches
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :read
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_remove_permission_from = MockUser.new(:test_role)
+    user_to_remove_permission_from_2 = MockUser.new(:test_role)
+
+    approaches = analyzer.find_approaches_for(:users => [user_to_remove_permission_from, user_to_remove_permission_from_2]) do
+      assert !permit?(:read, :context => :permissions, :user => users.first)
+      assert !permit?(:read, :context => :permissions, :user => users[1])
+    end
+
+    assert !approaches.any? {|approach|
+      approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::RemoveRoleFromUserAction} and
+      approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::RemovePrivilegeFromRoleAction}
+    }
+  end
+
   def test_prohibited_actions_role_to_user
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -465,6 +522,31 @@ class ChangeSupporterTest < Test::Unit::TestCase
     assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignRoleToUserAction}}
   end
 
+  def test_prohibited_actions_role_to_any_user
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :read
+        end
+        role :test_role_2 do
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_extend_permissions = MockUser.new(:test_role_2)
+
+    approaches = analyzer.find_approaches_for(:users => [user_to_extend_permissions],
+                    :prohibited_actions => [[:assign_role_to_user, :test_role]]) do
+      assert permit?(:read, :context => :permissions, :user => users.first)
+    end
+
+    assert_not_equal 0, approaches.length
+    assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignRoleToUserAction and step.role == :test_role }}
+  end
+
   def test_prohibited_actions_permission_to_role
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -488,5 +570,28 @@ class ChangeSupporterTest < Test::Unit::TestCase
 
     assert_not_equal 0, approaches.length
     assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignPrivilegeToRoleAction}}
+  end
+
+  def test_prohibited_actions_remove_role
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :read
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_remove_permission = MockUser.new(:test_role)
+
+    approaches = analyzer.find_approaches_for(:users => [user_to_remove_permission],
+                    :prohibited_actions => [[:remove_role_from_user, :test_role, user_to_remove_permission.login]]) do
+      assert !permit?(:read, :context => :permissions, :user => users.first)
+    end
+
+    assert_not_equal 0, approaches.length
+    assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::RemoveRoleFromUserAction}}
   end
 end

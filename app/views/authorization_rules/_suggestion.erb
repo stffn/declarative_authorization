@@ -2,8 +2,7 @@
   <% suggestion.changes.each do |action| %>
     <% (action.to_a[0].is_a?(Enumerable) ? action.to_a : [action.to_a]).each do |step| %>
       <li>
-        <%= describe_step(step.to_a) %>
-        <%= link_to_function "[x]", "prohibit_action('#{serialize_action(step.to_a)}', '#{escape_javascript(describe_step(step.to_a))}')", :class => 'unimportant' %>
+        <%= describe_step(step.to_a, :with_removal => true) %>
       </li>
     <% end %>
   <% end %>

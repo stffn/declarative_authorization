@@ -1,9 +1,34 @@
 <% javascript_tag do %>
-    function show_graph (privilege, context) {
+    function show_graph (privilege, context, user_ids) {
+        var params = {
+          privilege_hierarchy: 1,
+          highlight_privilege: privilege,
+          filter_contexts: context
+        };
+        if (user_ids)
+          params['user_ids[]'] = user_ids;
+        show_graph_with_params('graph', params);
+    }
+
+    var graph_params = {};
+    function show_graph_with_params (graph_id, params) {
+        graph_params[graph_id] = params;
         base_url = "<%= graph_authorization_rules_path('svg') %>";
-        $('graph').data = base_url + '?privilege_hierarchy=1&highlight_privilege=' +
-            privilege + '&filter_contexts=' + context;
-        $('graph').up().show();
+        $(graph_id).data = base_url + '?' + Object.toQueryString(params);
+        $(graph_id).up().show();
+    }
+
+    function update_graph_params (graph_id, params) {
+        show_graph_with_params(graph_id,
+            $H(graph_params[graph_id] || {}).merge(params).toObject());
+    }
+
+    function toggle_graph_params (graph_id) {
+        var opts = {}
+        $A(arguments).slice(1).each(function (param) {
+          opts[param] = graph_params[graph_id][param] ? null : '1';
+        });
+        update_graph_params(graph_id, opts)
     }
 <% end %>
 <div id="graph-container" style="display:none">

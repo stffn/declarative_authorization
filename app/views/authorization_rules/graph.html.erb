@@ -30,6 +30,7 @@
   <%= select_tag "filter_contexts", options_for_select([["All contexts",'']] + controller.authorization_engine.auth_rules.collect {|ar| ar.contexts.to_a}.flatten.uniq.map(&:to_s).sort), :onchange => 'update_graph(this.form)' %>
   <%= check_box_tag "effective_role_privs", "1", false, :onclick => 'update_graph(this.form)'  %> <%= label_tag "effective_role_privs", "Effective privileges"  %>
   <%= check_box_tag "privilege_hierarchy", "1", false, :onclick => 'update_graph(this.form)'  %> <%= label_tag "privilege_hierarchy", "Show full privilege hierarchy"  %>
+  <%= check_box_tag "stacked_roles", "1", false, :onclick => 'update_graph(this.form)'  %> <%= label_tag "stacked_roles", "Stacked roles"  %>
   <% end %>
 </p>
 <div style="margin: 1em;border:1px solid #ccc;max-width:95%">

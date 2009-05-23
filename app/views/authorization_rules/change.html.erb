@@ -1,8 +1,10 @@
 <h1>Suggestions on Authorization Rules Change</h1>
 <p><%= navigation %></p>
 <div style="display:none" id="suggest-graph-container">
-<%= link_to_function "Hide", "$(this).up().hide()" %><br/>
-<object id="suggest-graph" data="" type="image/svg+xml" style="max-width: 98%"/>
+<%= link_to_function "Hide", "$(this).up().hide()", :class => 'important' %>
+<%= link_to_function "Toggle stacked roles", "toggle_graph_params('suggest-graph', 'stacked_roles');" %>
+<%= link_to_function "Toggle only users' roles", "toggle_graph_params('suggest-graph', 'only_relevant_roles');" %><br/>
+<object id="suggest-graph" data="" type="image/svg+xml" style="max-width: 98%;max-height: 95%"/>
 </div>
 <%= render 'show_graph' %>
 
@@ -12,6 +14,7 @@
   .action-options br { clear: both; }
   .action-options { margin-bottom: 2em }
   .change-options { margin-bottom: 1em }
+  .change-options td.user_id { display: none }
   .change-options td { padding-right: 1em; padding-left: 0.5em }
   .change-options thead td { border-bottom: 1px solid lightgrey }
   .change-options thead td.choose { text-align: center; font-weight: bold }
@@ -27,32 +30,39 @@
   }
   #suggest-graph-container {
     background: white; border:1px solid #ccc;
-    max-height: 30%; position:fixed; z-index: 20;
-    left:2%; bottom: 2%; right: 2%;
+    position:fixed; z-index: 20;
+    left:10%; bottom: 10%; right: 10%; top: 10%
   }
-  #graph-container { margin: 1em; border:1px solid #ccc; max-width:50%; position:fixed; right:0; }
+  #graph-container {
+    background: white; margin: 1em; border:1px solid #ccc;
+    max-width:50%; position:fixed; z-index: 20; right:0;
+  }
   .unimportant, .remove { color: grey }
   .remove { cursor: pointer }
 </style>
 <% javascript_tag do %>
-    function suggest_changes () {
-        $("suggest-result").innerHTML = "Searching...";
+    function suggest_changes (refresh) {
+        if (!refresh)
+          $("suggest-result").innerHTML = "Searching...";
         $("suggest-result").show();
         new Ajax.Updater({success: 'suggest-result'}, '<%= suggest_change_authorization_rules_path %>', {
             method: 'get',
             onFailure: function(request) {
                 $("suggest-result").innerHTML = "Error while searching."
             },
-            parameters: $('change').down('form').serialize()
+            parameters: $H($('change').down('form').serialize(true)).merge(refresh ? {show_all: "true"} : {}).toQueryString()
         });
+        if (!refresh)
+          location.hash = 'suggest-result';
     }
 
-    function show_suggest_graph (changes, filter_roles_params, filter_context) {
-        base_url = "<%= graph_authorization_rules_path('svg') %>";
-        $('suggest-graph').data = base_url + '?changes=' + encodeURIComponent(changes) +
-            '&' + filter_roles_params +
-            (filter_context ? '&filter_contexts=' + encodeURIComponent(filter_context) : '');
-        $('suggest-graph').up().show();
+    function show_suggest_graph (changes, filter_roles_params, filter_context, user_ids) {
+        var params = {changes: changes, highlight_privilege: $F('privilege')};
+        if (filter_context)
+          params['filter_contexts'] = filter_context;
+        if (user_ids)
+          params['user_ids[]'] = user_ids;
+        show_graph_with_params('suggest-graph', params);
     }
 
     document.observe('dom:loaded', function() {
@@ -85,7 +95,15 @@
     }
 
     function show_current_permissions () {
-        show_graph($F('privilege'), $F('context'));
+        show_graph($F('privilege'), $F('context')/*, relevant_user_ids()*/);
+    }
+
+    function relevant_user_ids () {
+      return $$('#change .user_id').collect(function (el) {
+        return el.innerHTML;
+      }).reject(function (id) {
+        return $('user_' + id + '_permission_undetermined').checked;
+      });
     }
 
     var prohibited_action_template =
@@ -95,7 +113,7 @@
       $('prohibited_actions').insert(
           {bottom: prohibited_action_template.evaluate({action: action, description: description}) }
       );
-      suggest_changes();
+      suggest_changes(true);
     }
 <% end %>
 

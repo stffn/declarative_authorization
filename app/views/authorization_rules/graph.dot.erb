@@ -7,19 +7,38 @@ digraph rules {
   ranksep = "0.3"
   //concentrate = true
   rankdir = TB
+  
+  <% unless @users.blank? %>
+  {
+    rank = source
+    node [shape=polygon,style=filled,fillcolor="#eeeeee"]
+    <% @users.each do |user| %>
+    "<%= user.login %>"
+    <% end %>
+  }
+  <% end %>
+
   {
     node [shape=ellipse,style=filled]
-    //rank = source
+    <%= @stacked_roles ? '' : "rank = same" %>
     <% @roles.each do |role| %>
     "<%= role.inspect %>" [fillcolor="<%= role_fill_color(role) %>"]
     // ,URL="javascript:set_filter({roles: '<%= role %>'})"
     <% end %>
     <% @roles.each do |role| %>
-        <% (@role_hierarchy[role] || []).each do |lower_role| %>
-            "<%= role.inspect %>" -> "<%= lower_role.inspect %>" [constraint=false,arrowhead=empty]
+        <% (@role_hierarchy[role] || []).select {|lower_role| @roles.include?(lower_role)}.each do |lower_role| %>
+            "<%= role.inspect %>" -> "<%= lower_role.inspect %>" [arrowhead=empty]
         <% end %>
     <% end %>
   }
+
+  <% unless @users.blank? %>
+    <% @users.each do |user| %>
+      <% user.role_symbols.select {|role| @roles.include?(role)}.each do |role| %>
+    "<%= user.login %>" -> "<%= role.inspect %>" [color="<%= has_changed(:assign_role_to_user, role, user.login) ? '#00dd00' : (has_changed(:remove_role_from_user, role, user.login) ? '#dd0000' : '#000000') %>"]
+      <% end %>
+    <% end %>
+  <% end %>
 
   <% @contexts.each do |context| %>
     subgraph cluster_<%= context %>  {

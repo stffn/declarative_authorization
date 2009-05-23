@@ -24,6 +24,7 @@
   <tbody>
     <% @users.each do |user| %>
       <tr class="<%= controller.authorization_engine.permit?(@privilege, :context => @context, :user => user, :skip_attribute_test => true) ? 'permitted' : 'not-permitted' %>">
+        <td class="user_id"><%=h user.id %></td>
         <td style="font-weight:bold"><%=h user.login %></td>
         <td><%=h user.role_symbols * ', ' %></td>
         <td><%= radio_button_tag "user[#{user.id}][permission]", "undetermined", true %></td>

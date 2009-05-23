@@ -7,17 +7,15 @@ module Authorization
     # * Algorithm
     #   * Objective function:
     #     * affected user count,
-    #     * as specialized as possible (roles, privileges)
+    #     * as specific as possible (roles, privileges)
     #       -> counter-productive?
-    #   * check for seen states?
-    #   * Modify role hierarchies
-    #   * Modify privilege hierarchy
+    #     * as little changes as necessary
+    #   * Modify role, privilege hierarchy
     #   * Merge, split roles
     #   * Add privilege to existing rules
     # * Features
     #   * Improve review facts: impact, affected users count
-    #   * group similar candidates
-    #   * show users in graph
+    #   * group similar candidates: only show abstract methods?
     #   * restructure GUI layout: more room for analyzing suggestions
     #   * changelog, previous tests, etc.
     #   * different permissions in tests
@@ -44,9 +42,9 @@ module Authorization
     class ChangeSupporter < AbstractAnalyzer
 
       def find_approaches_for (options, &tests)
-        @prohibited_actions = options[:prohibited_actions] || []
+        @prohibited_actions = (options[:prohibited_actions] || []).to_set
 
-        @seen_states = Set.new
+        @approaches_by_actions = {}
 
         candidates = []
         suggestions = []
@@ -59,10 +57,9 @@ module Authorization
           candidates << starting_candidate
         end
 
-        step_count = 0
-        while !candidates.empty? and step_count < 100
-          next_step(suggestions, candidates, approach_checker)
-          step_count += 1
+        checked_candidates = 0
+        while !candidates.empty? and checked_candidates < 200
+          checked_candidates += next_step(suggestions, candidates, approach_checker)
         end
 
         # remove subsets
@@ -164,10 +161,10 @@ module Authorization
         end
 
         def state_hash
-          @engine.auth_rules.inject(0) do |memo, rule|
-            memo + rule.privileges.hash + rule.contexts.hash +
-                rule.attributes.hash + rule.role.hash
-          end +
+          @state_hash ||= @engine.auth_rules.inject(0) do |memo, rule|
+              memo + rule.privileges.hash + rule.contexts.hash +
+                  rule.attributes.hash + rule.role.hash
+            end +
               @users.inject(0) {|memo, user| memo + user.role_symbols.hash } +
               @engine.privileges.hash + @engine.privilege_hierarchy.hash +
               @engine.roles.hash + @engine.role_hierarchy.hash
@@ -204,7 +201,11 @@ module Authorization
         end
 
         def eql? (other)
-          other.class == self.class
+          other.class == self.class and hash == other.hash
+        end
+
+        def hash
+          @hash ||= to_a.hash
         end
 
         def reverse? (other)
@@ -212,7 +213,7 @@ module Authorization
         end
 
         def inspect
-          "#{self.class.name.demodulize} (#{to_a[1..-1].collect {|info| self.class.readable_info(info)} * ','})"
+          "#{self.class.name.demodulize} #{hash} #{to_a.hash} (#{to_a[1..-1].collect {|info| self.class.readable_info(info)} * ','})"
         end
 
         def to_a
@@ -222,6 +223,10 @@ module Authorization
         def resembles? (spec)
           min_length = [spec.length, to_a.length].min
           to_a[0,min_length] == spec[0,min_length]
+        end
+
+        def resembles_any? (specs)
+          specs.any? {|spec| resembles?(spec) }
         end
 
         def self.readable_info (info)
@@ -248,6 +253,10 @@ module Authorization
 
         def to_a
           @actions.inject([]) {|memo, action| memo += action.to_a.first.is_a?(Enumerable) ? action.to_a : [action.to_a]; memo }
+        end
+
+        def hash
+          @hash ||= @actions.inject(0) {|memo, action| memo += action.hash }
         end
 
         def resembles? (spec)
@@ -283,12 +292,6 @@ module Authorization
           AnalyzerEngine.apply_change(candidate.engine, to_a)
         end
 
-        def eql? (other)
-          super(other) and other.privilege == @privilege and
-              other.context == @context and
-              other.role == @role
-        end
-
         def reverse? (other)
           other.is_a?(RemovePrivilegeFromRoleAction) and
               other.privilege == @privilege and
@@ -317,24 +320,23 @@ module Authorization
         end
 
         def apply (candidate)
-          if @user.role_symbols.include?(@role)
+          if candidate.engine.roles_with_hierarchy_for(@user).include?(@role)
             false
           else
             # beware of shallow copies!
             cloned_user = @user.clone
-            candidate.users[candidate.users.index(@user)] = cloned_user
+            user_index = candidate.users.index(@user)
+            raise "Cannot find #{@user.inspect} in users array" unless user_index
+            candidate.users[user_index] = cloned_user
             # possible on real user objects?
             cloned_user.role_symbols << @role
+            raise "User#role_symbols immutable or user only shallowly cloned!" if cloned_user.role_symbols == @user.role_symbols
             true
           end
         end
 
-        # TODO use approach.users.index(self[idx]) ==
-        #    other.approach.users.index(other[idx])
-        # instead of user.login
-        def eql? (other)
-          super(other) and other.user.login == @user.login and
-              other.role == @role
+        def hash
+          to_a[0,2].hash + @user.login.hash
         end
 
         def reverse? (other)
@@ -344,7 +346,7 @@ module Authorization
         end
 
         def resembles? (spec)
-          super(spec[0,2]) and spec[2] == @user.login
+          super(spec[0,2]) and (spec.length == 2 or spec[2] == @user.login)
         end
 
         def to_a
@@ -378,13 +380,8 @@ module Authorization
           end
         end
 
-        # TODO use approach.users.index(self[idx]) ==
-        #    other.approach.users.index(other[idx])
-        # instead of user.login
-        def eql? (other)
-          super(other) && other.user.login == @user.login &&
-              other.privilege == @privilege &&
-              other.context == @context
+        def hash
+          to_a[0].hash + super
         end
 
         def to_a
@@ -413,16 +410,6 @@ module Authorization
             AssignPrivilegeToRoleAction.new(@privilege, @context, @role)
           ]
         end
-
-        # TODO use approach.users.index(self[idx]) ==
-        #    other.approach.users.index(other[idx])
-        # instead of user.login
-        def eql? (other)
-          super(other) && other.user.login == @user.login &&
-              other.privilege == @privilege &&
-              other.context == @context &&
-              other.role == @role
-        end
       end
 
       class RemovePrivilegeFromRoleAction < AbstractAction
@@ -445,14 +432,7 @@ module Authorization
         end
 
         def apply (candidate)
-          @role = AnalyzerEngine::Role.for_sym(@role.to_sym, candidate.engine)
           AnalyzerEngine.apply_change(candidate.engine, to_a)
-        end
-
-        def eql? (other)
-          super(other) && other.privilege == @privilege &&
-              other.context == @context &&
-              other.role == @role
         end
         
         def reverse? (other)
@@ -487,24 +467,26 @@ module Authorization
         def apply (candidate)
           # beware of shallow copies!
           cloned_user = @user.clone
-          candidate.users[candidate.users.index(@user)] = cloned_user
-          # possible on real user objects?
+          user_index = candidate.users.index(@user)
+          raise "Cannot find #{@user.inspect} in users array" unless user_index
+          candidate.users[user_index] = cloned_user
           cloned_user.role_symbols.delete(@role)
+          raise "User#role_symbols immutable or user only shallowly cloned!" if cloned_user.role_symbols == @user.role_symbols
           true
         end
 
-        # TODO use approach.users.index(self[idx]) ==
-        #    other.approach.users.index(other[idx])
-        # instead of user.login
-        def eql? (other)
-          super(other) && other.user.login == @user.login &&
-              other.role == @role
+        def hash
+          to_a[0,2].hash + @user.login.hash
         end
 
         def reverse? (other)
           (other.is_a?(AssignRoleToUserAction) or
               other.is_a?(AbstractCompoundAction)) and
                 other.reverse?(self)
+        end
+
+        def resembles? (spec)
+          super(spec[0,2]) and (spec.length == 2 or spec[2] == @user.login)
         end
 
         def to_a
@@ -516,39 +498,77 @@ module Authorization
       def next_step (viable_approaches, candidates, approach_checker)
         candidate = candidates.shift
 
+        child_candidates = generate_child_candidates(candidate)
+        check_child_candidates!(approach_checker, viable_approaches, candidates, child_candidates)
+
+        candidates.sort!
+        child_candidates.length
+      end
+
+      def generate_child_candidates (candidate)
         child_candidates = []
         abstract_actions = candidate.abstract_actions
         abstract_actions.each do |abstract_action|
           abstract_action.specific_actions(candidate).each do |specific_action|
-            child_candidate = candidate.clone
-            if !@prohibited_actions.any? {|spec| specific_action.resembles?(spec) } and
+            child_candidate = candidate.dup
+            if !specific_action.resembles_any?(@prohibited_actions) and
                   !child_candidate.reverse_of_previous?(specific_action) and
                   child_candidate.apply(specific_action)
               child_candidates << child_candidate
             end
           end
         end
+        child_candidates
+      end
 
+      def check_child_candidates! (approach_checker, viable_approaches, candidates, child_candidates)
         child_candidates.each do |child_candidate|
           if child_candidate.check(approach_checker)
-            unless viable_approaches.any? {|viable_approach| viable_approach.subset?(child_candidate) }
-              #puts "New: #{new_approach.changes.inspect}\n  #{viable_approaches.map(&:changes).inspect}"
-              viable_approaches.delete_if {|viable_approach| child_candidate.subset?(viable_approach)}
-              viable_approaches << child_candidate unless viable_approaches.find {|v_a| v_a.state_hash == child_candidate.state_hash}
+            unless superset_of_existing?(child_candidate)
+              remove_supersets!(viable_approaches, child_candidate)
+              viable_approaches << child_candidate
+              add_to_approaches_by_action!(child_candidate)
             end
           else
             candidates << child_candidate
           end
+          child_candidate.freeze
         end
+      end
 
-        candidates.sort!
+      def superset_of_existing? (candidate)
+        candidate.changes.any? do |action|
+          (@approaches_by_actions[action] ||= []).any? {|approach| approach.subset?(candidate)}
+        end
+      end
+
+      def remove_supersets! (existing, candidate)
+        candidate.changes.inject([]) do |memo, action|
+          memo += (@approaches_by_actions[action] ||= []).select do |approach|
+            candidate.subset?(approach)
+          end
+        end.uniq.each do |approach|
+          existing.delete(approach)
+          remove_from_approaches_by_action!(approach)
+        end
+      end
+
+      def add_to_approaches_by_action! (candidate)
+        candidate.changes.each do |action|
+          (@approaches_by_actions[action] ||= []) << candidate
+        end
+      end
+
+      def remove_from_approaches_by_action! (candidate)
+        candidate.changes.each do |action|
+          (@approaches_by_actions[action] ||= []).delete(candidate)
+        end
       end
 
       def relevant_roles (approach)
         self.class.relevant_roles(approach)
       end
       def self.relevant_roles (approach)
-        #return AnalyzerEngine.roles(approach.engine)
         (AnalyzerEngine.relevant_roles(approach.engine, approach.users) +
             (approach.engine.roles.include?(:new_role_for_change_analyzer) ?
                [AnalyzerEngine::Role.for_sym(:new_role_for_change_analyzer, approach.engine)] : [])).uniq

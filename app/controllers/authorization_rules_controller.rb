@@ -30,8 +30,7 @@ class AuthorizationRulesController < ApplicationController
   end
 
   def change
-    # TODO not generic enough
-    @users = User.all
+    @users = find_all_users
     @users.sort! {|a, b| a.login <=> b.login }
     
     @privileges = authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq
@@ -51,7 +50,7 @@ class AuthorizationRulesController < ApplicationController
     users_permission = params[:user].inject({}) do |memo, (user_id, data)|
       if data[:permission] != "undetermined"
         begin
-          memo[User.find(user_id)] = (data[:permission] == 'yes')
+          memo[find_user_by_id(user_id)] = (data[:permission] == 'yes')
         rescue ActiveRecord::NotFound
         end
       end
@@ -61,7 +60,6 @@ class AuthorizationRulesController < ApplicationController
     prohibited_actions = (params[:prohibited_action] || []).collect do |spec|
       deserialize_changes(spec).flatten
     end
-    logger.debug(prohibited_actions.inspect)
 
     users_keys = users_permission.keys
     analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(authorization_engine)
@@ -88,17 +86,26 @@ class AuthorizationRulesController < ApplicationController
     options = {
       :effective_role_privs => true,
       :privilege_hierarchy => false,
+      :stacked_roles => false,
       :only_relevant_contexts => true,
+      :only_relevant_roles => false,
       :filter_roles => nil,
       :filter_contexts => nil,
       :highlight_privilege => nil,
-      :changes => nil
+      :changes => nil,
+      :users => nil
     }.merge(options)
 
     @has_changes = options[:changes] && !options[:changes].empty?
     @highlight_privilege = options[:highlight_privilege]
+    @stacked_roles = options[:stacked_roles]
+
+    @users = options[:users]
 
     engine = authorization_engine.clone
+    @changes = replay_changes(engine, @users, options[:changes]) if options[:changes]
+
+    options[:filter_roles] ||= @users.collect {|user| user.role_symbols}.flatten.uniq if options[:only_relevant_roles] and @users
 
     filter_roles_flattened = nil
     if options[:filter_roles]
@@ -108,7 +115,6 @@ class AuthorizationRulesController < ApplicationController
       end.flatten.uniq
     end
 
-    @changes = replay_changes(engine, options[:changes]) if options[:changes]
     @roles = engine.roles
     @roles = @roles.select {|r| filter_roles_flattened.include?(r) } if options[:filter_roles]
     @role_hierarchy = engine.role_hierarchy
@@ -133,15 +139,23 @@ class AuthorizationRulesController < ApplicationController
 
     if options[:effective_role_privs]
       @roles.each do |role|
-        @role_privs[role] ||= []
-        (@role_hierarchy[role] || []).each do |lower_role|
-          @role_privs[role].concat(@role_privs[lower_role]).uniq!
+        role = Authorization::DevelopmentSupport::AnalyzerEngine::Role.for_sym(role, engine)
+        @role_privs[role.to_sym] ||= []
+        role.ancestors.each do |lower_role|
+          @role_privs[role.to_sym].concat(@role_privs[lower_role.to_sym]).uniq!
         end
       end
     end
 
+    @roles.delete_if do |role|
+      role = Authorization::DevelopmentSupport::AnalyzerEngine::Role.for_sym(role, engine)
+      ([role] + role.ancestors).all? {|inner_role| @role_privs[inner_role.to_sym].blank? }
+    end
+
     if options[:only_relevant_contexts]
-      @contexts.delete_if {|context| @roles.all? {|role| !@role_privs[role] || !@role_privs[role].any? {|info| info[0] == context}}}
+      @contexts.delete_if do |context|
+        @roles.all? {|role| !@role_privs[role] || !@role_privs[role].any? {|info| info[0] == context}}
+      end
     end
     
     if options[:privilege_hierarchy]
@@ -158,11 +172,14 @@ class AuthorizationRulesController < ApplicationController
     render_to_string :template => 'authorization_rules/graph.dot.erb', :layout => false
   end
 
-  def replay_changes (engine, changes)
+  def replay_changes (engine, users, changes)
     changes.inject({}) do |memo, info|
       case info[0]
       when :add_privilege, :add_role
         Authorization::DevelopmentSupport::AnalyzerEngine.apply_change(engine, info)
+      when :assign_role_to_user
+        user = users.find {|u| u.login == info[2]}
+        user.role_symbols << info[1] if user
       end
       (memo[info[0]] ||= Set.new) << info[1..-1]
       memo
@@ -182,10 +199,13 @@ class AuthorizationRulesController < ApplicationController
     {
       :effective_role_privs => !params[:effective_role_privs].blank?,
       :privilege_hierarchy => !params[:privilege_hierarchy].blank?,
+      :stacked_roles => !params[:stacked_roles].blank?,
+      :only_relevant_roles => !params[:only_relevant_roles].blank?,
       :filter_roles => params[:filter_roles].blank? ? nil : (params[:filter_roles].is_a?(Array) ? params[:filter_roles].map(&:to_sym) : [params[:filter_roles].to_sym]),
       :filter_contexts => params[:filter_contexts].blank? ? nil : params[:filter_contexts].to_sym,
       :highlight_privilege => params[:highlight_privilege].blank? ? nil : params[:highlight_privilege].to_sym,
-      :changes => deserialize_changes(params[:changes])
+      :changes => deserialize_changes(params[:changes]),
+      :users => params[:user_ids] && params[:user_ids].collect {|user_id| find_user_by_id(user_id)}
     }
   end
 
@@ -197,6 +217,13 @@ class AuthorizationRulesController < ApplicationController
         end
       end
     end
+  end
+
+  def find_user_by_id (id)
+    User.find(id)
+  end
+  def find_all_users
+    User.all.select {|user| !user.login.blank?}
   end
 end
 
