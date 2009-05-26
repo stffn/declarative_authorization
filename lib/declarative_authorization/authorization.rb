@@ -372,7 +372,7 @@ module Authorization
     end
 
     def obligations (attr_validator)
-      obligations = @attributes.collect {|attr| attr.obligation(attr_validator) }
+      obligations = @attributes.collect {|attr| attr.obligation(attr_validator) }.flatten
       if @join_operator == :and and !obligations.empty?
         merged_obligation = obligations.first
         obligations[1..-1].each do |obligation|

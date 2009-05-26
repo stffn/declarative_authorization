@@ -191,6 +191,28 @@ class AuthorizationTest < Test::Unit::TestCase
       engine.obligations(:test, :context => :permission_children_children,
           :user => MockUser.new(:test_role))
   end
+
+  def test_obligations_with_permissions_and_anded_conditions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permission_children, :to => :test, :join_by => :and do
+            if_permitted_to :test, :permission
+            if_attribute :test_attr => 1
+          end
+          has_permission_on :permissions, :to => :test do
+            if_attribute :test_attr => 1
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+
+    assert_equal [{:test_attr => [:is, 1], :permission => {:test_attr => [:is, 1]}}],
+      engine.obligations(:test, :context => :permission_children,
+          :user => MockUser.new(:test_role))
+  end
   
   def test_guest_user
     reader = Authorization::Reader::DSLReader.new
