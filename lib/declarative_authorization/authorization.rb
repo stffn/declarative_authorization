@@ -168,8 +168,8 @@ module Authorization
       end
       
       # Test each rule in turn to see whether any one of them is satisfied.
-      if !options[:skip_attribute_test] and !rules.any? {|rule| rule.validate?(attr_validator)}
-        raise AttributeAuthorizationError, "#{privilege} not allowed for #{user.inspect} on #{options[:object].inspect}."
+      unless rules.any? {|rule| rule.validate?(attr_validator, options[:skip_attribute_test])}
+        raise AttributeAuthorizationError, "#{privilege} not allowed for #{user.inspect} on #{(options[:object] || options[:context]).inspect}."
       end
       true
     end
@@ -360,8 +360,8 @@ module Authorization
         not (@privileges & privs).empty?
     end
 
-    def validate? (attr_validator)
-      @attributes.empty? or
+    def validate? (attr_validator, skip_attribute = false)
+      skip_attribute or @attributes.empty? or
         @attributes.send(@join_operator == :and ? :all? : :any?) do |attr|
           begin
             attr.validate?(attr_validator)
