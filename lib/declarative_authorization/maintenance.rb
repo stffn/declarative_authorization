@@ -145,6 +145,20 @@ module Authorization
       end
     end
     
+    def should_be_allowed_to (privilege, object_or_context)
+      options = {}
+      options[object_or_context.is_a?(Symbol) ? :context : :object] = object_or_context
+      assert_nothing_raised do
+        Authorization::Engine.instance.permit!(privilege, options)
+      end
+    end
+
+    def should_not_be_allowed_to (privilege, object_or_context)
+      options = {}
+      options[object_or_context.is_a?(Symbol) ? :context : :object] = object_or_context
+      assert !Authorization::Engine.instance.permit?(privilege, options)
+    end
+    
     def request_with (user, method, xhr, action, params = {}, 
         session = {}, flash = {})
       session = session.merge({:user => user, :user_id => user.id})
