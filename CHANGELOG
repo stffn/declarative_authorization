@@ -1,3 +1,5 @@
+* Added permitted_to!/? in model [Eike Carls]
+
 * New test helper: should_(not_)_be_allowed_to(privilege, object_or_context)
 
 ** RELEASE 0.3 (April 20, 2009) **
