@@ -1,6 +1,8 @@
+* Change Supporter: suggest changes to authorization rules [sb]
+
 * Added permitted_to!/? in model [Eike Carls]
 
-* New test helper: should_(not_)_be_allowed_to(privilege, object_or_context)
+* New test helper: should_(not_)_be_allowed_to(privilege, object_or_context) [sb]
 
 ** RELEASE 0.3 (April 20, 2009) **
 
