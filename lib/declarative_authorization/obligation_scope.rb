@@ -208,15 +208,20 @@ module Authorization
             end
             bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
 
-            attribute_operator = case operator
-                                 when :contains, :is             then "= :#{bindvar}"
-                                 when :does_not_contain, :is_not then "<> :#{bindvar}"
-                                 when :is_in, :intersects_with   then "IN (:#{bindvar})"
-                                 when :is_not_in                 then "NOT IN (:#{bindvar})"
-                                 else raise AuthorizationUsageError, "Unknown operator: #{operator}"
-                                 end
-            obligation_conds << "#{connection.quote_table_name(attribute_table_alias)}.#{connection.quote_table_name(attribute_name)} #{attribute_operator}"
-            binds[bindvar] = attribute_value(value)
+            sql_attribute = "#{connection.quote_table_name(attribute_table_alias)}.#{connection.quote_table_name(attribute_name)}"
+            if value.nil? and [:is, :is_not].include?(operator)
+              obligation_conds << "#{sql_attribute} IS #{[:contains, :is].include?(operator) ? '' : 'NOT '}NULL"
+            else
+              attribute_operator = case operator
+                                   when :contains, :is             then "= :#{bindvar}"
+                                   when :does_not_contain, :is_not then "<> :#{bindvar}"
+                                   when :is_in, :intersects_with   then "IN (:#{bindvar})"
+                                   when :is_not_in                 then "NOT IN (:#{bindvar})"
+                                   else raise AuthorizationUsageError, "Unknown operator: #{operator}"
+                                   end
+              obligation_conds << "#{sql_attribute} #{attribute_operator}"
+              binds[bindvar] = attribute_value(value)
+            end
           end
         end
         obligation_conds << "1=1" if obligation_conds.empty?

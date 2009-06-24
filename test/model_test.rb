@@ -168,6 +168,34 @@ class ModelTest < Test::Unit::TestCase
     TestModel.delete_all
   end
 
+  def test_named_scope_with_is_nil
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :content => nil
+          end
+        end
+        role :test_role_not_nil do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :content => is_not { nil }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_model_2 = TestModel.create! :content => "Content"
+
+    assert_equal test_model_1, TestModel.with_permissions_to(:read,
+      :context => :test_models, :user => MockUser.new(:test_role)).first
+    assert_equal test_model_2, TestModel.with_permissions_to(:read,
+      :context => :test_models, :user => MockUser.new(:test_role_not_nil)).first
+    TestModel.delete_all
+  end
+
   def test_named_scope_with_not_is
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
