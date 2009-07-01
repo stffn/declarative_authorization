@@ -2,6 +2,7 @@ if Authorization::activate_authorization_rules_browser?
 
 require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support analyzer})
 require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support change_supporter})
+require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization development_support development_support})
 
 begin
   # for nice auth_rules output:
@@ -34,6 +35,8 @@ class AuthorizationRulesController < ApplicationController
     @users.sort! {|a, b| a.login <=> b.login }
     
     @privileges = authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq
+    @privileges = @privileges.collect {|priv| Authorization::DevelopmentSupport::AnalyzerEngine::Privilege.for_sym(priv, authorization_engine).descendants.map(&:to_sym) }.flatten.uniq
+    @privileges.sort_by {|priv| priv.to_s}
     @privilege = params[:privilege].to_sym rescue @privileges.first
     @contexts = authorization_engine.auth_rules.collect {|rule| rule.contexts.to_a}.flatten.uniq
     @context = params[:context].to_sym rescue @contexts.first
