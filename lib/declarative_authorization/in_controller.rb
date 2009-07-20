@@ -24,36 +24,38 @@ module Authorization
     # 
     # See examples for Authorization::AuthorizationHelper #permitted_to?
     #
-    def permitted_to? (privilege, object_or_sym = nil, &block)
-      context = object = nil
-      if object_or_sym.is_a?(Symbol)
-        context = object_or_sym
-      else
-        object = object_or_sym
-      end
-      # TODO infer context also from self.class.name
-      authorization_engine.permit?(privilege, 
-          {:user => current_user, 
-           :object => object,
-           :context => context,
-           :skip_attribute_test => object.nil?}, 
-          &block)
+    # If no object or context is specified, the controller_name is used as
+    # context.
+    #
+    def permitted_to? (privilege, object_or_sym = nil, options = {}, &block)
+      permitted_to!(privilege, object_or_sym, options.merge(:non_bang => true), &block)
     end
     
-    # Works similar to the permitted_to? method, but doesn't accept a block
-    # and throws the authorization exceptions, just like Engine#permit!
-    def permitted_to! (privilege, object_or_sym = nil)
+    # Works similar to the permitted_to? method, but
+    # throws the authorization exceptions, just like Engine#permit!
+    def permitted_to! (privilege, object_or_sym = nil, options = {}, &block)
       context = object = nil
-      if object_or_sym.is_a?(Symbol)
+      if object_or_sym.nil?
+        context = self.class.controller_name.to_sym
+      elsif object_or_sym.is_a?(Symbol)
         context = object_or_sym
       else
         object = object_or_sym
       end
-      authorization_engine.permit!(privilege, 
-          {:user => current_user, 
-           :object => object,
-           :context => context,
-           :skip_attribute_test => object.nil?})
+
+      non_bang = options.delete(:non_bang)
+      args = [
+        privilege,
+        {:user => current_user,
+         :object => object,
+         :context => context,
+         :skip_attribute_test => object.nil?}.merge(options)
+      ]
+      if non_bang
+        authorization_engine.permit?(*args, &block)
+      else
+        authorization_engine.permit!(*args, &block)
+      end
     end
 
     # While permitted_to? is used for authorization, in some cases

@@ -23,9 +23,13 @@ module Authorization
     #     <% for user in @users %>
     #     <%= link_to 'Edit', edit_user_path(user) if permitted_to? :update, user %>
     #     <% end %>
+    #
+    # To pass in an object and override the context, you can use the optional
+    # options:
+    #     permitted_to? :update, user, :context => :account
     # 
-    def permitted_to? (privilege, object_or_sym = nil, &block)
-      controller.permitted_to?(privilege, object_or_sym, &block)
+    def permitted_to? (privilege, object_or_sym = nil, options = {}, &block)
+      controller.permitted_to?(privilege, object_or_sym, options, &block)
     end
   
     # While permitted_to? is used for authorization in views, in some cases

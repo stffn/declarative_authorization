@@ -153,6 +153,20 @@ class BasicControllerTest < ActionController::TestCase
       @controller.send(:instance_variable_get, :"@load_mock_object")
     assert @controller.authorized?
   end
+
+  def test_permitted_to_without_context
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :specific_mocks, :to => :test
+        end
+      end
+    }
+    @controller.current_user = MockUser.new(:test_role)
+    @controller.authorization_engine = Authorization::Engine.new(reader)
+    assert @controller.permitted_to?(:test)
+  end
 end
 
 

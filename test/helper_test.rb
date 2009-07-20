@@ -63,6 +63,27 @@ class HelperTest < ActionController::TestCase
     assert permitted_to?(:show, :mocks)
     assert !permitted_to?(:show, mock_2)
   end
+
+  def test_permit_with_object_and_context
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :other_mocks do
+            to :show
+            if_attribute :test_attr => is {user.test_attr}
+          end
+        end
+      end
+    }
+    user = MockUser.new(:test_role, :test_attr => 1)
+    mock = MockDataObject.new(:test_attr => 1)
+    mock_2 = MockDataObject.new(:test_attr => 2)
+    request!(user, :action, reader)
+
+    assert permitted_to?(:show, mock, :context => :other_mocks)
+    assert !permitted_to?(:show, mock_2, :context => :other_mocks)
+  end
   
   def test_has_role
     reader = Authorization::Reader::DSLReader.new
