@@ -473,10 +473,12 @@ sbartsch at tzi.org
 = Contributors
 
 Thanks to
+* Eike Carls
 * Erik Dahlstrand
 * Jeremy Friesen
 * Brian Langenfeld
 * Geoff Longman
+* Olly Lylo
 * Mark Mansour
 * Mike Vincent
 
