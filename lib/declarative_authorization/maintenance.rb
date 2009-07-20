@@ -22,10 +22,7 @@ module Authorization
     #    SomeModel.find(:first).save
     #  end
     def without_access_control
-      Authorization.ignore_access_control(true)
-      yield
-    ensure
-      Authorization.ignore_access_control(false)
+      self.class.without_access_control
     end
 
     # A class method variant of without_access_control.  Thus, one can call
@@ -33,10 +30,13 @@ module Authorization
     #    ...
     #  end
     def self.without_access_control
-      Authorization.ignore_access_control(true)
-      yield
-    ensure
-      Authorization.ignore_access_control(false)
+      previous_state = Authorization.ignore_access_control
+      begin
+        Authorization.ignore_access_control(true)
+        yield
+      ensure
+        Authorization.ignore_access_control(previous_state)
+      end
     end
 
     # Sets the current user for the declarative authorization plugin to the
