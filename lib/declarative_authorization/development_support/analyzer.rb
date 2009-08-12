@@ -100,7 +100,7 @@ module Authorization
         SMALL_ROLES_RATIO = 0.2
 
         def analyze_policy
-          small_roles.count > 1 and small_roles.count.to_f / roles.count.to_f > SMALL_ROLES_RATIO
+          small_roles.length > 1 and small_roles.length.to_f / roles.length.to_f > SMALL_ROLES_RATIO
         end
 
         def message (object)
@@ -109,7 +109,7 @@ module Authorization
 
         private
         def small_roles
-          roles.select {|role| role.rules.count < SMALL_ROLE_RULES_COUNT }
+          roles.select {|role| role.rules.length < SMALL_ROLE_RULES_COUNT }
         end
       end
 
