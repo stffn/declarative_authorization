@@ -2,11 +2,7 @@ require File.join(File.dirname(__FILE__), 'test_helper.rb')
 
 
 class LoadMockObject < MockDataObject
-  def self.find(*args)
-    new :id => args[0]
-  end
 end
-
 
 ##################
 class SpecificMocksController < MocksController
@@ -25,7 +21,6 @@ end
 
 class BasicControllerTest < ActionController::TestCase
   tests SpecificMocksController
-  
   
   def test_filter_access_to_receiving_an_explicit_array
     reader = Authorization::Reader::DSLReader.new
@@ -372,4 +367,3 @@ class HierachicalControllerTest < ActionController::TestCase
     assert !@controller.authorized?
   end
 end
-

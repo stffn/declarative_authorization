@@ -41,6 +41,11 @@ class MockDataObject
   def self.table_name
     "mocks"
   end
+  
+  def self.find(*args)
+    raise "Couldn't find #{self.name} with id #{args[0].inspect}" unless args[0]
+    new :id => args[0]
+  end
 end
 
 class MockUser < MockDataObject
@@ -69,6 +74,10 @@ class MocksController < ActionController::Base
         render :text => 'nothing'
       end
     end
+  end
+
+  def self.define_resource_actions
+    define_action_methods :index, :show, :edit, :update, :new, :create, :destroy
   end
   
   def logger (*args)

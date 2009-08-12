@@ -1,3 +1,5 @@
+* Simplified controller authorization with filter_resource_access [sb]
+
 * Allow passing explicit context in addition to object in permitted_to? [Olly Lylo, sb]
 
 * Change Supporter: suggest changes to authorization rules [sb]

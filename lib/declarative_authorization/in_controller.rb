@@ -117,7 +117,36 @@ module Authorization
         end
       end
     end
-    
+
+    def load_controller_object (context) # :nodoc:
+      instance_var = :"@#{context.to_s.singularize}"
+      model = context.to_s.classify.constantize
+      instance_variable_set(instance_var, model.find(params[:id]))
+    end
+
+    def load_parent_controller_object (parent_context) # :nodoc:
+      instance_var = :"@#{parent_context.to_s.singularize}"
+      model = parent_context.to_s.classify.constantize
+      instance_variable_set(instance_var, model.find(params[:"#{parent_context.to_s.singularize}_id"]))
+    end
+
+    def new_controller_object_from_params (context, parent_context) # :nodoc:
+      model_or_proxy = parent_context ?
+           instance_variable_get(:"@#{parent_context.to_s.singularize}").send(context.to_sym) :
+           context.to_s.classify.constantize
+      instance_var = :"@#{context.to_s.singularize}"
+      instance_variable_set(instance_var,
+          model_or_proxy.new(params[context.to_s.singularize]))
+    end
+
+    def new_controller_object_for_collection (context, parent_context) # :nodoc:
+      model_or_proxy = parent_context ?
+           instance_variable_get(:"@#{parent_context.to_s.singularize}").send(context.to_sym) :
+           context.to_s.classify.constantize
+      instance_var = :"@#{context.to_s.singularize}"
+      instance_variable_set(instance_var, model_or_proxy.new)
+    end
+
     module ClassMethods
       #
       # Defines a filter to be applied according to the authorization of the
@@ -260,6 +289,174 @@ module Authorization
           end
         end
       end
+
+      # To DRY up the filter_access_to statements in restful controllers,
+      # filter_resource_access combines typical filter_access_to and
+      # before_filter calls, which set up the instance variables.
+      #
+      # The simplest case are top-level resource controllers with only the
+      # seven CRUD methods, e.g.
+      #   class CompanyController < ApplicationController
+      #     filter_resource_access
+      #
+      #     def index...
+      #   end
+      # Here, all CRUD actions are protected through a filter_access_to :all
+      # statement.  :+attribute_check+ is enabled for all actions except for
+      # the collection action :+index+.  In addition, before_filters are in place
+      # to load @company from params[:id] in case of member actions (:+show+,
+      # :+edit+, :+update+, :+destroy+) and create a new object from params[:company]
+      # for +new+ actions (:+new+, :+create+)
+      #
+      # For nested resources, the parent object may be loaded automatically.
+      #   class BranchController < ApplicationController
+      #     filter_resource_access :nested_in => :companies
+      #   end
+      # Again, the CRUD actions are protected.  Now, for all CRUD actions,
+      # the parent object @company is loaded from params[:company_id].  It is
+      # also used when creating @branch for +new+ actions.  Here, attribute_check
+      # is enabled for the collection :+index+ as well, checking attributes on a
+      # @company.branches.new method.
+      #
+      # You can override the default object loading by implementing any of the
+      # following instance methods on the controller.  Examples are given for the
+      # BranchController (with +nested_in+ set to :+companies+):
+      # [+new_branch_from_params+]
+      #   Used for +new+ actions.
+      # [+new_branch_for_collection+]
+      #   Used for +collection+ actions if +nested_in+ is set.
+      # [+load_branch+]
+      #   Used for +member+ actions.
+      # [+load_company+]
+      #   Used for all +new+, +member+, and +collection+ actions if +nested_in+
+      #   is set.
+      #
+      # All options:
+      # [:+new+]
+      #   Allows specifying which actions behave like the new methods.  I.e.
+      #   new methods don't receive a params[:id] to load an object from, but
+      #   a params[:controller_name_singular] hash with attributes for a new
+      #   object.  The attributes will be used here to create a new object and
+      #   check the object against the authorization rules.  The object is
+      #   assigned to @controller_name, e.g. @branch.
+      #
+      #   If +nested_in+ is given, the new object
+      #   is created from the parent_object.controller_name
+      #   proxy, e.g. company.branches.new(params[:branch]).  By default,
+      #   +new+ is set to [:new, :create].
+      # [:+additional_new+]
+      #   Allows to add additional new actions to the default resource +new+ actions.
+      # [:+member+]
+      #   Member methods are methods like +show+, which have an params[:id] from
+      #   which to load the controller object and assign it to @controller_name,
+      #   e.g. @+branch+.  By default, member actions are [:+show+, :+edit+, :+update+,
+      #   :+destroy+].
+      # [:+additional_member+]
+      #   Allows to add additional member actions to the default resource +member+
+      #   actions.
+      # [:+collection+]
+      #   Collection actions are like :+index+, actions without any controller object
+      #   to check attributes of.  If +nested_in+ is given, a new object is
+      #   created from the parent object, e.g. @company.branches.new.  Without
+      #   +nested_in+, attribute check is deactivated for these actions.  By
+      #   default, collection is set to :+index+.
+      # [:+additional_collection+]
+      #   Allows to add additional collaction actions to the default resource +collection+
+      #   actions.
+      # [:+context+]
+      #   The context is used to determine the model to load objects from for the
+      #   before_filters and the context of privileges to use in authorization
+      #   checks.
+      # [:+nested_in+]
+      #   Specifies the parent controller if the resource is nested in another
+      #   one.  This is used to automatically load the parent object, e.g.
+      #   @+company+ from params[:company_id] for a BranchController nested in
+      #   a CompanyController.
+      # [:+no_attribute_check+]
+      #   Allows to set actions for which no attribute check should be perfomed.
+      #   See filter_access_to on details.  By default, with no +nested_in+,
+      #   +no_attribute_check+ is set to all collections.  If +nested_in+ is given
+      #   +no_attribute_check+ is empty by default.
+      #
+      def filter_resource_access(options = {})
+        options = {
+          :new        => [:new, :create],
+          :additional_new => nil,
+          :member     => [:show, :edit, :update, :destroy],
+          :additional_member => nil,
+          :collection => [:index],
+          :additional_collection => nil,
+          #:new_method_for_collection => nil,  # only symbol method name
+          #:new_method => nil,                 # only symbol method name
+          #:load_method => nil,                # only symbol method name
+          :no_attribute_check => nil,
+          :context    => nil,
+          :nested_in  => nil,
+        }.merge(options)
+
+        new_actions = actions_from_option(options[:new]).merge(
+            actions_from_option(options[:additional_new]))
+        members = actions_from_option(options[:member]).merge(
+            actions_from_option(options[:additional_member]))
+        collections = actions_from_option(options[:collection]).merge(
+            actions_from_option(options[:additional_collection]))
+
+        options[:no_attribute_check] ||= collections.keys unless options[:nested_in]
+
+        unless options[:nested_in].blank?
+          load_method = :"load_#{options[:nested_in].to_s.singularize}"
+          before_filter do |controller|
+            if controller.respond_to?(load_method)
+              controller.send(load_method)
+            else
+              controller.send(:load_parent_controller_object, options[:nested_in])
+            end
+          end
+
+          new_for_collection_method = :"new_#{controller_name.singularize}_for_collection"
+          before_filter :only => collections.keys do |controller|
+            # new_for_collection
+            if controller.respond_to?(new_for_collection_method)
+              controller.send(new_for_collection_method)
+            else
+              controller.send(:new_controller_object_for_collection,
+                  options[:context] || controller_name, options[:nested_in])
+            end
+          end
+        end
+
+        new_from_params_method = :"new_#{controller_name.singularize}_from_params"
+        before_filter :only => new_actions.keys do |controller|
+          # new_from_params
+          if controller.respond_to?(new_from_params_method)
+            controller.send(new_from_params_method)
+          else
+            controller.send(:new_controller_object_from_params,
+                options[:context] || controller_name, options[:nested_in])
+          end
+        end
+        load_method = :"load_#{controller_name.singularize}"
+        before_filter :only => members.keys do |controller|
+          # load controller object
+          if controller.respond_to?(load_method)
+            controller.send(load_method)
+          else
+            controller.send(:load_controller_object, options[:context] || controller_name)
+          end
+        end
+        filter_access_to :all, :attribute_check => true, :context => options[:context]
+
+        members.merge(new_actions).merge(collections).each do |action, privilege|
+          if action != privilege or (options[:no_attribute_check] and options[:no_attribute_check].include?(action))
+            filter_options = {
+              :context          => options[:context],
+              :attribute_check  => !options[:no_attribute_check] || !options[:no_attribute_check].include?(action)
+            }
+            filter_options[:require] = privilege if action != privilege
+            filter_access_to(action, filter_options)
+          end
+        end
+      end
       
       protected
       def filter_access_permissions # :nodoc:
@@ -274,6 +471,26 @@ module Authorization
       
       def filter_access_permissions? # :nodoc:
         class_variable_defined?(:@@declarative_authorization_permissions)
+      end
+
+      def actions_from_option (option) # :nodoc:
+        case option
+        when nil
+          {}
+        when Symbol, String
+          {option.to_sym => option.to_sym}
+        when Hash
+          option
+        when Enumerable
+          option.each_with_object({}) do |action, hash|
+            if action.is_a?(Array)
+              raise "Unexpected option format: #{option.inspect}" if action.length != 2
+              hash[action.first] = action.last
+            else
+              hash[action.to_sym] = action.to_sym
+            end
+          end
+        end
       end
     end
   end
@@ -334,8 +551,15 @@ module Authorization
         instance_var = :"@#{load_object_model.name.underscore}"
         object = contr.instance_variable_get(instance_var)
         unless object
-          # catch ActiveRecord::RecordNotFound?
-          object = load_object_model.find(contr.params[:id])
+          begin
+            object = load_object_model.find(contr.params[:id])
+          rescue ActiveRecord::RecordNotFound
+            logger.debug("filter_access_to tried to find " +
+                "#{load_object_model.inspect} from params[:id] " +
+                "(#{contr.params[:id].inspect}), because attribute_check is enabled " +
+                "and #{instance_var.to_s} isn't set.")
+            raise
+          end
           contr.instance_variable_set(instance_var, object)
         end
         object

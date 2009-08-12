@@ -79,12 +79,26 @@ generated yourself or at http://www.tzi.org/~sbartsch/declarative_authorization
 
 == Controller
 
-If authentication is in place, enabling user-specific access control may be
-as simple as one call to filter_access_to :all which simply requires the 
-according privileges for present actions.  E.g. the privilege index_users is
-required for action index.  This works as a first default configuration
-for RESTful controllers, with these privileges easily handled in the
-authorization configuration, which will be described below.
+If authentication is in place, there are two ways to enable user-specific
+access control on controller actions.  For resource controllers, which more
+or less follow the CRUD pattern, +filter_resource_access+ is the simplest
+approach.  It sets up instance variables in before filters and calls
+filter_access_to with the appropriate parameters to protect the CRUD methods.
+
+    class EmployeesController < ApplicationController
+      filter_resource_access
+      ...
+    end
+
+See Authorization::AuthorizationInController::ClassMethods for options on
+nested resources and custom member and collection actions.
+
+If you prefer less magic or your controller has no resemblance with the resource
+controllers, directly calling filter_access_to may be the better option.  Examples
+are given in the following.  E.g. the privilege index users is required for
+action index.  This works as a first default configuration for RESTful
+controllers, with these privileges easily handled in the authorization
+configuration, which will be described below.
 
     class EmployeesController < ApplicationController
       filter_access_to :all
