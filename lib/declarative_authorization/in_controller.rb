@@ -303,10 +303,12 @@ module Authorization
       #   end
       # Here, all CRUD actions are protected through a filter_access_to :all
       # statement.  :+attribute_check+ is enabled for all actions except for
-      # the collection action :+index+.  In addition, before_filters are in place
-      # to load @company from params[:id] in case of member actions (:+show+,
-      # :+edit+, :+update+, :+destroy+) and create a new object from params[:company]
-      # for +new+ actions (:+new+, :+create+)
+      # the collection action :+index+.  To have an object for attribute checks
+      # available, filter_resource_access will set the instance variable
+      # @+company+ in before filters.  For the member actions (:+show+, :+edit+,
+      # :+update+, :+destroy+) @company is set to Company.find(params[:id]).
+      # For +new+ actions (:+new+, :+create+), filter_resource_access creates
+      # a new object from company parameters: Company.new(params[:company].
       #
       # For nested resources, the parent object may be loaded automatically.
       #   class BranchController < ApplicationController
@@ -324,30 +326,16 @@ module Authorization
       # [+new_branch_from_params+]
       #   Used for +new+ actions.
       # [+new_branch_for_collection+]
-      #   Used for +collection+ actions if +nested_in+ is set.
+      #   Used for +collection+ actions if the +nested_in+ option is set.
       # [+load_branch+]
       #   Used for +member+ actions.
       # [+load_company+]
-      #   Used for all +new+, +member+, and +collection+ actions if +nested_in+
-      #   is set.
+      #   Used for all +new+, +member+, and +collection+ actions if the 
+      #   +nested_in+ option is set.
       #
       # All options:
-      # [:+new+]
-      #   Allows specifying which actions behave like the new methods.  I.e.
-      #   new methods don't receive a params[:id] to load an object from, but
-      #   a params[:controller_name_singular] hash with attributes for a new
-      #   object.  The attributes will be used here to create a new object and
-      #   check the object against the authorization rules.  The object is
-      #   assigned to @controller_name, e.g. @branch.
-      #
-      #   If +nested_in+ is given, the new object
-      #   is created from the parent_object.controller_name
-      #   proxy, e.g. company.branches.new(params[:branch]).  By default,
-      #   +new+ is set to [:new, :create].
-      # [:+additional_new+]
-      #   Allows to add additional new actions to the default resource +new+ actions.
       # [:+member+]
-      #   Member methods are methods like +show+, which have an params[:id] from
+      #   Member methods are actions like +show+, which have an params[:id] from
       #   which to load the controller object and assign it to @controller_name,
       #   e.g. @+branch+.  By default, member actions are [:+show+, :+edit+, :+update+,
       #   :+destroy+].
@@ -363,6 +351,20 @@ module Authorization
       # [:+additional_collection+]
       #   Allows to add additional collaction actions to the default resource +collection+
       #   actions.
+      # [:+new+]
+      #   +new+ methods are actions such as +new+ and +create+, which don't
+      #   receive a params[:id] to load an object from, but
+      #   a params[:controller_name_singular] hash with attributes for a new
+      #   object.  The attributes will be used here to create a new object and
+      #   check the object against the authorization rules.  The object is
+      #   assigned to @controller_name_singular, e.g. @branch.
+      #
+      #   If +nested_in+ is given, the new object
+      #   is created from the parent_object.controller_name
+      #   proxy, e.g. company.branches.new(params[:branch]).  By default,
+      #   +new+ is set to [:new, :create].
+      # [:+additional_new+]
+      #   Allows to add additional new actions to the default resource +new+ actions.
       # [:+context+]
       #   The context is used to determine the model to load objects from for the
       #   before_filters and the context of privileges to use in authorization
