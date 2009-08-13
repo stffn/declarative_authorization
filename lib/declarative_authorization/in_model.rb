@@ -8,7 +8,7 @@ module Authorization
 
     # If the user meets the given privilege, permitted_to? returns true
     # and yields to the optional block.
-    def permitted_to? (privilege, options = {} )
+    def permitted_to? (privilege, options = {}, &block)
       options = {
         :user =>  Authorization.current_user,
         :object => self

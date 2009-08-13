@@ -1168,4 +1168,48 @@ class ModelTest < Test::Unit::TestCase
     TestModel.delete_all
     TestAttr.delete_all
   end
+
+  def test_model_permitted_to
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :companies, :to => :read do
+            if_attribute :name => "company_1"
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    user = MockUser.new(:test_role)
+    allowed_read_company = Company.new(:name => 'company_1')
+    prohibited_company = Company.new(:name => 'company_2')
+
+    assert allowed_read_company.permitted_to?(:read, :user => user)
+    assert !allowed_read_company.permitted_to?(:update, :user => user)
+    assert !prohibited_company.permitted_to?(:read, :user => user)
+
+    executed_block = false
+    allowed_read_company.permitted_to?(:read, :user => user) do
+      executed_block = true
+    end
+    assert executed_block
+
+    executed_block = false
+    prohibited_company.permitted_to?(:read, :user => user) do
+      executed_block = true
+    end
+    assert !executed_block
+
+    assert_nothing_raised do
+      allowed_read_company.permitted_to!(:read, :user => user)
+    end
+    assert_raise Authorization::NotAuthorized do
+      prohibited_company.permitted_to!(:update, :user => user)
+    end
+    assert_raise Authorization::AttributeAuthorizationError do
+      prohibited_company.permitted_to!(:read, :user => user)
+    end
+  end
 end
