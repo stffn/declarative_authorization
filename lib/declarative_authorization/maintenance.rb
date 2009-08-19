@@ -21,8 +21,8 @@ module Authorization
     #  without_access_control do
     #    SomeModel.find(:first).save
     #  end
-    def without_access_control
-      self.class.without_access_control
+    def without_access_control (&block)
+      Authorization::Maintenance.without_access_control(&block)
     end
 
     # A class method variant of without_access_control.  Thus, one can call
