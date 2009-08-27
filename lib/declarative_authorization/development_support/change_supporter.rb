@@ -8,7 +8,6 @@ module Authorization
     #   * Objective function:
     #     * affected user count,
     #     * as specific as possible (roles, privileges)
-    #       -> counter-productive?
     #     * as little changes as necessary
     #   * Modify role, privilege hierarchy
     #   * Merge, split roles
@@ -18,7 +17,7 @@ module Authorization
     #   * group similar candidates: only show abstract methods?
     #   * restructure GUI layout: more room for analyzing suggestions
     #   * changelog, previous tests, etc.
-    #   * different permissions in tests
+    #   * multiple permissions in tests
     # * Evaluation of approaches with Analyzer algorithms
     # * Authorization constraints
     #
@@ -41,6 +40,11 @@ module Authorization
     #
     class ChangeSupporter < AbstractAnalyzer
 
+      # Returns a list of possible approaches for changes to the current
+      # authorization rules that achieve a given goal.  The goal is given as
+      # permission tests in the block.  The instance method +users+ is available
+      # when the block is executed to refer to the then-current users, whose
+      # roles might have changed as one suggestion.
       def find_approaches_for (options, &tests)
         @prohibited_actions = (options[:prohibited_actions] || []).to_set
 
@@ -63,8 +67,27 @@ module Authorization
         end
 
         # remove subsets
-
         suggestions.sort!
+      end
+
+      # Returns an array of GroupedApproaches for the given array of approaches.
+      # Only groups directly adjacent approaches
+      def group_approaches (approaches)
+        approaches.each_with_object([]) do |approach, grouped|
+          if grouped.last and grouped.last.approach.similar_to(approach)
+            grouped.last.similar_approaches << approach
+          else
+            grouped << GroupedApproach.new(approach)
+          end
+        end
+      end
+
+      class GroupedApproach
+        attr_accessor :approach, :similar_approaches
+        def initialize (approach)
+          @approach = approach
+          @similar_approaches = []
+        end
       end
 
       class ApproachChecker
@@ -119,6 +142,15 @@ module Authorization
           res
         end
 
+        def affected_users (original_engine, original_users, privilege, context)
+          (0...@users.length).select do |i|
+            original_engine.permit?(privilege, :context => context,
+              :skip_attribute_test => true, :user => original_users[i]) !=
+                @engine.permit?(privilege, :context => context,
+                  :skip_attribute_test => true, :user => @users[i])
+          end.collect {|i| original_users[i]}
+        end
+
         def initialize_copy (other)
           @engine = @engine.clone
           @users = @users.clone
@@ -171,7 +203,17 @@ module Authorization
         end
 
         def sort_value
-          changes.sum(&:weight) + @failed_tests.length
+          weight + @failed_tests.length
+        end
+
+        def weight
+          changes.sum(&:weight)
+        end
+
+        def similar_to (other)
+          other.weight == weight and
+              other.changes.map {|change| change.class.name}.sort ==
+                changes.map {|change| change.class.name}.sort
         end
 
         def inspect

@@ -35,7 +35,10 @@ class AuthorizationRulesController < ApplicationController
     @users.sort! {|a, b| a.login <=> b.login }
     
     @privileges = authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq
-    @privileges = @privileges.collect {|priv| Authorization::DevelopmentSupport::AnalyzerEngine::Privilege.for_sym(priv, authorization_engine).descendants.map(&:to_sym) }.flatten.uniq
+    @privileges = @privileges.collect do |priv|
+      priv = Authorization::DevelopmentSupport::AnalyzerEngine::Privilege.for_sym(priv, authorization_engine)
+      (priv.descendants + priv.ancestors).map(&:to_sym)
+    end.flatten.uniq
     @privileges.sort_by {|priv| priv.to_s}
     @privilege = params[:privilege].to_sym rescue @privileges.first
     @contexts = authorization_engine.auth_rules.collect {|rule| rule.contexts.to_a}.flatten.uniq
@@ -64,18 +67,39 @@ class AuthorizationRulesController < ApplicationController
       deserialize_changes(spec).flatten
     end
 
-    users_keys = users_permission.keys
     analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(authorization_engine)
     
     privilege = params[:privilege].to_sym
     context = params[:context].to_sym
+    all_users = User.all
     @context = context
-    @approaches = analyzer.find_approaches_for(:users => users_keys, :prohibited_actions => prohibited_actions) do
+    @approaches = analyzer.find_approaches_for(:users => all_users, :prohibited_actions => prohibited_actions) do
       users.each_with_index do |user, idx|
-        args = [privilege, {:context => context, :user => user}]
-        assert(users_permission[users_keys[idx]] ? permit?(*args) : !permit?(*args))
+        unless users_permission[all_users[idx]].nil?
+          args = [privilege, {:context => context, :user => user}]
+          assert(users_permission[all_users[idx]] ? permit?(*args) : !permit?(*args))
+        end
       end
     end
+
+    @affected_users = @approaches.each_with_object({}) do |approach, memo|
+      memo[approach] = approach.affected_users(authorization_engine, all_users, privilege, context).length
+    end
+    max_affected_users = @affected_users.values.max
+    if params[:affected_users]
+      @approaches = @approaches.sort_by do |approach|
+        affected_users_count = @affected_users[approach]
+        if params[:affected_users] == "many"
+          #approach.weight.to_f / [affected_users_count, 0.1].min
+          approach.weight + (max_affected_users - affected_users_count) * 10
+        else
+          #approach.weight * affected_users_count
+          approach.weight + affected_users_count * 10
+        end
+      end
+    end
+
+    @grouped_approaches = analyzer.group_approaches(@approaches)
 
     respond_to do |format|
       format.js do

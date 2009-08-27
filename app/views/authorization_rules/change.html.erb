@@ -4,12 +4,13 @@
 <%= link_to_function "Hide", "$(this).up().hide()", :class => 'important' %>
 <%= link_to_function "Toggle stacked roles", "toggle_graph_params('suggest-graph', 'stacked_roles');" %>
 <%= link_to_function "Toggle only users' roles", "toggle_graph_params('suggest-graph', 'only_relevant_roles');" %><br/>
-<object id="suggest-graph" data="" type="image/svg+xml" style="max-width: 98%;max-height: 95%"/>
+<object id="suggest-graph" data="" type="image/svg+xml" style="max-width: 98%;max-height: 95%;margin-top: 0.5em"/>
 </div>
 <%= render 'show_graph' %>
 
 <style type="text/css">
   .action-options label { display: block; float: left; width: 7em; padding-bottom: 0.5em }
+  .action-options label.inline { display: inline; float: none }
   .action-options select { float: left; }
   .action-options br { clear: both; }
   .action-options { margin-bottom: 2em }
@@ -23,21 +24,33 @@
   .submit { margin-top: 0 }
   .submit input { font-weight: bold; font-size: 120% }
   #suggest-result { 
-    position: absolute; left: 60%; right: 10px;
-    border-left: 2px solid grey;
-    padding-left: 1em;
+    position: absolute; left: 55%; right: 10px;
+    border-left: 1px solid grey;
+    padding-left: 2em;
     z-index: 10;
   }
+  #suggest-result>ul { padding-left: 0 }
+  #suggest-result>ul>li { list-style: none;  margin-bottom: 1em }
+  #suggest-result>ul>li.secondary { padding-left: 2em }
+  #suggest-result li { padding-left: 0 }
+  #suggest-result ul ul { padding-left: 2em }
+  #suggest-result .ord { float: left; display: block; width: 2em; font-weight: bold; color: grey }
+  .show-approach, .show-others-in-group { visibility: hidden }
+  .prohibit { text-decoration: none; visibility: hidden }
+  li:hover .show-approach, li:hover .prohibit,
+    li:hover .show-others-in-group { visibility: visible }
   #suggest-graph-container {
-    background: white; border:1px solid #ccc;
+    background: white; border:1px solid grey;
     position:fixed; z-index: 20;
-    left:10%; bottom: 10%; right: 10%; top: 10%
+    left:10%; bottom: 10%; right: 10%; top: 10%;
+    padding: 0.5em
   }
   #graph-container {
-    background: white; margin: 1em; border:1px solid #ccc;
+    background: white; margin: 1em; border:1px solid grey; padding: 0.5em;
     max-width:50%; position:fixed; z-index: 20; right:0;
   }
-  .unimportant, .remove { color: grey }
+  .unimportant, .remove, .prohibit { color: grey }
+  .important { font-weight: bold }
   .remove { cursor: pointer }
 </style>
 <% javascript_tag do %>
@@ -72,8 +85,9 @@
     function install_change_observers () {
         $$('#change select').each(function (el) {
             el.observe('change', function (event) {
+                var form = $('change').down('form');
                 new Ajax.Updater({success: 'change'}, '<%= url_for %>', {
-                  parameters: { context: $F('context'), privilege: $F('privilege') },
+                  parameters: Form.serializeElements(form.select('select').concat(form.getInputs('radio', 'affected_users')), true),
                   method: 'get',
                   onComplete: function () {
                       install_change_observers();
@@ -96,6 +110,20 @@
 
     function show_current_permissions () {
         show_graph($F('privilege'), $F('context')/*, relevant_user_ids()*/);
+    }
+
+    function show_all_groups () {
+      $$('#suggest-result>ul>li.primary').invoke("show");
+    }
+
+    function show_group_approaches (group_no) {
+      $$('#suggest-result>ul>li.secondary.group-' + group_no).invoke("show");
+      $$('#suggest-result>ul>li.primary.group-' + group_no + ' a.show-others-in-group').invoke("hide");
+    }
+
+    function hide_group_approaches (group_no) {
+      $$('#suggest-result>ul>li.secondary.group-' + group_no).invoke("hide");
+      $$('#suggest-result>ul>li.primary.group-' + group_no + ' a.show-others-in-group').invoke("show");
     }
 
     function relevant_user_ids () {

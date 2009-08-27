@@ -46,7 +46,7 @@ module AuthorizationRulesHelper
   
   def navigation
     link_to("Rules", authorization_rules_path) << ' | ' <<
-    link_to("Change Supporter", change_authorization_rules_path) << ' | ' <<
+    link_to("Change Support", change_authorization_rules_path) << ' | ' <<
     link_to("Graphical view", graph_authorization_rules_path) << ' | ' <<
     link_to("Usages", authorization_usages_path) #<< ' | ' <<
   #  'Edit | ' <<
@@ -118,8 +118,8 @@ module AuthorizationRulesHelper
 
   def prohibit_link (step, text, title, options)
     options[:with_removal] ?
-          ' ' + link_to_function("[x]", "prohibit_action('#{serialize_action(step)}', '#{text}')",
-                    :class => 'unimportant', :title => title) :
+          link_to_function("[x]", "prohibit_action('#{serialize_action(step)}', '#{text}')",
+                    :class => 'prohibit', :title => title) :
           ''
   end
   
@@ -147,6 +147,10 @@ module AuthorizationRulesHelper
 
   def has_changed (*args)
     @changes && @changes[args[0]] && @changes[args[0]].include?(args[1..-1])
+  end
+
+  def affected_users_count (approach)
+    @affected_users[approach]
   end
 
   def auth_usage_info_classes (auth_info)

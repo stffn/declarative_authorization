@@ -1,5 +1,5 @@
 <form>
-<h2>1. Choose permission to change</h2>
+<h2>Which permission to change?</h2>
 <p class="action-options">
   <label>Privilege</label>
   <%= select_tag :privilege, options_for_select(@privileges.map(&:to_s).sort, @privilege.to_s) %>
@@ -7,10 +7,19 @@
   <label>On</label>
   <%= select_tag :context, options_for_select(@contexts.map(&:to_s).sort, @context.to_s) %>
   <br/>
-  <%= link_to_function "Current permissions", "show_current_permissions()", :class => 'unimportant' %>
+  <label></label>
+  <%= link_to_function "Show current permissions", "show_current_permissions()", :class => 'unimportant' %>
+  <br/><br/>
+  How many users should be <strong>affected</strong>?
+  <br/>
+  <label></label>
+  <%= radio_button_tag :affected_users, :few, params[:affected_users] == 'few' %>
+  <label class="inline">A <strong>few</strong> users</label>
+  <%= radio_button_tag :affected_users, :many, params[:affected_users] == 'many' %>
+  <label class="inline"><strong>Many</strong> users</label>
 </p>
 
-<h2>2. Whose permission should be changed?</h2>
+<h2>Whose permission should be changed?</h2>
 <table class="change-options">
   <thead>
     <tr>

@@ -594,4 +594,92 @@ class ChangeSupporterTest < Test::Unit::TestCase
     assert_not_equal 0, approaches.length
     assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::RemoveRoleFromUserAction}}
   end
+
+  def test_affected_users
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+        end
+        role :test_role_2 do
+          includes :test_role
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_extend_permissions = MockUser.new(:test_role_2)
+    another_user = MockUser.new(:test_role)
+    all_users = [user_to_extend_permissions, another_user]
+
+    approaches = analyzer.find_approaches_for(:users => all_users) do
+      assert permit?(:read, :context => :permissions, :user => users[0])
+      assert !permit?(:read, :context => :permissions, :user => users[1])
+    end
+
+    assert approaches.any? {|approach|
+        approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignPrivilegeToRoleAction} &&
+          approach.affected_users(engine, all_users, :read, :permissions).length == 1 }
+  end
+
+  def test_affected_users_with_user_change
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+        end
+        role :test_role_2 do
+          has_permission_on :permissions, :to => :read
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_extend_permissions = MockUser.new(:test_role)
+    another_user = MockUser.new(:test_role)
+    all_users = [user_to_extend_permissions, another_user]
+
+    approaches = analyzer.find_approaches_for(:users => all_users) do
+      assert permit?(:read, :context => :permissions, :user => users.first)
+      assert !permit?(:read, :context => :permissions, :user => users[1])
+    end
+
+    assert approaches.any? {|approach|
+        approach.changes.first.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignRoleToUserAction &&
+            approach.affected_users(engine, all_users, :read, :permissions).length == 1 }
+  end
+
+  def test_group_approaches
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          includes :test_role_2
+        end
+        role :test_role_2 do
+          has_permission_on :permissions, :to => :read
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(engine)
+
+    user_to_extend_permissions = MockUser.new()
+    another_user = MockUser.new()
+    all_users = [user_to_extend_permissions, another_user]
+
+    approaches = analyzer.find_approaches_for(:users => all_users) do
+      assert permit?(:read, :context => :permissions, :user => users.first)
+    end
+
+    assert approaches.first.similar_to(approaches[1]),
+        "First two approaches should be similar"
+
+    grouped_approaches = analyzer.group_approaches(approaches)
+    assert_equal 2, grouped_approaches.length
+    assert grouped_approaches.first.approach
+    assert_equal 1, grouped_approaches.first.similar_approaches.length
+  end
 end

@@ -1,3 +1,5 @@
+* Change Support: Suggestion grouping, sort by affected users [sb]
+
 * Changed context derived from objects to #class.name.tableize to fix STI [sb]
 
 * Simplified controller authorization with filter_resource_access [sb]

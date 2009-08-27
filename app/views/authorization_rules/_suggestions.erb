@@ -4,21 +4,45 @@
   <% if @approaches.first.changes.empty? %>
     <p>No changes necessary.</p>
   <% else %>
-    <p>Suggested changes (<%= link_to_function "show", "show_suggest_graph('#{serialize_changes(@approaches.first)}', '#{serialize_relevant_roles(@approaches.first)}', '#{@context}', relevant_user_ids())" %>):</p>
-    <%= render "suggestion", :object => @approaches.first %>
+    <p class="unimportant">
+      <%= pluralize(@approaches.length, 'approach') %> in
+      <%= pluralize(@grouped_approaches.length, 'group') %>
+      <%= params[:affected_users] ? "– #{params[:affected_users] == 'few' ? "fewer" : "most"} affected users first" : "" %>
+    </p>
+    <ul>
+      <% @grouped_approaches.each_with_index do |grouped_approach, group_index| %>
+        <% ([grouped_approach.approach] + grouped_approach.similar_approaches).each_with_index do |approach, index| %>
+          <li <%= (group_index < 3 || params[:show_all]) && index == 0 ? '' : 'style="display: none"' %> class="<%= index == 0 ? 'primary' : "secondary" %> group-<%= group_index %>">
+            <!--<span class="ord"><%= (index + 1) %></span>-->
+            <span class="unimportant">Affected users</span> <strong><%= affected_users_count(approach) %></strong> &nbsp;
+            <span class="unimportant">Complexity</span> <strong><%= approach.weight %></strong> &nbsp;
+            <%= link_to_function "Diagram", "show_suggest_graph('#{serialize_changes(approach)}', '#{serialize_relevant_roles(approach)}', '#{@context}', relevant_user_ids())", :class => "show-approach" %>
+            <ul>
+              <% approach.changes.each do |action| %>
+                <% (action.to_a[0].is_a?(Enumerable) ? action.to_a : [action.to_a]).each do |step| %>
+                  <li>
+                    <%= describe_step(step.to_a, :with_removal => true) %>
+                  </li>
+                <% end %>
+              <% end %>
+            </ul>
+            <% if index == 0 %>
+              <% if grouped_approach.similar_approaches.empty? %>
+                <span class="unimportant show-others-in-group">No further suggestions in this group</span>
+              <% else %>
+                <%= link_to_function "Show further #{pluralize grouped_approach.similar_approaches.length, "suggestion"} in this group", "show_group_approaches(#{group_index})", :class => "show-others-in-group" %>
+              <% end %>
+            <% end %>
+            <%= link_to_function "Hide further suggestions", "hide_group_approaches(#{group_index})" if index > 0 and index == grouped_approach.similar_approaches.length %>
+          </li>
+          <% if index == 0 and group_index == 2 and @grouped_approaches.length > 3 %>
+            <li <%= !params[:show_all] ? '' : 'style="display: none"' %>><%= link_to_function "Show further #{pluralize(@grouped_approaches.length - 3, 'group')}", "show_all_groups(); $(this).up().hide()" %></li>
+          <% end %>
+        <% end %>
+      <% end %>
+    </ul>
+
   <% end %>
 <% else %>
   <p><strong>No approach found.</strong></p>
-<% end %>
-
-<% if @approaches.length > 1 %>
-  <p <%= !params[:show_all] ? '' : 'style="display: none"' %>><a href="#" onclick="$(this).up().hide();$('more-suggestions').show();return false">Show other <%= pluralize(@approaches.length - 1, 'approach') %></a></p>
-  <div id="more-suggestions" <%= params[:show_all] ? '' : 'style="display: none"' %>>
-    <% @approaches[1..-1].each_with_index do |approach, index| %>
-      <p>
-        <%= (index + 2).ordinalize %> best approach (<%= pluralize(approach.changes.length, 'step') %>, <%= link_to_function "show", "show_suggest_graph('#{serialize_changes(approach)}', '#{serialize_relevant_roles(approach)}', '#{@context}', relevant_user_ids())" %>)
-        <%= render "suggestion", :object => approach %>
-      </p>
-    <% end %>
-  </div>
 <% end %>
