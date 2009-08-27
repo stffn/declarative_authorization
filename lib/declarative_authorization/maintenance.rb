@@ -2,12 +2,6 @@
 require File.dirname(__FILE__) + '/authorization.rb'
 
 module Authorization
-  
-  def self.ignore_access_control (state = nil) # :nodoc:
-    Thread.current["ignore_access_control"] = state unless state.nil?
-    Thread.current["ignore_access_control"] || false
-  end
-  
   # Provides a few maintenance methods for modifying data without enforcing
   # authorization.
   module Maintenance

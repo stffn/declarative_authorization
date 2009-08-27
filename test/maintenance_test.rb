@@ -2,6 +2,7 @@ require File.join(File.dirname(__FILE__), 'test_helper.rb')
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization maintenance})
 
 class MaintenanceTest < Test::Unit::TestCase
+  include Authorization::TestHelper
 
   def test_usages_by_controllers
     usage_test_controller = Class.new(ActionController::Base)
@@ -25,6 +26,10 @@ class MaintenanceTest < Test::Unit::TestCase
     assert !engine.permit?(:test_2, :context => :permissions,
         :user => MockUser.new(:test_role))
     Authorization::Maintenance::without_access_control do
+      assert engine.permit!(:test_2, :context => :permissions,
+          :user => MockUser.new(:test_role))
+    end
+    without_access_control do
       assert engine.permit?(:test_2, :context => :permissions,
           :user => MockUser.new(:test_role))
     end

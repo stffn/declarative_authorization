@@ -33,10 +33,10 @@ module Authorization
     Thread.current["current_user"] = user
   end
   
-  @@ignore_access_control = false
   # For use in test cases only
   def self.ignore_access_control (state = nil) # :nodoc:
-    false
+    Thread.current["ignore_access_control"] = state unless state.nil?
+    Thread.current["ignore_access_control"] || false
   end
 
   def self.activate_authorization_rules_browser? # :nodoc:
