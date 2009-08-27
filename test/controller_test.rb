@@ -124,9 +124,6 @@ class BasicControllerTest < ActionController::TestCase
     }
     request!(MockUser.new(:test_role), "new", reader)
     assert @controller.authorized?
-    
-    request!(MockUser.new(:test_role), "edit_2", reader)
-    assert !@controller.authorized?
   end
   
   def test_existing_instance_var_remains_unchanged
@@ -237,6 +234,23 @@ class LoadObjectControllerTest < ActionController::TestCase
       :clear => [:@load_mock_object])
     assert @controller.authorized?
     assert @controller.instance_variable_defined?(:@load_mock_object)
+  end
+
+  def test_filter_access_object_load_without_param
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :load_mock_objects, :to => [:show, :edit] do
+            if_attribute :id => is {"1"}
+          end
+        end
+      end
+    }
+
+    assert_raise RuntimeError, "No id param supplied" do
+      request!(MockUser.new(:test_role), "show", reader)
+    end
   end
   
   def test_filter_access_with_object_load_custom

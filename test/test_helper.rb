@@ -86,8 +86,10 @@ class MocksController < ActionController::Base
         #p args
       end
       alias_method :info, :warn
+      alias_method :debug, :warn
       def warn?; end
       alias_method :info?, :warn?
+      alias_method :debug?, :warn?
     end.new
   end
 end

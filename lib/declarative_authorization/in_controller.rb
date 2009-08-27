@@ -555,8 +555,8 @@ module Authorization
         unless object
           begin
             object = load_object_model.find(contr.params[:id])
-          rescue ActiveRecord::RecordNotFound
-            logger.debug("filter_access_to tried to find " +
+          rescue ActiveRecord::RecordNotFound, RuntimeError
+            contr.logger.debug("filter_access_to tried to find " +
                 "#{load_object_model.inspect} from params[:id] " +
                 "(#{contr.params[:id].inspect}), because attribute_check is enabled " +
                 "and #{instance_var.to_s} isn't set.")
