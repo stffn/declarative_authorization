@@ -222,7 +222,10 @@ module Authorization
       #   Join operator to logically connect the constraint statements inside
       #   of the has_permission_on block.  May be :+and+ or :+or+.  Defaults to :+or+.
       #
-      def has_permission_on (context, options = {}, &block)
+      def has_permission_on (*args, &block)
+        options = args.extract_options!
+        context = args.flatten
+        
         raise DSLError, "has_permission_on only allowed in role blocks" if @current_role.nil?
         options = {:to => [], :join_by => :or}.merge(options)
         

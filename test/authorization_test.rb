@@ -40,6 +40,7 @@ class AuthorizationTest < Test::Unit::TestCase
       authorization do
         role :test_role do
           has_permission_on [:permissions, :permissions_2], :to => :test
+          has_permission_on :permissions_4, :permissions_5, :to => :test
         end
       end
     }
@@ -50,6 +51,9 @@ class AuthorizationTest < Test::Unit::TestCase
       :user => MockUser.new(:test_role))
     assert !engine.permit?(:test, :context => :permissions_3, 
       :user => MockUser.new(:test_role))
+      
+    assert  engine.permit?(:test, :context => :permissions_4, :user => MockUser.new(:test_role))
+    assert  engine.permit?(:test, :context => :permissions_5, :user => MockUser.new(:test_role))
   end
   
   def test_obligations_without_conditions
