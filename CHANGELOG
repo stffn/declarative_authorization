@@ -1,3 +1,5 @@
+* Changed context derived from objects to #class.name.tableize to fix STI [sb]
+
 * Simplified controller authorization with filter_resource_access [sb]
 
 * Allow passing explicit context in addition to object in permitted_to? [Olly Lylo, sb]

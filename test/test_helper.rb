@@ -37,9 +37,13 @@ class MockDataObject
   def descends_from_active_record?
     true
   end
-  
+
   def self.table_name
-    "mocks"
+    name.tableize
+  end
+
+  def self.name
+    "Mock"
   end
   
   def self.find(*args)

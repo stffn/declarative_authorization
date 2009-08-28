@@ -38,7 +38,7 @@ module Authorization
           options = args.last.is_a?(Hash) ? args.pop : {}
           privilege = (args[0] || :read).to_sym
           privileges = [privilege]
-          context = options[:context] || :"#{parent_scope.table_name}"
+          context = options[:context] || :"#{parent_scope.name.tableize}"
           
           user = options[:user] || Authorization.current_user
 

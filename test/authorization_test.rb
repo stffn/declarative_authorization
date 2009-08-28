@@ -555,8 +555,8 @@ class AuthorizationTest < Test::Unit::TestCase
   end
 
   class PermissionMock < MockDataObject
-    def self.table_name
-      "permissions"
+    def self.name
+      "Permission"
     end
   end
   def test_attribute_with_permissions

@@ -1,6 +1,9 @@
 require File.join(File.dirname(__FILE__), 'test_helper.rb')
 
 class BasicResource < MockDataObject
+  def self.name
+    "BasicResource"
+  end
 end
 class BasicResourcesController < MocksController
   filter_resource_access
@@ -74,6 +77,9 @@ class NestedResource < MockDataObject
     end
     super(attributes)
   end
+  def self.name
+    "NestedResource"
+  end
 end
 class ParentMock < MockDataObject
   def nested_resources
@@ -89,6 +95,9 @@ class ParentMock < MockDataObject
 
   def == (other)
     id == other.id
+  end
+  def self.name
+    "ParentMock"
   end
 end
 class NestedResourcesController < MocksController

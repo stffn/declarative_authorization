@@ -117,10 +117,9 @@ module Authorization
     # Options:
     # [:+context+]
     #   The context part of the privilege.
-    #   Defaults either to the +table_name+ of the given :+object+, if given.
-    #   That is, either :+users+ for :+object+ of type User.  
-    #   Raises AuthorizationUsageError if
-    #   context is missing and not to be infered.
+    #   Defaults either to the tableized +class_name+ of the given :+object+, if given.
+    #   That is, :+users+ for :+object+ of type User.  
+    #   Raises AuthorizationUsageError if context is missing and not to be infered.
     # [:+object+] An context object to test attribute checks against.
     # [:+skip_attribute_test+]
     #   Skips those attribute checks in the 
@@ -153,7 +152,7 @@ module Authorization
         options[:object] = options[:object].new
       end
       
-      options[:context] ||= options[:object] && options[:object].class.table_name.to_sym rescue NoMethodError
+      options[:context] ||= options[:object] && options[:object].class.name.tableize.to_sym rescue NoMethodError
       
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 

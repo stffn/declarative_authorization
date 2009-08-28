@@ -2,6 +2,9 @@ require File.join(File.dirname(__FILE__), 'test_helper.rb')
 
 
 class LoadMockObject < MockDataObject
+  def self.name
+    "LoadMockObject"
+  end
 end
 
 ##################
