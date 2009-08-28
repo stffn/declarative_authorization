@@ -489,11 +489,13 @@ sbartsch at tzi.org
 Thanks to
 * Eike Carls
 * Erik Dahlstrand
+* Jeroen van Dijk
 * Jeremy Friesen
 * Brian Langenfeld
 * Geoff Longman
 * Olly Lylo
 * Mark Mansour
+* Thomas Maurer
 * Mike Vincent
 
 
