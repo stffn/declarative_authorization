@@ -320,6 +320,21 @@ module Authorization
       # is enabled for the collection :+index+ as well, checking attributes on a
       # @company.branches.new method.
       #
+      # In many cases, the default seven CRUD actions are not sufficient.  As in
+      # the resource definition for routing you may thus give additional member,
+      # new and collection methods.  The options allow you to specify the
+      # required privileges for each action by providing a hash or an array of
+      # pairs.  By default, for each action the action name is taken as privilege
+      # (action search in the example below requires the privilege :index
+      # :companies).  Any controller action that is not specified and does not
+      # belong to the seven CRUD actions is handled as a member method.
+      #   class CompanyController < ApplicationController
+      #     filter_resource_access :collection => [[:search, :index], :index],
+      #         :additional_member => {:mark_as_key_company => :update}
+      #   end
+      # The +additional_+* options add to the respective CRUD actions,
+      # the other options replace the respective CRUD actions.
+      # 
       # You can override the default object loading by implementing any of the
       # following instance methods on the controller.  Examples are given for the
       # BranchController (with +nested_in+ set to :+companies+):
@@ -337,8 +352,19 @@ module Authorization
       # [:+member+]
       #   Member methods are actions like +show+, which have an params[:id] from
       #   which to load the controller object and assign it to @controller_name,
-      #   e.g. @+branch+.  By default, member actions are [:+show+, :+edit+, :+update+,
-      #   :+destroy+].
+      #   e.g. @+branch+.
+      #
+      #   By default, member actions are [:+show+, :+edit+, :+update+,
+      #   :+destroy+].  Also, any action not belonging to the seven CRUD actions
+      #   are handled as member actions.
+      #
+      #   There are three different syntax to specify member, collection and
+      #   new actions.
+      #   * Hash:  Lets you set the required privilege for each action:
+      #     {:+show+ => :+show+, :+mark_as_important+ => :+update+}
+      #   * Array of actions or pairs: [:+show+, [:+mark_as_important+, :+update+]],
+      #     with single actions requiring the privilege of the same name as the method.
+      #   * Single method symbol: :+show+
       # [:+additional_member+]
       #   Allows to add additional member actions to the default resource +member+
       #   actions.
