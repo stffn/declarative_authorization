@@ -34,7 +34,7 @@ class MockDataObject
     end
   end
   
-  def descends_from_active_record?
+  def self.descends_from_active_record?
     true
   end
 

@@ -232,8 +232,8 @@ module Authorization
     end
 
     def attribute_value (value)
-      value.respond_to?( :descends_from_active_record? ) && value.descends_from_active_record? && value.id ||
-        value.is_a?( Array ) && value[0].respond_to?( :descends_from_active_record? ) && value[0].descends_from_active_record? && value.map( &:id ) ||
+      value.class.respond_to?(:descends_from_active_record?) && value.class.descends_from_active_record? && value.id ||
+        value.is_a?(Array) && value[0].class.respond_to?(:descends_from_active_record?) && value[0].class.descends_from_active_record? && value.map( &:id ) ||
         value
     end
     
