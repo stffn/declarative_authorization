@@ -84,6 +84,11 @@ class Company < ActiveRecord::Base
   has_many :branches
   belongs_to :country
 end
+class SmallCompany < Company
+  def self.decl_auth_context
+    :companies
+  end
+end
 class Country < ActiveRecord::Base
   has_many :test_models
   has_many :companies
@@ -166,6 +171,27 @@ class ModelTest < Test::Unit::TestCase
       TestModel.with_permissions_to(:update_test_models, :user => user)
     end
     TestModel.delete_all
+  end
+
+  def test_named_scope_with_modified_context
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :companies, :to => :read do
+            if_attribute :id => is { user.test_company_id }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_company = SmallCompany.create!
+
+    user = MockUser.new(:test_role, :test_company_id => test_company.id)
+    assert_equal 1, SmallCompany.with_permissions_to(:read,
+      :user => user).length
+    SmallCompany.delete_all
   end
 
   def test_named_scope_with_is_nil
@@ -1211,5 +1237,23 @@ class ModelTest < Test::Unit::TestCase
     assert_raise Authorization::AttributeAuthorizationError do
       prohibited_company.permitted_to!(:read, :user => user)
     end
+  end
+
+  def test_model_permitted_to_with_modified_context
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :companies, :to => :read
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    user = MockUser.new(:test_role)
+    allowed_read_company = SmallCompany.new(:name => 'small_company_1')
+
+    assert allowed_read_company.permitted_to?(:read, :user => user)
+    assert !allowed_read_company.permitted_to?(:update, :user => user)
   end
 end

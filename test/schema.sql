@@ -44,6 +44,7 @@ CREATE TABLE 'branches' (
 CREATE TABLE 'companies' (
   'id' INTEGER PRIMARY KEY NOT NULL,
   'country_id' integer,
+  'type' text,
   'name' text
 );
 
