@@ -2,10 +2,10 @@
 <h2>Which permission to change?</h2>
 <p class="action-options">
   <label>Privilege</label>
-  <%= select_tag :privilege, options_for_select(@privileges.map(&:to_s).sort, @privilege.to_s) %>
+  <%= select_tag :privilege, options_for_select(@privileges.map {|p| [human_privilege(p), p.to_s]}.sort, @privilege.to_s) %>
   <br/>
   <label>On</label>
-  <%= select_tag :context, options_for_select(@contexts.map(&:to_s).sort, @context.to_s) %>
+  <%= select_tag :context, options_for_select(@contexts.map {|c| [human_context(c), c.to_s]}.sort, @context.to_s) %>
   <br/>
   <label></label>
   <%= link_to_function "Show current permissions", "show_current_permissions()", :class => 'unimportant' %>
@@ -35,7 +35,7 @@
       <tr class="<%= controller.authorization_engine.permit?(@privilege, :context => @context, :user => user, :skip_attribute_test => true) ? 'permitted' : 'not-permitted' %>">
         <td class="user_id"><%=h user.id %></td>
         <td style="font-weight:bold"><%=h user.login %></td>
-        <td><%=h user.role_symbols * ', ' %></td>
+        <td><%=h user.role_symbols.map {|r| human_role(r)} * ', ' %></td>
         <td><%= radio_button_tag "user[#{user.id}][permission]", "undetermined", true %></td>
         <td class="yes"><%= radio_button_tag "user[#{user.id}][permission]", "yes" %></td>
         <td class="no"><%= radio_button_tag "user[#{user.id}][permission]", "no" %></td>

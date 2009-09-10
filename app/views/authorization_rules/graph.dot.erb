@@ -22,7 +22,7 @@ digraph rules {
     node [shape=ellipse,style=filled]
     <%= @stacked_roles ? '' : "rank = same" %>
     <% @roles.each do |role| %>
-    "<%= role.inspect %>" [fillcolor="<%= role_fill_color(role) %>"]
+    "<%= role.inspect %>" [fillcolor="<%= role_fill_color(role) %>",label="<%= human_role(role) %>"]
     // ,URL="javascript:set_filter({roles: '<%= role %>'})"
     <% end %>
     <% @roles.each do |role| %>
@@ -42,11 +42,11 @@ digraph rules {
 
   <% @contexts.each do |context| %>
     subgraph cluster_<%= context %>  {
-      label = "<%= context.inspect %>"
+      label = "<%= human_context(context) %>"
       style=filled; fillcolor="#eeeeee"
       node[fillcolor=white,style=filled]
       <% (@context_privs[context] || []).each do |priv| %>
-      <%= priv %>_<%= context %> [label="<%= priv.inspect %>"<%= ',fontcolor="#ff0000"' if @highlight_privilege == priv %>]
+      <%= priv %>_<%= context %> [label="<%= human_privilege(priv) %>"<%= ',fontcolor="#ff0000"' if @highlight_privilege == priv %>]
       <% end %>
       <% (@context_privs[context] || []).each do |priv| %>
         <% (@privilege_hierarchy[priv] || []).

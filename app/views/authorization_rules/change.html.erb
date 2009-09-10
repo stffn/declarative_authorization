@@ -8,6 +8,8 @@
 </div>
 <%= render 'show_graph' %>
 
+<div id="spinner" style="display:none">Searching...</div>
+
 <style type="text/css">
   .action-options label { display: block; float: left; width: 7em; padding-bottom: 0.5em }
   .action-options label.inline { display: inline; float: none }
@@ -52,16 +54,31 @@
   .unimportant, .remove, .prohibit { color: grey }
   .important { font-weight: bold }
   .remove { cursor: pointer }
+  #spinner { position: fixed; top: 0; right: 0; background: #FFE599; padding: 1em }
 </style>
 <% javascript_tag do %>
     function suggest_changes (refresh) {
-        if (!refresh)
+        var opened_groups = $$("#suggest-result>ul>li.secondary").select(function (li) {return li.visible()}).collect(function (li) {
+            return li.classNames().toArray()[1].split("-")[1];
+        }).uniq();
+
+        if (refresh)
+          $("spinner").show();
+        else
           $("suggest-result").innerHTML = "Searching...";
+
+
         $("suggest-result").show();
         new Ajax.Updater({success: 'suggest-result'}, '<%= suggest_change_authorization_rules_path %>', {
             method: 'get',
             onFailure: function(request) {
                 $("suggest-result").innerHTML = "Error while searching."
+            },
+            onComplete: function () {
+                $("spinner").hide();
+                opened_groups.each(function (group_no) {
+                  show_group_approaches(group_no);
+                });
             },
             parameters: $H($('change').down('form').serialize(true)).merge(refresh ? {show_all: "true"} : {}).toQueryString()
         });
@@ -70,7 +87,7 @@
     }
 
     function show_suggest_graph (changes, filter_roles_params, filter_context, user_ids) {
-        var params = {changes: changes, highlight_privilege: $F('privilege')};
+        var params = {changes: changes, highlight_privilege: $F('privilege'), stacked_roles: '1'};
         if (filter_context)
           params['filter_contexts'] = filter_context;
         if (user_ids)

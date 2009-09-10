@@ -84,32 +84,63 @@ module AuthorizationRulesHelper
           role_color(role))
   end
 
+  def human_privilege (privilege)
+    begin
+      I18n.t(privilege, :scope => [:declarative_authorization, :privilege], :raise => true)
+    rescue
+      privilege.to_s
+    end
+  end
+
+  def human_context (context)
+    begin
+      context.to_s.classify.constantize.human_name
+    rescue
+      context.to_s
+    end
+  end
+
+  def human_privilege_context (privilege, context)
+    human = [human_privilege(privilege), human_context(context)]
+    begin
+      unless I18n.t(:verb_in_front_of_object, :scope => :declarative_authorization, :raise => true)
+        human.reverse!
+      end
+    rescue
+    end
+    human * " "
+  end
+
+  def human_role (role)
+    Authorization::Engine.instance.title_for(role) or role.to_s
+  end
+
   def describe_step (step, options = {})
     options = {:with_removal => false}.merge(options)
 
     case step[0]
     when :add_privilege
       dont_assign = prohibit_link(step[0,3],
-          "Add privilege <strong>#{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}</strong> to any role",
-          "Don't suggest adding #{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}.", options)
-      "Add privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong>#{dont_assign} to role <strong>#{h step[3].to_sym.inspect}</strong>"
+          "Add privilege <strong>#{h human_privilege_context(step[1], step[2])}</strong> to any role",
+          "Don't suggest adding #{h human_privilege_context(step[1], step[2])}.", options)
+      "Add privilege <strong>#{h human_privilege_context(step[1], step[2])}</strong>#{dont_assign} to role <strong>#{h human_role(step[3].to_sym)}</strong>"
     when :remove_privilege
       dont_remove = prohibit_link(step[0,3], 
-          "Remove privilege <strong>#{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}</strong> from any role", 
-          "Don't suggest removing #{h step[1].to_sym.inspect} #{h step[2].to_sym.inspect}.", options)
-      "Remove privilege <strong>#{h step[1].inspect} #{h step[2].inspect}</strong>#{dont_remove} from role <strong>#{h step[3].to_sym.inspect}</strong>"
+          "Remove privilege <strong>#{h human_privilege_context(step[1], step[2])}</strong> from any role",
+          "Don't suggest removing #{h human_privilege_context(step[1], step[2])}.", options)
+      "Remove privilege <strong>#{h human_privilege_context(step[1], step[2])}</strong>#{dont_remove} from role <strong>#{h human_role(step[3].to_sym)}</strong>"
     when :add_role
-      "New role <strong>#{h step[1].to_sym.inspect}</strong>"
+      "New role <strong>#{h human_role(step[1].to_sym)}</strong>"
     when :assign_role_to_user
       dont_assign = prohibit_link(step[0,2],
-          "Assign role <strong>#{h step[1].to_sym.inspect}</strong> to any user",
-          "Don't suggest assigning #{h step[1].to_sym.inspect}.", options)
-      "Assign role <strong>#{h step[1].to_sym.inspect}</strong>#{dont_assign} to <strong>#{h readable_step_info(step[2])}</strong>"
+          "Assign role <strong>#{h human_role(step[1].to_sym)}</strong> to any user",
+          "Don't suggest assigning #{h human_role(step[1].to_sym)}.", options)
+      "Assign role <strong>#{h human_role(step[1].to_sym)}</strong>#{dont_assign} to <strong>#{h readable_step_info(step[2])}</strong>"
     when :remove_role_from_user
       dont_remove = prohibit_link(step[0,2],
-          "Remove role <strong>#{h step[1].to_sym.inspect}</strong> from any user",
-          "Don't suggest removing #{h step[1].to_sym.inspect}.", options)
-      "Remove role <strong>#{h step[1].to_sym.inspect}</strong>#{dont_remove} from <strong>#{h readable_step_info(step[2])}</strong>"
+          "Remove role <strong>#{h human_role(step[1].to_sym)}</strong> from any user",
+          "Don't suggest removing #{h human_role(step[1].to_sym)}.", options)
+      "Remove role <strong>#{h human_role(step[1].to_sym)}</strong>#{dont_remove} from <strong>#{h readable_step_info(step[2])}</strong>"
     else
       step.collect {|info| readable_step_info(info) }.map {|str| h str } * ', '
     end + prohibit_link(step, options[:with_removal] ? "#{escape_javascript(describe_step(step))}" : '',

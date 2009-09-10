@@ -30,13 +30,13 @@
               <% if grouped_approach.similar_approaches.empty? %>
                 <span class="unimportant show-others-in-group">No further suggestions in this group</span>
               <% else %>
-                <%= link_to_function "Show further #{pluralize grouped_approach.similar_approaches.length, "suggestion"} in this group", "show_group_approaches(#{group_index})", :class => "show-others-in-group" %>
+                <%= link_to_function "Show further <strong>#{pluralize grouped_approach.similar_approaches.length, "suggestion"}</strong> in this group", "show_group_approaches(#{group_index})", :class => "show-others-in-group" %>
               <% end %>
             <% end %>
             <%= link_to_function "Hide further suggestions", "hide_group_approaches(#{group_index})" if index > 0 and index == grouped_approach.similar_approaches.length %>
           </li>
           <% if index == 0 and group_index == 2 and @grouped_approaches.length > 3 %>
-            <li <%= !params[:show_all] ? '' : 'style="display: none"' %>><%= link_to_function "Show further #{pluralize(@grouped_approaches.length - 3, 'group')}", "show_all_groups(); $(this).up().hide()" %></li>
+            <li <%= !params[:show_all] ? '' : 'style="display: none"' %>><%= link_to_function "Show further <strong>#{pluralize(@grouped_approaches.length - 3, 'group')}</strong>", "show_all_groups(); $(this).up().hide()" %></li>
           <% end %>
         <% end %>
       <% end %>
