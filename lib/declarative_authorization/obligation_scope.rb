@@ -128,7 +128,11 @@ module Authorization
       
       reflection = path.empty? ? @proxy_scope : begin
         parent = reflection_for( path[0..-2] )
-        parent.klass.reflect_on_association( path.last )
+        if parent.respond_to?(:klass)
+          parent.klass.reflect_on_association( path.last )
+        else
+          parent.reflect_on_association( path.last )
+        end
       rescue
         parent.reflect_on_association( path.last )
       end
