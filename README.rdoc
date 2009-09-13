@@ -470,7 +470,7 @@ and Ubuntu) and has only been tested under Linux.
 
 = Help and Contact
 
-We have an issue tracker[http://stffn.lighthouseapp.com/projects/20733-declarative_authorization] 
+We have an issue tracker[http://github.com/stffn/declarative_authorization/issues]
 for bugs and feature requests as well as a 
 Google Group[http://groups.google.com/group/declarative_authorization] for
 discussions on the usage of the plugin.  You are very welcome to contribute.
