@@ -38,8 +38,16 @@ module Authorization
           options = args.last.is_a?(Hash) ? args.pop : {}
           privilege = (args[0] || :read).to_sym
           privileges = [privilege]
-          context = options[:context] ||
-              :"#{parent_scope.respond_to?(:decl_auth_context) ? parent_scope.decl_auth_context : parent_scope.name.tableize}"
+          context =
+              if options[:context]
+                options[:context]
+              elsif parent_scope.respond_to?(:proxy_reflection)
+                parent_scope.proxy_reflection.klass.name.tableize.to_sym
+              elsif parent_scope.respond_to?(:decl_auth_context)
+                parent_scope.decl_auth_context
+              else
+                parent_scope.name.tableize.to_sym
+              end
           
           user = options[:user] || Authorization.current_user
 

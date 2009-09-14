@@ -125,10 +125,10 @@ module Authorization
     # Attempts to map a reflection for the given path.  Raises if already defined.
     def map_reflection_for( path )
       raise "reflection for #{path.inspect} already exists" unless reflections[path].nil?
-      
+
       reflection = path.empty? ? @proxy_scope : begin
         parent = reflection_for( path[0..-2] )
-        if parent.respond_to?(:klass)
+        if !parent.respond_to?(:proxy_reflection) and parent.respond_to?(:klass)
           parent.klass.reflect_on_association( path.last )
         else
           parent.reflect_on_association( path.last )
