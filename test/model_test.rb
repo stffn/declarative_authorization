@@ -28,6 +28,8 @@ class TestModel < ActiveRecord::Base
   has_and_belongs_to_many :test_attr_throughs_habtm, :join_table => :test_attrs,
       :class_name => "TestAttrThrough"
 
+  named_scope :with_content, :conditions => "test_models.content IS NOT NULL"
+
   # Primary key test
   # take this out for Rails prior to 2.2
   if ([Rails::VERSION::MAJOR, Rails::VERSION::MINOR] <=> [2, 2]) > -1
@@ -170,6 +172,53 @@ class ModelTest < Test::Unit::TestCase
     assert_raise Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
     end
+    TestModel.delete_all
+  end
+
+  def test_named_scope_on_proxy
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :id => is { user.test_attr_value }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_attr_1 = test_model_1.test_attrs.create!
+    test_model_1.test_attrs.create!
+    TestAttr.create!
+
+    user = MockUser.new(:test_role, :test_attr_value => test_attr_1.id)
+    assert_equal 1, test_model_1.test_attrs.with_permissions_to(:read, :user => user).length
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_on_named_scope
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :country_id => 1
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    TestModel.create!(:country_id => 1, :content => "Content")
+    TestModel.create!(:country_id => 1)
+    TestModel.create!(:country_id => 2, :content => "Content")
+
+    user = MockUser.new(:test_role)
+    assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
+    assert_equal 1, TestModel.with_content.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
   end
 
