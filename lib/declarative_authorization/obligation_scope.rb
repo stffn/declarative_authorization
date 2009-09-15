@@ -107,9 +107,16 @@ module Authorization
     end
     
     # Returns the model associated with the given path.
-    def model_for( path )
-      reflection = reflection_for( path )
-      reflection.respond_to?( :klass ) ? reflection.klass : reflection
+    def model_for (path)
+      reflection = reflection_for(path)
+      
+      if reflection.respond_to?(:proxy_reflection)
+        reflection.proxy_reflection.klass
+      elsif reflection.respond_to?(:klass)
+        reflection.klass
+      else
+        reflection
+      end
     end
     
     # Returns the reflection corresponding to the given path.
