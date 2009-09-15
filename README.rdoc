@@ -492,6 +492,7 @@ Thanks to
 * Jeroen van Dijk
 * Jeremy Friesen
 * Brian Langenfeld
+* Georg Ledermann
 * Geoff Longman
 * Olly Lylo
 * Mark Mansour
