@@ -229,7 +229,8 @@ module Authorization
 
     # Returns the role symbols of the given user.
     def roles_for (user)
-      raise AuthorizationUsageError, "User object doesn't respond to roles" \
+      user ||= Authorization.current_user
+      raise AuthorizationUsageError, "User object doesn't respond to roles (#{user.inspect})" \
         if !user.respond_to?(:role_symbols) and !user.respond_to?(:roles)
 
       RAILS_DEFAULT_LOGGER.info("The use of user.roles is deprecated.  Please add a method " +

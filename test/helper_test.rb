@@ -112,6 +112,23 @@ class HelperTest < ActionController::TestCase
     end
     assert !block_evaled
   end
+
+  def test_has_role_with_guest_user
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+      end
+    }
+    request!(nil, :action, reader)
+
+    assert !has_role?(:test_role)
+
+    block_evaled = false
+    has_role?(:test_role) do
+      block_evaled = true
+    end
+    assert !block_evaled
+  end
   
   def test_has_role_with_hierarchy
     reader = Authorization::Reader::DSLReader.new
