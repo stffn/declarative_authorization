@@ -360,7 +360,10 @@ See Authorization::TestHelper for more information.
 
 One of three options to install the plugin:
 * Install by Gem:  Add to your environment.rb in the initializer block:
-    config.gem "stffn-declarative_authorization", :lib => "declarative_authorization"
+    config.gem "declarative_authorization"
+  Note: you need gemcutter support in place, i.e. call
+    gem install gemcutter
+    gem tumble
   And call from your application's root directory
     rake gems:install
 * Alternatively, to install from github, execute in your application's root directory
