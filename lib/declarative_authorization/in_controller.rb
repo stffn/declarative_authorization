@@ -448,10 +448,10 @@ module Authorization
         options[:no_attribute_check] ||= collections.keys unless options[:nested_in]
 
         unless options[:nested_in].blank?
-          load_method = :"load_#{options[:nested_in].to_s.singularize}"
+          load_parent_method = :"load_#{options[:nested_in].to_s.singularize}"
           before_filter do |controller|
-            if controller.respond_to?(load_method)
-              controller.send(load_method)
+            if controller.respond_to?(load_parent_method)
+              controller.send(load_parent_method)
             else
               controller.send(:load_parent_controller_object, options[:nested_in])
             end
