@@ -12,6 +12,21 @@ module Authorization
     
     DEFAULT_DENY = false
     
+    # If attribute_check is set for filter_access_to, decl_auth will try to
+    # load the appropriate object from the current controller's model with
+    # the id from params[:id].  If that fails, a 404 Not Found is often the
+    # right way to handle the error.  If you have additional measures in place
+    # that restricts the find scope, handling this error as a permission denied
+    # might be a better way.  Set failed_auto_loading_is_not_found to false
+    # for the latter behaviour.
+    @@failed_auto_loading_is_not_found = true
+    def self.failed_auto_loading_is_not_found?
+      @@failed_auto_loading_is_not_found
+    end
+    def self.failed_auto_loading_is_not_found= (new_value)
+      @@failed_auto_loading_is_not_found = new_value
+    end
+
     # Returns the Authorization::Engine for the current controller.
     def authorization_engine
       @authorization_engine ||= Authorization::Engine.instance
@@ -548,19 +563,12 @@ module Authorization
       context = @context || contr.class.controller_name.to_sym
       object = @attribute_check ? load_object(contr, context) : nil
       privilege = @privilege || :"#{contr.action_name}"
-      
-      #puts "Trying permit?(#{privilege.inspect}, "
-      #puts "               :user => #{contr.send(:current_user).inspect}, "
-      #puts "               :object => #{object.inspect}," 
-      #puts "               :skip_attribute_test => #{!@attribute_check}," 
-      #puts "               :context => #{contr.class.controller_name.pluralize.to_sym})"
-      res = contr.authorization_engine.permit!(privilege, 
+
+      contr.authorization_engine.permit!(privilege, 
                                          :user => contr.send(:current_user),
                                          :object => object,
                                          :skip_attribute_test => !@attribute_check,
                                          :context => context)
-      #puts "permit? result: #{res.inspect}"
-      res
     end
     
     def remove_actions (actions)
@@ -581,12 +589,12 @@ module Authorization
         unless object
           begin
             object = load_object_model.find(contr.params[:id])
-          rescue ActiveRecord::RecordNotFound, RuntimeError
+          rescue RuntimeError => e
             contr.logger.debug("filter_access_to tried to find " +
-                "#{load_object_model.inspect} from params[:id] " +
+                "#{load_object_model} from params[:id] " +
                 "(#{contr.params[:id].inspect}), because attribute_check is enabled " +
-                "and #{instance_var.to_s} isn't set.")
-            raise
+                "and #{instance_var.to_s} isn't set, but failed: #{e.class.name}: #{e}")
+            raise if AuthorizationInController.failed_auto_loading_is_not_found?
           end
           contr.instance_variable_set(instance_var, object)
         end
