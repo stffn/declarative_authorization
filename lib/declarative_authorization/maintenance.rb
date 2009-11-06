@@ -36,7 +36,11 @@ module Authorization
     # Sets the current user for the declarative authorization plugin to the
     # given one for the execution of the supplied block.  Suitable for tests
     # on certain users.
-    def with_user (user)
+    def with_user (user, &block)
+      Authorization::Maintenance.with_user(user, &block)
+    end
+
+    def self.with_user (user)
       prev_user = Authorization.current_user
       Authorization.current_user = user
       yield
