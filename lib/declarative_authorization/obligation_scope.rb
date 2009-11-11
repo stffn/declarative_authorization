@@ -46,6 +46,7 @@ module Authorization
     # Consumes the given obligation, converting it into scope join and condition options.
     def parse!( obligation )
       @current_obligation = obligation
+      @join_table_joins = Set.new
       obligation_conditions[@current_obligation] ||= {}
       follow_path( obligation )
 
@@ -120,7 +121,8 @@ module Authorization
     end
     
     # Returns the reflection corresponding to the given path.
-    def reflection_for( path )
+    def reflection_for(path, for_join_table_only = false)
+      @join_table_joins << path if for_join_table_only and !reflections[path]
       reflections[path] ||= map_reflection_for( path )
     end
     
@@ -147,6 +149,12 @@ module Authorization
 
       reflections[path] = reflection
       map_table_alias_for( path )  # Claim a table alias for the path.
+
+      # Claim alias for join table
+      if reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
+        join_table_path = path[0..-2] + [reflection.options[:through]]
+        reflection_for(join_table_path, true)
+      end
       
       reflection
     end
@@ -254,7 +262,7 @@ module Authorization
       joins = (@proxy_options[:joins] || []) + (@proxy_options[:includes] || [])
 
       reflections.keys.each do |path|
-        next if path.empty?
+        next if path.empty? or @join_table_joins.include?(path)
 
         existing_join = joins.find do |join|
           existing_path = join_to_path(join)

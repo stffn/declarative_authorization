@@ -302,6 +302,18 @@ module Authorization
       #       if_attribute :branch => { :company => is {user.branch.company} }
       #     end
       #   end
+      #
+      # has_many and has_many through associations may also be nested.
+      # Then, at least one item in the association needs to fulfill the
+      # subsequent condition:
+      #   if_attribute :company => { :branches => { :manager => { :last_name => is { user.last_name } } }
+      # Beware of possible performance issues when using has_many associations in
+      # permitted_to? checks.  For
+      #   permitted_to? :read, object
+      # a check like
+      #   object.company.branches.any? { |branch| branch.manager ... }
+      # will be executed.  with_permission_to scopes construct efficient SQL
+      # joins, though.
       # 
       # Multiple attributes in one :if_attribute statement are AND'ed.
       # Multiple if_attribute statements are OR'ed if the join operator for the
@@ -313,6 +325,8 @@ module Authorization
       #     if_attribute :branch => is {user.branch}, :changeable_by_coworker => true
       #     if_attribute :id => is {user.id}
       #   end
+      # The join operator for if_attribute rules can explicitly set to AND, though.
+      # See has_permission_on for details.
       #
       # Arrays and fixed values may be used directly as hash values:
       #   if_attribute :id   => 1

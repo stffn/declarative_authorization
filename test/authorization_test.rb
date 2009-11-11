@@ -122,6 +122,23 @@ class AuthorizationTest < Test::Unit::TestCase
       engine.obligations(:test, :context => :permissions,
           :user => MockUser.new(:test_role, :deeper_attr => 1, :deeper_attr_2 => 2))
   end
+
+  def test_obligations_with_has_many
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :attrs => { :deeper_attr => is { user.deeper_attr } }
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [{:attrs => {:deeper_attr => [:is, 1]}}],
+      engine.obligations(:test, :context => :permissions,
+          :user => MockUser.new(:test_role, :deeper_attr => 1))
+  end
   
   def test_obligations_with_conditions_and_empty
     reader = Authorization::Reader::DSLReader.new
@@ -534,16 +551,42 @@ class AuthorizationTest < Test::Unit::TestCase
       end
     |
     engine = Authorization::Engine.new(reader)
-    attr_1_struct = Struct.new(:test_attr_2)
     assert engine.permit?(:test, :context => :permissions,
               :user => MockUser.new(:test_role),
-              :object => MockDataObject.new(:test_attr_1 => attr_1_struct.new([1,2])))
+              :object => MockDataObject.new(:test_attr_1 =>
+                    MockDataObject.new(:test_attr_2 => [1,2])))
     assert !engine.permit?(:test, :context => :permissions,
               :user => MockUser.new(:test_role),
-              :object => MockDataObject.new(:test_attr_1 => attr_1_struct.new([3,4])))
+              :object => MockDataObject.new(:test_attr_1 =>
+                    MockDataObject.new(:test_attr_2 => [3,4])))
     assert_equal [{:test_attr_1 => {:test_attr_2 => [:contains, 1]}}], 
       engine.obligations(:test, :context => :permissions, 
           :user => MockUser.new(:test_role))
+  end
+
+  def test_attribute_has_many
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %|
+      authorization do
+        role :test_role do
+          has_permission_on :companies, :to => :read do
+            if_attribute :branches => {:city => is { user.city } }
+          end
+        end
+      end
+    |
+    engine = Authorization::Engine.new(reader)
+
+    company = MockDataObject.new(:branches => [
+        MockDataObject.new(:city => 'Barcelona'),
+        MockDataObject.new(:city => 'Paris')
+      ])
+    assert engine.permit!(:read, :context => :companies,
+              :user => MockUser.new(:test_role, :city => 'Paris'),
+              :object => company)
+    assert !engine.permit?(:read, :context => :companies,
+              :user => MockUser.new(:test_role, :city => 'London'),
+              :object => company)
   end
   
   def test_attribute_non_block

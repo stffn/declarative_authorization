@@ -427,15 +427,17 @@ module Authorization
       (hash || @conditions_hash).all? do |attr, value|
         attr_value = object_attribute_value(object, attr)
         if value.is_a?(Hash)
-          if attr_value.is_a?(Array)
-            raise AuthorizationUsageError, "Unable evaluate multiple attributes " +
-              "on a collection.  Cannot use '=>' operator on #{attr.inspect} " +
-              "(#{attr_value.inspect}) for attributes #{value.inspect}."
-          elsif attr_value.nil?
+          case attr_value
+          when Enumerable
+            attr_value.any? do |inner_value|
+              validate?(attr_validator, inner_value, value)
+            end
+          when nil
             raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
+          else
+            validate?(attr_validator, attr_value, value)
           end
-          validate?(attr_validator, attr_value, value)
-        elsif value.is_a?(Array) and value.length == 2
+        elsif value.is_a?(Array) and value.length == 2 and value.first.is_a?(Symbol)
           evaluated = if value[1].is_a?(Proc)
                         attr_validator.evaluate(value[1])
                       else

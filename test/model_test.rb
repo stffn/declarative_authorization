@@ -149,6 +149,66 @@ class ModelTest < Test::Unit::TestCase
     TestAttr.delete_all
     TestModel.delete_all
   end
+
+  def test_named_scope_with_nested_has_many
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :companies, :to => :read do
+            if_attribute :branches => { :test_attrs => { :attr => is { user.test_attr_value } } }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    allowed_company = Company.create!
+    allowed_company.branches.create!.test_attrs.create!(:attr => 1)
+    allowed_company.branches.create!.test_attrs.create!(:attr => 2)
+
+    prohibited_company = Company.create!
+    prohibited_company.branches.create!.test_attrs.create!(:attr => 3)
+
+    user = MockUser.new(:test_role, :test_attr_value => 1)
+    prohibited_user = MockUser.new(:test_role, :test_attr_value => 4)
+    assert_equal 1, Company.with_permissions_to(:read, :user => user).length
+    assert_equal 0, Company.with_permissions_to(:read, :user => prohibited_user).length
+
+    Company.delete_all
+    Branch.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_nested_has_many_through
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attr_throughs => { :test_attr => { :attr => is { user.test_attr_value } } }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    allowed_model = TestModel.create!
+    allowed_model.test_attrs.create!(:attr => 1).test_attr_throughs.create!
+    allowed_model.test_attrs.create!(:attr => 2).test_attr_throughs.create!
+
+    prohibited_model = TestModel.create!
+    prohibited_model.test_attrs.create!(:attr => 3).test_attr_throughs.create!
+
+    user = MockUser.new(:test_role, :test_attr_value => 1)
+    prohibited_user = MockUser.new(:test_role, :test_attr_value => 4)
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+    assert_equal 0, TestModel.with_permissions_to(:read, :user => prohibited_user).length
+
+    TestModel.delete_all
+    TestAttrThrough.delete_all
+    TestAttr.delete_all
+  end
   
   def test_named_scope_with_is
     reader = Authorization::Reader::DSLReader.new
@@ -832,6 +892,7 @@ class ModelTest < Test::Unit::TestCase
            
     TestModel.delete_all
     TestAttr.delete_all
+    TestAttrThrough.delete_all
   end
   
   def test_named_scope_with_is_in
