@@ -75,7 +75,7 @@ module Authorization
           follow_comparison( steps, past_steps[0..-2], past_steps[-1] )
         end
       else
-        raise "invalid obligation path #{[past_steps, steps].flatten}"
+        raise "invalid obligation path #{[past_steps, steps].inspect}"
       end
     end
     

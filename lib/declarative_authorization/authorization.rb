@@ -207,6 +207,9 @@ module Authorization
     def obligations (privilege, options = {})
       options = {:context => nil}.merge(options)
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
+
+      permit!(privilege, :skip_attribute_test => true, :user => user, :context => options[:context])
+      
       attr_validator = AttributeValidator.new(self, user, nil, privilege, options[:context])
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
         rule.obligations(attr_validator)
@@ -376,7 +379,20 @@ module Authorization
     end
 
     def obligations (attr_validator)
-      obligations = @attributes.collect {|attr| attr.obligation(attr_validator) }.flatten
+      exceptions = []
+      obligations = @attributes.collect do |attr|
+        begin
+          attr.obligation(attr_validator)
+        rescue NotAuthorized => e
+          exceptions << e
+          nil
+        end
+      end.flatten.compact
+
+      if exceptions.length > 0 and (@join_operator == :and or exceptions.length == @attributes.length)
+        raise NotAuthorized, "Missing authorization in collecting obligations: #{exceptions.map(&:to_s) * ", "}"
+      end
+
       if @join_operator == :and and !obligations.empty?
         merged_obligation = obligations.first
         obligations[1..-1].each do |obligation|
@@ -557,17 +573,29 @@ module Authorization
       case hash_or_attr
       when Symbol
         attr_value = object_attribute_value(object, hash_or_attr)
-        if attr_value.nil?
+        case attr_value
+        when nil
           raise NilAttributeValueError, "Attribute #{hash_or_attr.inspect} is nil in #{object.inspect}."
+        when Enumerable
+          attr_value.any? do |inner_value|
+            attr_validator.engine.permit? @privilege, :object => inner_value, :user => attr_validator.user
+          end
+        else
+          attr_validator.engine.permit? @privilege, :object => attr_value, :user => attr_validator.user
         end
-        attr_validator.engine.permit? @privilege, :object => attr_value, :user => attr_validator.user
       when Hash
         hash_or_attr.all? do |attr, sub_hash|
           attr_value = object_attribute_value(object, attr)
-          if attr_value.nil?
+          case attr_value
+          when nil
             raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
+          when Enumerable
+            attr_value.any? do |inner_value|
+              validate?(attr_validator, inner_value, sub_hash)
+            end
+          else
+            validate?(attr_validator, attr_value, sub_hash)
           end
-          validate?(attr_validator, attr_value, sub_hash)
         end
       when NilClass
         attr_validator.engine.permit? @privilege, :object => object, :user => attr_validator.user
@@ -577,20 +605,29 @@ module Authorization
     end
 
     # may return an array of obligations to be OR'ed
-    def obligation (attr_validator, hash_or_attr = nil)
+    def obligation (attr_validator, hash_or_attr = nil, path = [])
       hash_or_attr ||= @attr_hash
       case hash_or_attr
       when Symbol
+        @context ||= begin
+          rule_model = attr_validator.context.to_s.classify.constantize
+          context_reflection = self.class.reflection_for_path(rule_model, path + [hash_or_attr])
+          context_reflection.klass.table_name.to_sym
+        rescue # missing model, reflections
+          hash_or_attr.to_s.pluralize.to_sym
+        end
+        
         obligations = attr_validator.engine.obligations(@privilege,
-                          :context => @context || hash_or_attr.to_s.pluralize.to_sym,
+                          :context => @context,
                           :user    => attr_validator.user)
+
         obligations.collect {|obl| {hash_or_attr => obl} }
       when Hash
         obligations_array_attrs = []
         obligations =
             hash_or_attr.inject({}) do |all, pair|
               attr, sub_hash = pair
-              all[attr] = obligation(attr_validator, sub_hash)
+              all[attr] = obligation(attr_validator, sub_hash, path + [attr])
               if all[attr].length > 1
                 obligations_array_attrs << attr
               else
@@ -621,6 +658,22 @@ module Authorization
 
     def to_long_s
       "if_permitted_to #{@privilege.inspect}, #{@attr_hash.inspect}"
+    end
+
+    private
+    def self.reflection_for_path (parent_model, path)
+      reflection = path.empty? ? parent_model : begin
+        parent = reflection_for_path(parent_model, path[0..-2])
+        if !parent.respond_to?(:proxy_reflection) and parent.respond_to?(:klass)
+          parent.klass.reflect_on_association(path.last)
+        else
+          parent.reflect_on_association(path.last)
+        end
+      rescue
+        parent.reflect_on_association(path.last)
+      end
+      raise "invalid path #{path.inspect}" if reflection.nil?
+      reflection
     end
   end
   

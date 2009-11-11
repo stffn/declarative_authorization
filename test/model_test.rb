@@ -15,6 +15,7 @@ end
 
 class TestModel < ActiveRecord::Base
   has_many :test_attrs
+  has_many :test_another_attrs, :class_name => "TestAttr", :foreign_key => :test_another_model_id
   has_many :test_attr_throughs, :through => :test_attrs
   has_many :test_attrs_with_attr, :class_name => "TestAttr", :conditions => {:attr => 1}
   has_many :test_attr_throughs_with_attr, :through => :test_attrs, 
@@ -909,6 +910,131 @@ class ModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role, :id => test_attr_1.id)
     assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_if_permitted_to_with_no_child_permissions
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :another_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_attrs => contains { user }
+          end
+        end
+        role :additional_if_attribute do
+          has_permission_on :test_attrs, :to => :read do
+            if_permitted_to :read, :test_model
+            if_attribute :test_model => {:test_attrs => contains { user }}
+          end
+        end
+        role :only_permitted_to do
+          has_permission_on :test_attrs, :to => :read do
+            if_permitted_to :read, :test_model
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_attr_1 = test_model_1.test_attrs.create!
+
+    user = MockUser.new(:only_permitted_to, :another_role, :id => test_attr_1.id)
+    also_allowed_user = MockUser.new(:additional_if_attribute, :id => test_attr_1.id)
+    non_allowed_user = MockUser.new(:only_permitted_to, :id => test_attr_1.id)
+
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => also_allowed_user).length
+    assert_raise Authorization::NotAuthorized do
+      TestAttr.with_permissions_to(:read, :user => non_allowed_user).find(:all)
+    end
+    
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_if_permitted_to_with_context_from_model
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_attribute :test_another_attrs => contains { user }
+          end
+          has_permission_on :test_attrs, :to => :read do
+            if_permitted_to :read, :test_another_model
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_attr_1 = test_model_1.test_another_attrs.create!
+
+    user = MockUser.new(:test_role, :id => test_attr_1.id)
+    non_allowed_user = MockUser.new(:test_role, :id => 111)
+
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+    assert_equal 0, TestAttr.with_permissions_to(:read, :user => non_allowed_user).length
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_has_many_if_permitted_to
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_models, :to => :read do
+            if_permitted_to :read, :test_attrs
+          end
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :attr => is { user.id }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!
+    test_attr_1 = test_model_1.test_attrs.create!(:attr => 111)
+
+    user = MockUser.new(:test_role, :id => test_attr_1.attr)
+    non_allowed_user = MockUser.new(:test_role, :id => 333)
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
+    assert_equal 0, TestModel.with_permissions_to(:read, :user => non_allowed_user).length
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
+  def test_named_scope_with_deep_has_many_if_permitted_to
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :branches, :to => :read do
+            if_attribute :name => "A Branch"
+          end
+          has_permission_on :companies, :to => :read do
+            if_permitted_to :read, :test_attrs => :branch
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    readable_company = Company.create!
+    readable_company.test_attrs.create!(:branch => Branch.create!(:name => "A Branch"))
+
+    forbidden_company = Company.create!
+    forbidden_company.test_attrs.create!(:branch => Branch.create!(:name => "Different Branch"))
+
+    user = MockUser.new(:test_role)
+    assert_equal 1, Company.with_permissions_to(:read, :user => user).length
+    Company.delete_all
+    Branch.delete_all
     TestAttr.delete_all
   end
 

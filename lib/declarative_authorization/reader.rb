@@ -343,6 +343,14 @@ module Authorization
       # if_permitted_to associations may be nested as well:
       #   if_permitted_to :read, :branch => :company
       #
+      # You can even use has_many associations as target.  Then, it is checked
+      # if the current user has the required privilege on *any* of the target objects.
+      #   if_permitted_to :read, :branch => :employees
+      # Beware of performance issues with permission checks.  In the current implementation,
+      # all employees are checked until the first permitted is found.
+      # with_permissions_to, on the other hand, constructs more efficient SQL
+      # instead.
+      #
       # To check permissions based on the current object, the attribute has to
       # be left out:
       #   has_permission_on :branches, :to => :manage do
@@ -357,8 +365,9 @@ module Authorization
       #
       # Options:
       # [:+context+]
-      #   If the context of the refered object may not be infered from the
-      #   associations name, the context may be given explicitly:
+      #   When using with_permissions_to, the target context of the if_permitted_to
+      #   statement is infered from the last reflections target class.  Still,
+      #   you may override this algorithm by setting the context explicitly.
       #     if_permitted_to :read, :home_branch, :context => :branches
       #     if_permitted_to :read, :branch => :main_company, :context => :companies
       #
