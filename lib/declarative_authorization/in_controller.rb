@@ -51,7 +51,7 @@ module Authorization
     def permitted_to! (privilege, object_or_sym = nil, options = {}, &block)
       context = object = nil
       if object_or_sym.nil?
-        context = self.class.controller_name.to_sym
+        context = self.class.decl_auth_context
       elsif object_or_sym.is_a?(Symbol)
         context = object_or_sym
       else
@@ -133,32 +133,32 @@ module Authorization
       end
     end
 
-    def load_controller_object (context) # :nodoc:
-      instance_var = :"@#{context.to_s.singularize}"
-      model = context.to_s.classify.constantize
+    def load_controller_object (context_without_namespace = nil) # :nodoc:
+      instance_var = :"@#{context_without_namespace.to_s.singularize}"
+      model = context_without_namespace.to_s.classify.constantize
       instance_variable_set(instance_var, model.find(params[:id]))
     end
 
-    def load_parent_controller_object (parent_context) # :nodoc:
-      instance_var = :"@#{parent_context.to_s.singularize}"
-      model = parent_context.to_s.classify.constantize
-      instance_variable_set(instance_var, model.find(params[:"#{parent_context.to_s.singularize}_id"]))
+    def load_parent_controller_object (parent_context_without_namespace) # :nodoc:
+      instance_var = :"@#{parent_context_without_namespace.to_s.singularize}"
+      model = parent_context_without_namespace.to_s.classify.constantize
+      instance_variable_set(instance_var, model.find(params[:"#{parent_context_without_namespace.to_s.singularize}_id"]))
     end
 
-    def new_controller_object_from_params (context, parent_context) # :nodoc:
-      model_or_proxy = parent_context ?
-           instance_variable_get(:"@#{parent_context.to_s.singularize}").send(context.to_sym) :
-           context.to_s.classify.constantize
-      instance_var = :"@#{context.to_s.singularize}"
+    def new_controller_object_from_params (context_without_namespace, parent_context_without_namespace) # :nodoc:
+      model_or_proxy = parent_context_without_namespace ?
+           instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
+           context_without_namespace.to_s.classify.constantize
+      instance_var = :"@#{context_without_namespace.to_s.singularize}"
       instance_variable_set(instance_var,
-          model_or_proxy.new(params[context.to_s.singularize]))
+          model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
     end
 
-    def new_controller_object_for_collection (context, parent_context) # :nodoc:
-      model_or_proxy = parent_context ?
-           instance_variable_get(:"@#{parent_context.to_s.singularize}").send(context.to_sym) :
-           context.to_s.classify.constantize
-      instance_var = :"@#{context.to_s.singularize}"
+    def new_controller_object_for_collection (context_without_namespace, parent_context_without_namespace) # :nodoc:
+      model_or_proxy = parent_context_without_namespace ?
+           instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
+           context_without_namespace.to_s.classify.constantize
+      instance_var = :"@#{context_without_namespace.to_s.singularize}"
       instance_variable_set(instance_var, model_or_proxy.new)
     end
 
@@ -236,7 +236,8 @@ module Authorization
       # [:+require+] 
       #   Privilege required; defaults to action_name
       # [:+context+] 
-      #   The privilege's context, defaults to controller_name, pluralized.
+      #   The privilege's context, defaults to decl_auth_context, which consists
+      #   of controller_name, prepended by any namespaces
       # [:+attribute_check+]
       #   Enables the check of attributes defined in the authorization rules.
       #   Defaults to false.  If enabled, filter_access_to will use a context
@@ -500,6 +501,19 @@ module Authorization
           end
         end
       end
+
+      # Returns the context for authorization checks in the current controller.
+      # Uses the controller_name and prepends any namespaces underscored and
+      # joined with underscores.
+      #
+      # E.g.
+      #   AllThosePeopleController         => :all_those_people
+      #   AnyName::Space::ThingsController => :any_name_space_things
+      #
+      def decl_auth_context
+        prefixes = name.split('::')[0..-2].map(&:underscore)
+        ((prefixes + [controller_name]) * '_').to_sym
+      end
       
       protected
       def filter_access_permissions # :nodoc:
@@ -560,15 +574,14 @@ module Authorization
       if @filter_block
         return contr.instance_eval(&@filter_block)
       end
-      context = @context || contr.class.controller_name.to_sym
-      object = @attribute_check ? load_object(contr, context) : nil
+      object = @attribute_check ? load_object(contr) : nil
       privilege = @privilege || :"#{contr.action_name}"
 
       contr.authorization_engine.permit!(privilege, 
                                          :user => contr.send(:current_user),
                                          :object => object,
                                          :skip_attribute_test => !@attribute_check,
-                                         :context => context)
+                                         :context => @context || contr.class.decl_auth_context)
     end
     
     def remove_actions (actions)
@@ -577,13 +590,14 @@ module Authorization
     end
     
     private
-    def load_object(contr, context)
+    def load_object(contr)
       if @load_object_method and @load_object_method.is_a?(Symbol)
         contr.send(@load_object_method)
       elsif @load_object_method and @load_object_method.is_a?(Proc)
         contr.instance_eval(&@load_object_method)
       else
-        load_object_model = @load_object_model || context.to_s.classify.constantize
+        load_object_model = @load_object_model ||
+            (@context ? @context.to_s.classify.constantize : contr.class.controller_name.classify.constantize)
         instance_var = :"@#{load_object_model.name.underscore}"
         object = contr.instance_variable_get(instance_var)
         unless object
