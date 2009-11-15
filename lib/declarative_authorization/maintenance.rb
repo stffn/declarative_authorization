@@ -142,7 +142,13 @@ module Authorization
         with_user(user, &block)
       end
     end
-    
+
+    # Test helper to test authorization rules.  E.g.
+    #   with_user a_normal_user do
+    #     should_not_be_allowed_to :update, :conferences
+    #     should_not_be_allowed_to :read, an_unpublished_conference
+    #     should_be_allowed_to :read, a_published_conference
+    #   end
     def should_be_allowed_to (privilege, object_or_context)
       options = {}
       options[object_or_context.is_a?(Symbol) ? :context : :object] = object_or_context
@@ -151,6 +157,7 @@ module Authorization
       end
     end
 
+    # See should_be_allowed_to
     def should_not_be_allowed_to (privilege, object_or_context)
       options = {}
       options[object_or_context.is_a?(Symbol) ? :context : :object] = object_or_context
