@@ -1,3 +1,49 @@
+** RELEASE 0.4 (November 15, 2009) **
+
+* Implemented controller namespace handling [sb]
+
+* Improved if_attribute to allow nesting of has_many associations [sb]
+
+* Improved if_permitted_to: allow has_many associations and improved context inference [sb]
+
+* Added option on handling non-existant auto-loaded object [sb]
+
+* Added with_user as module method [sb]
+
+* Change support i18n [sb]
+
+** RELEASE 0.3.2.3 (October 12, 2009) **
+
+* Switched to gemcutter [sb]
+
+* Fixed has_role? for guest user. Closes #8 [sb]
+
+* Fixed unnecessary DB query with named scopes [sb, ledermann]
+
+* Change support: suggestions: grouping, sorting by affected users [sb]
+
+* Fixed context inference from AR objects for STI by switching to #class.name.tableize [sb]
+
+* Allow multiple contexts as arguments to has_permission_on [Jeroen van Dijk]
+
+** RELEASE 0.3.2.2 (August 27, 2009) **
+
+* Fix without_access_control test cases [sb]
+
+* Fixed error on debug logging (Closes #6) [sb]
+
+* Fixed without_access_control instance method in TestHelper [sb]
+
+** RELEASE 0.3.2.1 (August 14, 2009) **
+
+* Fix gemspec for Rdoc generation [sb]
+
+** RELEASE 0.3.2 (August 13, 2009) **
+
+* Fix for model-level permitted_to?/! [sb]
+
+** RELEASE 0.3.1 (August 12, 2009) **
+
 * Change Support: Suggestion grouping, sort by affected users [sb]
 
 * Changed context derived from objects to #class.name.tableize to fix STI [sb]
