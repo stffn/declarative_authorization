@@ -40,6 +40,14 @@ class TestModel < ActiveRecord::Base
       :through => :test_attrs_with_primary_id, :class_name => "TestAttrThrough",
       :source => :n_way_join_item
   end
+
+  # for checking for unnecessary queries
+  mattr_accessor :query_count
+  def self.find(*args)
+    self.query_count ||= 0
+    self.query_count += 1
+    super(*args)
+  end
 end
 
 class NWayJoinItem < ActiveRecord::Base
@@ -278,8 +286,19 @@ class ModelTest < Test::Unit::TestCase
     TestModel.create!(:country_id => 2, :content => "Content")
 
     user = MockUser.new(:test_role)
+
+    TestModel.query_count = 0
     assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
+    assert_equal 1, TestModel.query_count
+
+    TestModel.query_count = 0
     assert_equal 1, TestModel.with_content.with_permissions_to(:read, :user => user).length
+    assert_equal 1, TestModel.query_count
+
+    TestModel.query_count = 0
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length
+    assert_equal 1, TestModel.query_count
+
     TestModel.delete_all
   end
 
