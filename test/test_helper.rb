@@ -3,6 +3,7 @@ RAILS_ROOT = File.join(File.dirname(__FILE__), %w{.. .. .. ..})
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization rails_legacy})
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization authorization})
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization in_controller})
+require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization maintenance})
 
 unless defined?(ActiveRecord)
   if File.directory? RAILS_ROOT + 'config'
@@ -105,6 +106,8 @@ ActionController::Base.send :include, Authorization::AuthorizationInController
 require "action_controller/test_process"
 
 class Test::Unit::TestCase
+  include Authorization::TestHelper
+  
   def request! (user, action, reader, params = {})
     action = action.to_sym if action.is_a?(String)
     @controller.current_user = user

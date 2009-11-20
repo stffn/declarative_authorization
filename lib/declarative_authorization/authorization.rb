@@ -427,12 +427,11 @@ module Authorization
       (hash || @conditions_hash).all? do |attr, value|
         attr_value = object_attribute_value(object, attr)
         if value.is_a?(Hash)
-          case attr_value
-          when Enumerable
+          if attr_value.is_a?(Enumerable)
             attr_value.any? do |inner_value|
               validate?(attr_validator, inner_value, value)
             end
-          when nil
+          elsif attr_value == nil
             raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
           else
             validate?(attr_validator, attr_value, value)
@@ -588,10 +587,9 @@ module Authorization
       when Hash
         hash_or_attr.all? do |attr, sub_hash|
           attr_value = object_attribute_value(object, attr)
-          case attr_value
-          when nil
+          if attr_value == nil
             raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
-          when Enumerable
+          elsif attr_value.is_a?(Enumerable)
             attr_value.any? do |inner_value|
               validate?(attr_validator, inner_value, sub_hash)
             end

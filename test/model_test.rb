@@ -1289,6 +1289,40 @@ class ModelTest < Test::Unit::TestCase
     end
   end
 
+  def test_model_security_with_update_attrbributes
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_model_security_models, :to => :update do
+            if_attribute :test_attrs => { :branch => is { user.branch }}
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    params = {
+      :model_data => { :attr => 11 }
+    }
+
+    test_attr = TestAttr.create!(:branch => Branch.create!)
+    test_model = without_access_control do
+      TestModelSecurityModel.create!(:test_attrs => [test_attr])
+    end
+
+    with_user MockUser.new(:test_role, :branch => test_attr.branch) do
+      assert_nothing_raised do
+        test_model.update_attributes(params[:model_data])
+      end
+    end
+    assert_equal params[:model_data][:attr], test_model.reload.attr
+
+    TestAttr.delete_all
+    TestModelSecurityModel.delete_all
+    Branch.delete_all
+  end
+
   def test_using_access_control
     assert !TestModel.using_access_control?
     assert TestModelSecurityModel.using_access_control?
