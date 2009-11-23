@@ -66,10 +66,12 @@ module Authorization
       end
 
       # Loads and parses a DSL from the given file name.
-      def self.load (dsl_file)
+      def self.load (dsl_files)
         # TODO cache reader in production mode?
         reader = new
-        reader.parse(File.read(dsl_file), dsl_file)
+        dsl_files.each do |file|
+          reader.parse(File.read(file), file) if File.exist?(file)
+        end
         reader
       end
 

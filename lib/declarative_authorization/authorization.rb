@@ -20,7 +20,7 @@ module Authorization
   # The exception is raised to ensure that the entire rule is invalidated.
   class NilAttributeValueError < AuthorizationError; end
   
-  AUTH_DSL_FILE = "#{RAILS_ROOT}/config/authorization_rules.rb"
+  AUTH_DSL_FILES = ["#{RAILS_ROOT}/config/authorization_rules.rb"] unless defined? AUTH_DSL_FILES
   
   # Controller-independent method for retrieving the current user.
   # Needed for model security where the current controller is not available.
@@ -67,7 +67,7 @@ module Authorization
     def initialize (reader = nil)
       if reader.nil?
         begin
-          reader = Reader::DSLReader.load(AUTH_DSL_FILE)
+          reader = Reader::DSLReader.load(AUTH_DSL_FILES)
         rescue SystemCallError
           reader = Reader::DSLReader.new
         end
