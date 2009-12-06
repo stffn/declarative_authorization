@@ -323,8 +323,7 @@ authorization in mind.
 
 In your test_helper.rb, to enable the helpers add
 
-    require File.expand_path(File.dirname(__FILE__) +
-        "/../vendor/plugins/declarative_authorization/lib/maintenance")
+    require 'declarative_authorization/maintenance'
 
     class Test::Unit::TestCase
       include Authorization::TestHelper
