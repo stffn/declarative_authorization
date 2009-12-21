@@ -37,7 +37,7 @@ class AuthorizationRulesController < ApplicationController
     @privileges = authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq
     @privileges = @privileges.collect do |priv|
       priv = Authorization::DevelopmentSupport::AnalyzerEngine::Privilege.for_sym(priv, authorization_engine)
-      (priv.descendants + priv.ancestors).map(&:to_sym)
+      ([priv] + priv.descendants + priv.ancestors).map(&:to_sym)
     end.flatten.uniq
     @privileges.sort_by {|priv| priv.to_s}
     @privilege = params[:privilege].to_sym rescue @privileges.first
