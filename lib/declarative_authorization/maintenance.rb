@@ -132,6 +132,11 @@ module Authorization
   #      ...
   #    end
   #  end
+  #
+  # Note: get_with etc. do two things to set the user for the request:
+  # Authorization.current_user is set and session[:user], session[:user_id]
+  # are set appropriately.  If you determine the current user in a different
+  # way, these methods might not work for you.
   module TestHelper
     include Authorization::Maintenance
     
