@@ -1,3 +1,5 @@
+* Allow multiple authorization rules files [kaichen]
+
 ** RELEASE 0.4 (November 15, 2009) **
 
 * Implemented controller namespace handling [sb]

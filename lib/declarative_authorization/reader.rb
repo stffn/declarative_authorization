@@ -69,6 +69,7 @@ module Authorization
       def self.load (dsl_files)
         # TODO cache reader in production mode?
         reader = new
+        dsl_files = [dsl_files].flatten
         dsl_files.each do |file|
           reader.parse(File.read(file), file) if File.exist?(file)
         end

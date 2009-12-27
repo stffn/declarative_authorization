@@ -62,7 +62,7 @@ module Authorization
       :rev_role_hierarchy
     
     # If +reader+ is not given, a new one is created with the default
-    # authorization configuration of +AUTH_DSL_FILE+.  If given, may be either
+    # authorization configuration of +AUTH_DSL_FILES+.  If given, may be either
     # a Reader object or a path to a configuration file.
     def initialize (reader = nil)
       if reader.nil?
