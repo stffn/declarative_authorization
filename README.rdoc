@@ -488,18 +488,10 @@ sbartsch at tzi.org
 
 = Contributors
 
-Thanks to
-* Eike Carls
-* Erik Dahlstrand
-* Jeroen van Dijk
-* Jeremy Friesen
-* Brian Langenfeld
-* Georg Ledermann
-* Geoff Longman
-* Olly Lylo
-* Mark Mansour
-* Thomas Maurer
-* Mike Vincent
+Thanks to John Joseph Bachir, Eike Carls, Kai Chen, Erik Dahlstrand,
+Jeroen van Dijk, Jeremy Friesen, Daniel Kristensen, Brian Langenfeld,
+Georg Ledermann, Geoff Longman, Olly Lylo, Mark Mansour, Thomas Maurer,
+Mike Vincent
 
 
 = Licence

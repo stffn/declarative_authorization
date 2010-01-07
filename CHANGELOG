@@ -1,3 +1,5 @@
+* Support shallow nested resources [jjb]
+
 * Allow multiple authorization rules files [kaichen]
 
 ** RELEASE 0.4 (November 15, 2009) **
