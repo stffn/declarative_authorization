@@ -419,7 +419,9 @@ module Authorization
       # [:+shallow+]
       #   Only relevant when used in conjunction with +nested_in+. Specifies a nested resource
       #   as being a shallow nested resource, resulting in the controller not attempting to
-      #   load a parent object for the following actions: :+show+, :+edit+, :+update+, :+destroy+
+      #   load a parent object for all member actions defined by +member+ and
+      #   +additional_member+ or rather the default member actions (:+show+, :+edit+,
+      #   :+update+, :+destroy+).
       # [:+no_attribute_check+]
       #   Allows to set actions for which no attribute check should be perfomed.
       #   See filter_access_to on details.  By default, with no +nested_in+,
@@ -453,7 +455,7 @@ module Authorization
 
         unless options[:nested_in].blank?
           load_parent_method = :"load_#{options[:nested_in].to_s.singularize}"
-          shallow_exceptions = options[:shallow] ? {:except => [ :show, :edit, :update, :destroy ]} : {}
+          shallow_exceptions = options[:shallow] ? {:except => members.keys} : {}
           before_filter shallow_exceptions do |controller|
             if controller.respond_to?(load_parent_method)
               controller.send(load_parent_method)
