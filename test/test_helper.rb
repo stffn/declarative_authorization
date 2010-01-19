@@ -6,7 +6,7 @@ require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization in
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization maintenance})
 
 unless defined?(ActiveRecord)
-  if File.directory? RAILS_ROOT + 'config'
+  if File.directory? RAILS_ROOT + '/config'
     puts 'using config/boot.rb'
     ENV['RAILS_ENV'] = 'test'
     require File.join(RAILS_ROOT, 'config', 'boot.rb')
