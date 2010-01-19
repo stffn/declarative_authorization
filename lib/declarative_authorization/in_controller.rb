@@ -274,8 +274,7 @@ module Authorization
         context = options[:context]
         actions = args.flatten
 
-        # collect permits in controller array for use in one before_filter
-        unless filter_chain.any? {|filter| filter.method == :filter_access_filter}
+        if all_filter_access_permissions.empty?
           before_filter :filter_access_filter
         end
         

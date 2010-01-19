@@ -69,11 +69,12 @@ module Authorization
           }.merge(options)
           engine = options[:engine] || Authorization::Engine.instance
 
-          scope = ObligationScope.new( options[:model], {} )
+          obligation_scope = ObligationScope.new( options[:model], {} )
           engine.obligations( privileges, :user => options[:user], :context => options[:context] ).each do |obligation|
-            scope.parse!( obligation )
+            obligation_scope.parse!( obligation )
           end
-          scope
+
+          obligation_scope.scope
         end
 
         # Named scope for limiting query results according to the authorization
@@ -132,15 +133,17 @@ module Authorization
                   :object => object, :context => options[:context])
               end
             end
-
-            # after_find is only called if after_find is implemented
-            after_find do |object|
-              Authorization::Engine.instance.permit!(:read, :object => object,
-                :context => options[:context])
-            end
             
             if options[:include_read]
-              def after_find; end
+              # after_find is only called if after_find is implemented
+              after_find do |object|
+                Authorization::Engine.instance.permit!(:read, :object => object,
+                  :context => options[:context])
+              end
+
+              if Rails.version < "3"
+                def after_find; end
+              end
             end
 
             def self.using_access_control?
