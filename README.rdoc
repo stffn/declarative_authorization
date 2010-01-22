@@ -467,7 +467,9 @@ Then, point your browser to
 
 The browser needs Rails 2.3 (for Engine support).  The graphical view requires 
 Graphviz (which e.g. can be installed through the graphviz package under Debian 
-and Ubuntu) and has only been tested under Linux.
+and Ubuntu) and has only been tested under Linux.  Note: for Change Support
+you'll need to have a User#login method that returns a non-ambiguous user
+name for identification.
 
 
 = Help and Contact
