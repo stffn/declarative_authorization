@@ -309,18 +309,8 @@ module Authorization
     # Returns the privilege hierarchy flattened for given privileges in context.
     def flatten_privileges (privileges, context = nil)
       # TODO caching?
-      #if context.nil?
-      #  context = privileges.collect { |p| p.to_s.split('_') }.
-      #                       reject { |p_p| p_p.length < 2 }.
-      #                       collect { |p_p| (p_p[1..-1] * '_').to_sym }.first
-      #  raise AuthorizationUsageError, "No context given or inferable from privileges #{privileges.inspect}" unless context
-      #end
       raise AuthorizationUsageError, "No context given or inferable from object" unless context
-      #context_regex = Regexp.new "_#{context}$"
-      # TODO work with contextless privileges
-      #flattened_privileges = privileges.collect {|p| p.to_s.sub(context_regex, '')}
-      flattened_privileges = privileges.clone #collect {|p| p.to_s.end_with?(context.to_s) ?
-                                              #       p : [p, "#{p}_#{context}".to_sym] }.flatten
+      flattened_privileges = privileges.clone
       flattened_privileges.each do |priv|
         flattened_privileges.concat(@rev_priv_hierarchy[[priv, nil]]).uniq! if @rev_priv_hierarchy[[priv, nil]]
         flattened_privileges.concat(@rev_priv_hierarchy[[priv, context]]).uniq! if @rev_priv_hierarchy[[priv, context]]
@@ -612,7 +602,11 @@ module Authorization
         @context ||= begin
           rule_model = attr_validator.context.to_s.classify.constantize
           context_reflection = self.class.reflection_for_path(rule_model, path + [hash_or_attr])
-          context_reflection.klass.table_name.to_sym
+          if context_reflection.klass.respond_to?(:decl_auth_context)
+            context_reflection.klass.decl_auth_context
+          else
+            context_reflection.klass.name.tableize.to_sym
+          end
         rescue # missing model, reflections
           hash_or_attr.to_s.pluralize.to_sym
         end
