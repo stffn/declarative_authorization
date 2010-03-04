@@ -220,7 +220,8 @@ class LoadObjectControllerTest < ActionController::TestCase
       authorization do
         role :test_role do
           has_permission_on :load_mock_objects, :to => [:show, :edit] do
-            if_attribute :id => is {"1"}
+            if_attribute :id => 1
+            if_attribute :id => "1"
           end
         end
       end
@@ -372,7 +373,7 @@ class CommonChild1Controller < CommonController
 end
 class CommonChild2Controller < CommonController
   filter_access_to :delete
-  define_action_methods :show
+  define_action_methods :show, :delete
 end
 class HierachicalControllerTest < ActionController::TestCase
   tests CommonChild2Controller

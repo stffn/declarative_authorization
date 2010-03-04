@@ -379,7 +379,7 @@ Then,
 
 == Providing the Plugin's Requirements
 The requirements are
-* Rails >= 2.1 and Ruby >= 1.8.6, including 1.9
+* Rails >= 2.2, including 3 and Ruby >= 1.8.6, including 1.9
 * An authentication mechanism 
 * A user object returned by Controller#current_user
 * An array of role symbols returned by User#role_symbols

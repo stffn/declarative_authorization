@@ -1,5 +1,11 @@
 require 'test/unit'
-RAILS_ROOT = File.join(File.dirname(__FILE__), %w{.. .. .. ..})
+
+unless defined?(RAILS_ROOT)
+  RAILS_ROOT = ENV['RAILS_ROOT'] ?
+      ENV['RAILS_ROOT'] + "" :
+      File.join(File.dirname(__FILE__), %w{.. .. .. ..})
+end
+
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization rails_legacy})
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization authorization})
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization in_controller})
@@ -7,17 +13,22 @@ require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization ma
 
 unless defined?(ActiveRecord)
   if File.directory? RAILS_ROOT + '/config'
-    puts 'using config/boot.rb'
+    puts 'Using config/boot.rb'
     ENV['RAILS_ENV'] = 'test'
-    require File.join(RAILS_ROOT, 'config', 'boot.rb')
+    require File.join(RAILS_ROOT, 'config', 'environment.rb')
   else
     # simply use installed gems if available
-    puts 'using rubygems'
+    version_requirement = ENV['RAILS_VERSION'] ? "= #{ENV['RAILS_VERSION']}" : nil
+    puts "Using Rails from RubyGems (#{version_requirement || "default"})"
     require 'rubygems'
-    gem 'actionpack'; gem 'activerecord'; gem 'activesupport'; gem 'rails'
+    %w{actionpack activerecord activesupport rails}.each do |gem_name|
+      gem gem_name, version_requirement
+    end
   end
 
-  %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
+  unless defined?(Rails)  # needs to be explicit in Rails < 3
+    %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
+  end
 end
 
 begin
@@ -103,7 +114,9 @@ ActionController::Routing::Routes.draw do |map|
   map.connect ':controller/:action/:id'
 end
 ActionController::Base.send :include, Authorization::AuthorizationInController
-require "action_controller/test_process"
+if Rails.version < "3"
+  require "action_controller/test_process"
+end
 
 class Test::Unit::TestCase
   include Authorization::TestHelper

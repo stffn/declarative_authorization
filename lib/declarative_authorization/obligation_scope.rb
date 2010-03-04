@@ -33,6 +33,7 @@ module Authorization
   #   [ :attr, :is, <user.id> ]
   # ]+
   #
+  # TODO update doc for Relations:
   # After successfully parsing an obligation, all of the stored paths and conditions are converted
   # into scope options (stored in +proxy_options+ as +:joins+ and +:conditions+).  The resulting
   # scope may then be used to find all scoped objects for which at least one of the parsed
@@ -42,7 +43,20 @@ module Authorization
   # @proxy_options[:conditions] = [ 'foos_bazzes.attr = :foos_bazzes__id_0', { :foos_bazzes__id_0 => 1 } ]+
   #
   class ObligationScope < ActiveRecord::NamedScope::Scope
-    
+    def initialize (model, options)
+      @finder_options = {}
+      super(model, options)
+    end
+
+    def scope
+      if Rails.version < "3"
+        self
+      else
+        # for Rails < 3: scope, after setting proxy_options
+        self.klass.scoped(@finder_options)
+      end
+    end
+
     # Consumes the given obligation, converting it into scope join and condition options.
     def parse!( obligation )
       @current_obligation = obligation
@@ -78,6 +92,18 @@ module Authorization
       else
         raise "invalid obligation path #{[past_steps, steps].inspect}"
       end
+    end
+
+    def top_level_model
+      if Rails.version < "3"
+        @proxy_scope
+      else
+        self.klass
+      end
+    end
+
+    def finder_options
+      Rails.version < "3" ? @proxy_options : @finder_options
     end
     
     # At the end of every association path, we expect to see a comparison of some kind; for
@@ -135,7 +161,7 @@ module Authorization
     def map_reflection_for( path )
       raise "reflection for #{path.inspect} already exists" unless reflections[path].nil?
 
-      reflection = path.empty? ? @proxy_scope : begin
+      reflection = path.empty? ? top_level_model : begin
         parent = reflection_for( path[0..-2] )
         if !parent.respond_to?(:proxy_reflection) and parent.respond_to?(:klass)
           parent.klass.reflect_on_association( path.last )
@@ -151,6 +177,7 @@ module Authorization
       map_table_alias_for( path )  # Claim a table alias for the path.
 
       # Claim alias for join table
+      # TODO change how this is checked
       if !reflection.respond_to?(:proxy_scope) and reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
         join_table_path = path[0..-2] + [reflection.options[:through]]
         reflection_for(join_table_path, true)
@@ -209,7 +236,7 @@ module Authorization
         conditions.each do |path, expressions|
           model = model_for( path )
           table_alias = table_alias_for(path)
-          parent_model = (path.length > 1 ? model_for(path[0..-2]) : @proxy_scope)
+          parent_model = (path.length > 1 ? model_for(path[0..-2]) : top_level_model)
           expressions.each do |expression|
             attribute, operator, value = expression
             # prevent unnecessary joins:
@@ -227,7 +254,8 @@ module Authorization
             end
             bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
 
-            sql_attribute = "#{connection.quote_table_name(attribute_table_alias)}.#{connection.quote_table_name(attribute_name)}"
+            sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." +
+                "#{parent_model.connection.quote_table_name(attribute_name)}"
             if value.nil? and [:is, :is_not].include?(operator)
               obligation_conds << "#{sql_attribute} IS #{[:contains, :is].include?(operator) ? '' : 'NOT '}NULL"
             else
@@ -247,7 +275,8 @@ module Authorization
         conds << "(#{obligation_conds.join(' AND ')})"
       end
       (delete_paths - used_paths).each {|path| reflections.delete(path)}
-      @proxy_options[:conditions] = [ conds.join( " OR " ), binds ]
+
+      finder_options[:conditions] = [ conds.join( " OR " ), binds ]
     end
 
     def attribute_value (value)
@@ -259,7 +288,7 @@ module Authorization
     # Parses all of the defined obligation joins and defines the scope's :joins or :includes option.
     # TODO: Support non-linear association paths.  Right now, we just break down the longest path parsed.
     def rebuild_join_options!
-      joins = (@proxy_options[:joins] || []) + (@proxy_options[:includes] || [])
+      joins = (finder_options[:joins] || []) + (finder_options[:includes] || [])
 
       reflections.keys.each do |path|
         next if path.empty? or @join_table_joins.include?(path)
@@ -283,11 +312,11 @@ module Authorization
       when 0 then
         # No obligation conditions means we don't have to mess with joins or includes at all.
       when 1 then
-        @proxy_options[:joins] = joins
-        @proxy_options.delete( :include )
+        finder_options[:joins] = joins
+        finder_options.delete( :include )
       else
-        @proxy_options.delete( :joins )
-        @proxy_options[:include] = joins
+        finder_options.delete( :joins )
+        finder_options[:include] = joins
       end
     end
 
