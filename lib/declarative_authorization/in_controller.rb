@@ -274,9 +274,7 @@ module Authorization
         context = options[:context]
         actions = args.flatten
 
-        if all_filter_access_permissions.empty?
-          before_filter :filter_access_filter
-        end
+        before_filter :filter_access_filter
         
         filter_access_permissions.each do |perm|
           perm.remove_actions(actions)
