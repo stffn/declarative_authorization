@@ -34,6 +34,20 @@ class AuthorizationTest < Test::Unit::TestCase
       :user => MockUser.new(:test_role))
   end
 
+  def test_permit_elevated_people
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :admin do
+          has_omnipotence
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert engine.permit?(:test, :context => :people,
+      :user => MockUser.new(:admin))
+  end
+
   def test_permit_multiple_contexts
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

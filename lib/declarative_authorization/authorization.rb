@@ -57,7 +57,7 @@ module Authorization
   # a certain privilege is granted for the current user.
   #
   class Engine
-    attr_reader :roles, :role_titles, :role_descriptions, :privileges,
+    attr_reader :roles, :omnipotent_roles, :role_titles, :role_descriptions, :privileges,
       :privilege_hierarchy, :auth_rules, :role_hierarchy, :rev_priv_hierarchy,
       :rev_role_hierarchy
     
@@ -72,6 +72,7 @@ module Authorization
       @privilege_hierarchy = reader.privileges_reader.privilege_hierarchy
       @auth_rules = reader.auth_rules_reader.auth_rules
       @roles = reader.auth_rules_reader.roles
+      @omnipotent_roles = reader.auth_rules_reader.omnipotent_roles
       @role_hierarchy = reader.auth_rules_reader.role_hierarchy
 
       @role_titles = reader.auth_rules_reader.role_titles
@@ -153,6 +154,7 @@ module Authorization
       
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 
+      return true unless (roles & @omnipotent_roles).empty?
       # find a authorization rule that matches for at least one of the roles and 
       # at least one of the given privileges
       attr_validator = AttributeValidator.new(self, user, options[:object], privilege, options[:context])

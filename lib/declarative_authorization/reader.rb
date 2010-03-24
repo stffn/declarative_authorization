@@ -167,12 +167,13 @@ module Authorization
 
     class AuthorizationRulesReader
       attr_reader :roles, :role_hierarchy, :auth_rules,
-        :role_descriptions, :role_titles # :nodoc:
+        :role_descriptions, :role_titles, :omnipotent_roles # :nodoc:
 
       def initialize # :nodoc:
         @current_role = nil
         @current_rule = nil
         @roles = []
+        @omnipotent_roles = []
         # higher_role => [lower_roles]
         @role_hierarchy = {}
         @role_titles = {}
@@ -268,6 +269,10 @@ module Authorization
         end
       end
       
+      def has_omnipotence
+        @omnipotent_roles << @current_role
+      end
+
       # Sets a description for the current role.  E.g.
       #   role :admin
       #     description "To be assigned to administrative personnel"
