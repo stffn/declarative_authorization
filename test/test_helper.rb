@@ -18,7 +18,7 @@ unless defined?(ActiveRecord)
     require File.join(RAILS_ROOT, 'config', 'environment.rb')
   else
     # simply use installed gems if available
-    version_requirement = ENV['RAILS_VERSION'] ? "= #{ENV['RAILS_VERSION']}" : nil
+    version_requirement = ENV['RAILS_VERSION'] ? "= #{ENV['RAILS_VERSION']}" : "> 2.1.0"
     puts "Using Rails from RubyGems (#{version_requirement || "default"})"
     require 'rubygems'
     %w{actionpack activerecord activesupport rails}.each do |gem_name|
