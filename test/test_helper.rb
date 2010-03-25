@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'pathname'
 
 unless defined?(RAILS_ROOT)
   RAILS_ROOT = ENV['RAILS_ROOT'] ?
@@ -6,10 +7,12 @@ unless defined?(RAILS_ROOT)
       File.join(File.dirname(__FILE__), %w{.. .. .. ..})
 end
 
-require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization rails_legacy})
-require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization authorization})
-require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization in_controller})
-require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization maintenance})
+DA_ROOT = Pathname.new(File.expand_path("..", File.dirname(__FILE__)))
+
+require DA_ROOT + File.join(%w{lib declarative_authorization rails_legacy})
+require DA_ROOT + File.join(%w{lib declarative_authorization authorization})
+require DA_ROOT + File.join(%w{lib declarative_authorization in_controller})
+require DA_ROOT + File.join(%w{lib declarative_authorization maintenance})
 
 unless defined?(ActiveRecord)
   if File.directory? RAILS_ROOT + '/config'
