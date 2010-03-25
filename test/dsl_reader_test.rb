@@ -164,4 +164,10 @@ class DSLReaderTest < Test::Unit::TestCase
     reader = Authorization::Reader::DSLReader.factory((DA_ROOT + "authorization_rules.dist.rb").to_s)
     assert_equal(Authorization::Reader::DSLReader, reader.class)
   end
+
+  def test_load_file_not_found
+    assert_raise(Authorization::Reader::DSLFileNotFoundError) do
+      Authorization::Reader::DSLReader.load("nonexistent_file.rb")
+    end
+  end
 end

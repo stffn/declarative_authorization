@@ -35,6 +35,8 @@ module Authorization
   # * PrivilegesReader#includes
   #
   module Reader
+    # Signals that the specified file to load was not found.
+    class DSLFileNotFoundError < Exception; end
     # Signals errors that occur while reading and parsing an authorization DSL
     class DSLError < Exception; end
     # Signals errors in the syntax of an authorization DSL.
@@ -62,11 +64,7 @@ module Authorization
         when Reader::DSLReader
           obj
         when String, Array
-          begin
-            load(obj)
-          rescue SystemCallError
-            reader = Reader::DSLReader.new
-          end
+          load(obj)
         end
       end
 
@@ -88,7 +86,11 @@ module Authorization
         reader = new
         dsl_files = [dsl_files].flatten
         dsl_files.each do |file|
-          reader.parse(File.read(file), file) if File.exist?(file)
+          begin
+            reader.parse(File.read(file), file)
+          rescue SystemCallError
+            raise ::Authorization::Reader::DSLFileNotFoundError, "Error reading authorization rules file with path '#{file}'!  Please ensure it exists and that it is accessible."
+          end
         end
         reader
       end
