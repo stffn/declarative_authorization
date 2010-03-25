@@ -65,15 +65,8 @@ module Authorization
     # authorization configuration of +AUTH_DSL_FILES+.  If given, may be either
     # a Reader object or a path to a configuration file.
     def initialize (reader = nil)
-      if reader.nil?
-        begin
-          reader = Reader::DSLReader.load(AUTH_DSL_FILES)
-        rescue SystemCallError
-          reader = Reader::DSLReader.new
-        end
-      elsif reader.is_a?(String)
-        reader = Reader::DSLReader.load(reader)
-      end
+      reader = Reader::DSLReader.factory(reader || AUTH_DSL_FILES)
+
       @privileges = reader.privileges_reader.privileges
       # {priv => [[priv, ctx],...]}
       @privilege_hierarchy = reader.privileges_reader.privilege_hierarchy

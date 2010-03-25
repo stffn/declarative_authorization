@@ -53,6 +53,23 @@ module Authorization
         @auth_rules_reader = AuthorizationRulesReader.new
       end
 
+      # ensures you get back a DSLReader
+      # if you provide a:
+      #   DSLReader - you will get it back.
+      #   String or Array - it will treat it as if you have passed a path or an array of paths and attempt to load those.
+      def self.factory(obj)
+        case obj
+        when Reader::DSLReader
+          obj
+        when String, Array
+          begin
+            load(obj)
+          rescue SystemCallError
+            reader = Reader::DSLReader.new
+          end
+        end
+      end
+
       # Parses a authorization DSL specification from the string given
       # in +dsl_data+.  Raises DSLSyntaxError if errors occur on parsing.
       def parse (dsl_data, file_name = nil)
