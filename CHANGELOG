@@ -1,4 +1,8 @@
-* Rails 3 support
+* Omnipotent roles [timcharper]
+
+* Meaningful error in case of missing authorization rules file [timcharper]
+
+* Rails 3 support [sb]
 
 * Support shallow nested resources [jjb]
 

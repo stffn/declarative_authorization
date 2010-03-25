@@ -268,8 +268,13 @@ module Authorization
           @current_rule = nil
         end
       end
-      
+
+      # Removes any permission checks for the current role.
+      #   role :admin
+      #     has_omnipotence
+      #   end
       def has_omnipotence
+        raise DSLError, "has_omnipotence only allowed in role blocks" if @current_role.nil?
         @omnipotent_roles << @current_role
       end
 
