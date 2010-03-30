@@ -154,7 +154,8 @@ module Authorization
       
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 
-      return true unless (roles & @omnipotent_roles).empty?
+      return true if roles.is_a?(Array) and not (roles & @omnipotent_roles).empty?
+
       # find a authorization rule that matches for at least one of the roles and 
       # at least one of the given privileges
       attr_validator = AttributeValidator.new(self, user, options[:object], privilege, options[:context])
