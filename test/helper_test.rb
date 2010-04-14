@@ -99,6 +99,7 @@ class HelperTest < ActionController::TestCase
     
     assert has_role?(:test_role)
     assert !has_role?(:test_role2)
+    assert !has_role?(:test_role, :test_role2)
     
     block_evaled = false
     has_role?(:test_role) do
