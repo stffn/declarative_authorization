@@ -113,9 +113,18 @@ class MocksController < ActionController::Base
   end
 end
 
-ActionController::Routing::Routes.draw do |map|
-  map.connect ':controller/:action/:id'
+if Rails.version < "3"
+  ActionController::Routing::Routes.draw do |map|
+    map.connect ':controller/:action/:id'
+  end
+else
+  Rails::Application.routes.draw do
+    match '/name/spaced_things(/:action)' => 'name/spaced_things'
+    match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things'
+    match '/:controller(/:action(/:id))'
+  end
 end
+
 ActionController::Base.send :include, Authorization::AuthorizationInController
 if Rails.version < "3"
   require "action_controller/test_process"
@@ -133,5 +142,11 @@ class Test::Unit::TestCase
       @controller.instance_variable_set(var, nil)
     end
     get action, params
+  end
+
+  unless Rails.version < "3"
+    def setup
+      @routes = Rails::Application.routes
+    end
   end
 end
