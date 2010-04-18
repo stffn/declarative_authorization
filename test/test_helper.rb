@@ -7,13 +7,6 @@ unless defined?(RAILS_ROOT)
       File.join(File.dirname(__FILE__), %w{.. .. .. ..})
 end
 
-DA_ROOT = Pathname.new(File.expand_path("..", File.dirname(__FILE__)))
-
-require DA_ROOT + File.join(%w{lib declarative_authorization rails_legacy})
-require DA_ROOT + File.join(%w{lib declarative_authorization authorization})
-require DA_ROOT + File.join(%w{lib declarative_authorization in_controller})
-require DA_ROOT + File.join(%w{lib declarative_authorization maintenance})
-
 unless defined?(ActiveRecord)
   if File.directory? RAILS_ROOT + '/config'
     puts 'Using config/boot.rb'
@@ -33,6 +26,13 @@ unless defined?(ActiveRecord)
     %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
   end
 end
+
+DA_ROOT = Pathname.new(File.expand_path("..", File.dirname(__FILE__)))
+
+require DA_ROOT + File.join(%w{lib declarative_authorization rails_legacy})
+require DA_ROOT + File.join(%w{lib declarative_authorization authorization})
+require DA_ROOT + File.join(%w{lib declarative_authorization in_controller})
+require DA_ROOT + File.join(%w{lib declarative_authorization maintenance})
 
 begin
   require 'ruby-debug'

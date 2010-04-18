@@ -20,7 +20,7 @@ module Authorization
   # The exception is raised to ensure that the entire rule is invalidated.
   class NilAttributeValueError < AuthorizationError; end
   
-  AUTH_DSL_FILES = ["#{RAILS_ROOT}/config/authorization_rules.rb"] unless defined? AUTH_DSL_FILES
+  AUTH_DSL_FILES = ["#{Rails.root}/config/authorization_rules.rb"] unless defined? AUTH_DSL_FILES
   
   # Controller-independent method for retrieving the current user.
   # Needed for model security where the current controller is not available.
@@ -40,7 +40,7 @@ module Authorization
   end
 
   def self.activate_authorization_rules_browser? # :nodoc:
-    ::RAILS_ENV == 'development'
+    ::Rails.env.development?
   end
 
   @@dot_path = "dot"

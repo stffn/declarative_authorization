@@ -55,9 +55,9 @@ module Authorization
       def self.usages_by_controller
         # load each application controller
         begin
-          Dir.foreach(File.join(RAILS_ROOT, %w{app controllers})) do |entry|
+          Dir.foreach(File.join(::Rails.root, %w{app controllers})) do |entry|
             if entry =~ /^\w+_controller\.rb$/
-              require File.join(RAILS_ROOT, %w{app controllers}, entry)
+              require File.join(::Rails.root, %w{app controllers}, entry)
             end
           end
         rescue Errno::ENOENT

@@ -18,7 +18,7 @@ class AuthorizationRulesController < ApplicationController
   def index
     respond_to do |format|
       format.html do
-        @auth_rules_script = File.read("#{RAILS_ROOT}/config/authorization_rules.rb")
+        @auth_rules_script = File.read("#{::Rails.root}/config/authorization_rules.rb")
       end
     end
   end
