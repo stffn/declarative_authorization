@@ -112,7 +112,7 @@ module Authorization
                   else
                     !DEFAULT_DENY
                   end
-      rescue AuthorizationError => e
+      rescue NotAuthorized => e
         auth_exception = e
       end
 

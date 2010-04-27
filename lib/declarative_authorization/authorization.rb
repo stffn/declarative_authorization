@@ -518,8 +518,9 @@ module Authorization
       begin
         object.send(attr)
       rescue ArgumentError, NoMethodError => e
-        raise AuthorizationUsageError, "Error when calling #{attr} on " +
-         "#{object.inspect} for validating attribute: #{e}"
+        raise AuthorizationUsageError, "Error occurred while validating attribute ##{attr} on #{object.inspect}: #{e}.\n" +
+          "Please check your authorization rules and ensure the attribute is correctly spelled and \n" +
+          "corresponds to a method on the model you are authorizing for."
       end
     end
 
