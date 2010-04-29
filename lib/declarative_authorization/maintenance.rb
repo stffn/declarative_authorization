@@ -171,7 +171,7 @@ module Authorization
     
     def request_with (user, method, xhr, action, params = {}, 
         session = {}, flash = {})
-      session = session.merge({:user => user, :user_id => user.id})
+      session = session.merge({:user => user, :user_id => user && user.id})
       with_user(user) do
         if xhr
           xhr method, action, params, session, flash
