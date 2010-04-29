@@ -9,6 +9,8 @@ if Rails::VERSION::STRING < min_rails_version
   raise "declarative_authorization requires Rails #{min_rails_version}.  You are using #{Rails::VERSION::STRING}."
 end
 
+require File.join(%w{declarative_authorization railsengine}) if defined?(::Rails::Engine)
+
 ActionController::Base.send :include, Authorization::AuthorizationInController
 ActionController::Base.helper Authorization::AuthorizationHelper
 

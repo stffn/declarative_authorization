@@ -1,5 +1,4 @@
 # Authorization
-require File.dirname(__FILE__) + '/railsengine' if defined?(::Rails::Engine)
 require File.dirname(__FILE__) + '/reader.rb'
 require "set"
 
