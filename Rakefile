@@ -33,11 +33,3 @@ desc "clone the garlic repo (for running ci tasks)"
 task :get_garlic do
   sh "git clone git://github.com/ianwhite/garlic.git garlic"
 end
-
-desc "Expand filelist in src gemspec"
-task :build_gemspec do
-  gemspec_data = File.read("declarative_authorization.gemspec.src")
-  gemspec_data.gsub!(/\.files = (.*)/) {|m| ".files = #{eval($1).inspect}"}
-  File.open("declarative_authorization.gemspec", "w") {|f| f.write(gemspec_data)}
-end
-
