@@ -36,14 +36,14 @@ module AuthorizationRulesHelper
       note = %Q{<span class="note" title="#{h text}">[i]</span>}
       marked_up_by_line[line - 1] = note + marked_up_by_line[line - 1]
     end
-    marked_up_by_line * "\n"
+    (marked_up_by_line * "\n").html_safe
   end
-  
+
   def link_to_graph (title, options = {})
     type = options[:type] || ''
     link_to_function title, "$$('object')[0].data = '#{url_for :action => 'index', :format => 'svg', :type => type}'"
   end
-  
+
   def navigation
     link_to("Rules", authorization_rules_path) << ' | ' <<
     link_to("Change Support", change_authorization_rules_path) << ' | ' <<

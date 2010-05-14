@@ -12,3 +12,12 @@ class Hash
     end
   end
 end
+
+unless String.respond_to?(:html_safe)
+  class String
+    def html_safe
+      @_rails_html_safe = true
+      self
+    end
+  end
+end
