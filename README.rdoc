@@ -493,7 +493,7 @@ sbartsch at tzi.org
 Thanks to John Joseph Bachir, Eike Carls, Kai Chen, Erik Dahlstrand,
 Jeroen van Dijk, Sebastian Dyck, Jeremy Friesen, Tim Harper, Daniel Kristensen,
 Brian Langenfeld, Georg Ledermann, Geoff Longman, Olly Lylo, Mark Mansour,
-Thomas Maurer, Mike Vincent
+Thomas Maurer, TJ Singleton, Mike Vincent
 
 
 = Licence
