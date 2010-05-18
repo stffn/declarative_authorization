@@ -13,10 +13,9 @@ class Hash
   end
 end
 
-unless String.respond_to?(:html_safe)
+unless String.instance_methods.include?(:html_safe)
   class String
     def html_safe
-      @_rails_html_safe = true
       self
     end
   end
