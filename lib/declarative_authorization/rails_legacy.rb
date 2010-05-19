@@ -13,8 +13,8 @@ class Hash
   end
 end
 
-unless String.instance_methods.include?('html_safe')
-  class String
+class String
+  unless "".respond_to?(:html_safe)
     def html_safe
       self
     end
