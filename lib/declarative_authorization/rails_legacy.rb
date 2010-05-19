@@ -13,7 +13,7 @@ class Hash
   end
 end
 
-unless String.instance_methods.include?(:html_safe)
+unless String.instance_methods.include?('html_safe')
   class String
     def html_safe
       self
