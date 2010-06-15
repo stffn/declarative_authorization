@@ -308,7 +308,7 @@ module Authorization
       #   end
       def to (*privs)
         raise DSLError, "to only allowed in has_permission_on blocks" if @current_rule.nil?
-        @current_rule.append_privileges(privs)
+        @current_rule.append_privileges(privs.flatten)
       end
 
       # In a has_permission_on block, if_attribute specifies conditions
