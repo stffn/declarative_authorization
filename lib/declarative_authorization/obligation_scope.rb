@@ -182,7 +182,7 @@ module Authorization
 
       # Claim alias for join table
       # TODO change how this is checked
-      if !reflection.respond_to?(:proxy_scope) and reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
+      if !reflection.respond_to?(:proxy_reflection) and !reflection.respond_to?(:proxy_scope) and reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
         join_table_path = path[0..-2] + [reflection.options[:through]]
         reflection_for(join_table_path, true)
       end

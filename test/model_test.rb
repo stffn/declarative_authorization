@@ -281,16 +281,21 @@ class NamedScopeModelTest < Test::Unit::TestCase
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
-            if_attribute :country_id => 1
+            if_attribute :test_attr_through_id => 1
+          end
+          has_permission_on :test_attrs, :to => :read do
+            if_permitted_to :read, :test_model
           end
         end
       end
     }
     Authorization::Engine.instance(reader)
 
-    TestModel.create!(:country_id => 1, :content => "Content")
-    TestModel.create!(:country_id => 1)
-    TestModel.create!(:country_id => 2, :content => "Content")
+    country = Country.create!
+    model_1 = TestModel.create!(:test_attr_through_id => 1, :content => "Content")
+    country.test_models << model_1
+    TestModel.create!(:test_attr_through_id => 1)
+    TestModel.create!(:test_attr_through_id => 2, :content => "Content")
 
     user = MockUser.new(:test_role)
 
@@ -307,7 +312,12 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length
     assert_equal 1, TestModel.query_count if Rails.version < "3"
 
+    TestModel.query_count = 0
+    assert_equal 1, country.test_models.with_permissions_to(:read, :user => user).length
+    assert_equal 1, TestModel.query_count if Rails.version < "3"
+
     TestModel.delete_all
+    Country.delete_all
   end
 
   def test_with_modified_context
