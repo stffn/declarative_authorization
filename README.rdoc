@@ -277,8 +277,9 @@ Privilege hierarchies may be context-specific, e.g. applicable to :employees.
       privilege :manage, :employees, :includes => :increase_salary
     end
 
-For more complex use cases, authorizations need to be based on attributes.  E.g.
-if a branch admin should manage only employees of his branch (see 
+For more complex use cases, authorizations need to be based on attributes.  Note 
+that you then also need to set :attribute_check => true in controllers for filter_access_to.
+E.g. if a branch admin should manage only employees of his branch (see 
 Authorization::Reader in the API docs for a full list of available operators):
 
     authorization do
