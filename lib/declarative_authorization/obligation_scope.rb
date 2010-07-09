@@ -268,6 +268,10 @@ module Authorization
                                    when :does_not_contain, :is_not then "<> :#{bindvar}"
                                    when :is_in, :intersects_with   then "IN (:#{bindvar})"
                                    when :is_not_in                 then "NOT IN (:#{bindvar})"
+                                   when :lt                        then "< :#{bindvar}"
+                                   when :lte                       then "<= :#{bindvar}"
+                                   when :gt                        then "> :#{bindvar}"
+                                   when :gte                       then ">= :#{bindvar}"
                                    else raise AuthorizationUsageError, "Unknown operator: #{operator}"
                                    end
               obligation_conds << "#{sql_attribute} #{attribute_operator}"
@@ -347,3 +351,4 @@ module Authorization
     end
   end
 end
+

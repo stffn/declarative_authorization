@@ -473,6 +473,14 @@ module Authorization
                   "subclass of Enumerable as value, got: #{attr_value.inspect} " +
                   "is_not_in #{evaluated.inspect}: #{e}"
             end
+          when :lt
+            attr_value && attr_value < evaluated
+          when :lte
+            attr_value && attr_value <= evaluated
+          when :gt
+            attr_value && attr_value > evaluated
+          when :gte
+            attr_value && attr_value >= evaluated
           else
             raise AuthorizationError, "Unknown operator #{value[0]}"
           end
@@ -676,3 +684,4 @@ module Authorization
     end
   end
 end
+

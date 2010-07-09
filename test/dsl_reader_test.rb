@@ -90,6 +90,10 @@ class DSLReaderTest < Test::Unit::TestCase
             if_attribute :test_attr_4 => does_not_contain { user.test_attr }
             if_attribute :test_attr_5 => is_in { user.test_attr }
             if_attribute :test_attr_5 => is_not_in { user.test_attr }
+            if_attribute :test_attr_6 => lt { user.test_attr }
+            if_attribute :test_attr_6 => lte { user.test_attr }
+            if_attribute :test_attr_6 => gt { user.test_attr }
+            if_attribute :test_attr_6 => gte { user.test_attr }
           end
         end
       end
@@ -171,3 +175,4 @@ class DSLReaderTest < Test::Unit::TestCase
     end
   end
 end
+

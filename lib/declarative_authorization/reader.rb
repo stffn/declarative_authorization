@@ -28,7 +28,11 @@ module Authorization
   # * AuthorizationRulesReader#is,
   # * AuthorizationRulesReader#is_not,
   # * AuthorizationRulesReader#is_in,
-  # * AuthorizationRulesReader#is_not_in
+  # * AuthorizationRulesReader#is_not_in,
+  # * AuthorizationRulesReader#lt,
+  # * AuthorizationRulesReader#lte,
+  # * AuthorizationRulesReader#gt,
+  # * AuthorizationRulesReader#gte
   #
   # And privilege definition methods
   # * PrivilegesReader#privilege,
@@ -471,6 +475,26 @@ module Authorization
         [:is_not_in, block]
       end
       
+      # Less than
+      def lt (&block)
+        [:lt, block]
+      end
+
+      # Less than or equal to
+      def lte (&block)
+        [:lte, block]
+      end
+
+      # Greater than
+      def gt (&block)
+        [:gt, block]
+      end
+
+      # Greater than or equal to
+      def gte (&block)
+        [:gte, block]
+      end
+
       private
       def parse_attribute_conditions_hash! (hash)
         merge_hash = {}
@@ -494,3 +518,4 @@ module Authorization
     end
   end
 end
+
