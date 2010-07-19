@@ -201,7 +201,7 @@ class LoadMockObjectsController < MocksController
   filter_access_to :show, :attribute_check => true, :model => LoadMockObject
   filter_access_to :edit, :attribute_check => true
   filter_access_to :update, :delete, :attribute_check => true,
-                   :load_method => lambda {MockDataObject.new(:test => 1)}
+                   :load_method => proc {MockDataObject.new(:test => 1)}
   filter_access_to :create do
     permitted_to! :edit, :load_mock_objects
   end
