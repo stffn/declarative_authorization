@@ -1,3 +1,9 @@
+* Ruby 1.9.2 compatibility [sb]
+
+* Comparisons in authorization roles: lt, lte, gt, gte [aepstein,hollownest]
+
+* DSL optimization: allow array being passed to to 
+
 * Omnipotent roles [timcharper]
 
 * Meaningful error in case of missing authorization rules file [timcharper]
