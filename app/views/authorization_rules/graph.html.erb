@@ -3,6 +3,13 @@
 <p><%= navigation %></p>
 
 <% javascript_tag do %>
+    if (typeof Prototype != 'object') {
+       //load up prototype... it's needed here
+       var s = document.createElement('script');
+       s.setAttribute('src','http://ajax.googleapis.com/ajax/libs/prototype/1.6.0.3/prototype.js');
+       document.getElementsByTagName('body')[0].appendChild(s);
+     }
+
     function update_graph (form) {
         base_url = "<%= url_for :format => 'svg' %>";
         $('graph').data = base_url + '?' + form.serialize();

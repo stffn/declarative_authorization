@@ -1,4 +1,11 @@
 <% javascript_tag do %>
+    if (typeof Prototype != 'object') {
+       //load up prototype... it's needed here
+       var s = document.createElement('script');
+       s.setAttribute('src','http://ajax.googleapis.com/ajax/libs/prototype/1.6.0.3/prototype.js');
+       document.getElementsByTagName('body')[0].appendChild(s);
+    }
+
     function show_graph (privilege, context, user_ids) {
         var params = {
           privilege_hierarchy: 1,
