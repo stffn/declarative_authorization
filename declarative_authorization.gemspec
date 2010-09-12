@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = "declarative_authorization"
-  s.version = "0.5"
+  s.version = "0.5.1"
 
   s.required_ruby_version = ">= 1.8.6"
   s.authors = ["Steffen Bartsch"]
@@ -13,5 +13,5 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = ['README.rdoc', 'CHANGELOG']
   s.homepage = %q{http://github.com/stffn/declarative_authorization}
 
-  s.add_dependency('rails', '>= 2.1.0')
+  #s.add_dependency('rails', '>= 2.1.0')
 end
