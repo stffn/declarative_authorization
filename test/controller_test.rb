@@ -198,6 +198,7 @@ end
 
 ##################
 class LoadMockObjectsController < MocksController
+  before_filter { @@load_method_call_count = 0 }
   filter_access_to :show, :attribute_check => true, :model => LoadMockObject
   filter_access_to :edit, :attribute_check => true
   filter_access_to :update, :delete, :attribute_check => true,
@@ -207,9 +208,18 @@ class LoadMockObjectsController < MocksController
   end
   filter_access_to :view, :attribute_check => true, :load_method => :load_method
   def load_method
+    self.class.load_method_called
     MockDataObject.new(:test => 2)
   end
   define_action_methods :show, :edit, :update, :delete, :create, :view
+
+  def self.load_method_called
+    @@load_method_call_count ||= 0
+    @@load_method_call_count += 1
+  end
+  def self.load_method_call_count
+    @@load_method_call_count || 0
+  end
 end
 class LoadObjectControllerTest < ActionController::TestCase
   tests LoadMockObjectsController
@@ -287,7 +297,12 @@ class LoadObjectControllerTest < ActionController::TestCase
     
     request!(MockUser.new(:test_role), "view", reader)
     assert @controller.authorized?
+    assert_equal 1, @controller.class.load_method_call_count
     
+    request!(MockUser.new(:test_role_2), "view", reader)
+    assert !@controller.authorized?
+    assert_equal 1, @controller.class.load_method_call_count
+
     request!(MockUser.new(:test_role), "update", reader)
     assert @controller.authorized?
   end
