@@ -332,6 +332,12 @@ In your test_helper.rb, to enable the helpers add
       ...
     end
 
+For using the test helpers with RSpec, just add the following lines to your
+spec_helper.rb (somewhere after require 'spec/rails'):
+
+    require 'declarative_authorization/maintenance'
+    include Authorization::TestHelper
+
 Now, in unit tests, you may deactivate authorization if needed e.g. for test
 setup and assume certain identities for tests:
 
