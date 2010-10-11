@@ -353,6 +353,19 @@ setup and assume certain identities for tests:
         end
       end
     end
+    
+Or, with RSpec, it would work like this:
+
+  describe Employee do
+    it "should read" do
+      without_access_control do
+        Employee.create(...)
+      end
+      with_user(admin) do
+        Employee.find(:first)
+      end
+    end
+  end
 
 In functional tests, get, posts, etc. may be tested in the name of certain users:
 
