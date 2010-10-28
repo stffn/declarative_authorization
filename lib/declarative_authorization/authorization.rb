@@ -373,18 +373,27 @@ module Authorization
           exceptions << e
           nil
         end
-      end.flatten.compact
+      end
 
       if exceptions.length > 0 and (@join_operator == :and or exceptions.length == @attributes.length)
         raise NotAuthorized, "Missing authorization in collecting obligations: #{exceptions.map(&:to_s) * ", "}"
       end
 
       if @join_operator == :and and !obligations.empty?
-        merged_obligation = obligations.first
-        obligations[1..-1].each do |obligation|
-          merged_obligation = merged_obligation.deep_merge(obligation)
+        # cross product of OR'ed obligations in arrays
+        arrayed_obligations = obligations.map {|obligation| obligation.is_a?(Hash) ? [obligation] : obligation}
+        merged_obligations = arrayed_obligations.first
+        arrayed_obligations[1..-1].each do |inner_obligations|
+          previous_merged_obligations = merged_obligations
+          merged_obligations = inner_obligations.collect do |inner_obligation|
+            previous_merged_obligations.collect do |merged_obligation|
+              merged_obligation.deep_merge(inner_obligation)
+            end
+          end.flatten
         end
-        obligations = [merged_obligation]
+        obligations = merged_obligations
+      else
+        obligations = obligations.flatten.compact
       end
       obligations.empty? ? [{}] : obligations
     end

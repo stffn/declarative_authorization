@@ -1099,6 +1099,52 @@ class NamedScopeModelTest < Test::Unit::TestCase
     TestAttr.delete_all
   end
 
+  def test_with_anded_if_permitted_to
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :base_role do
+          has_permission_on :test_attrs, :to => :read, :join_by => :and do
+            if_permitted_to :read, :test_model
+            if_attribute :attr => 1
+          end
+        end
+        role :first_role do
+          includes :base_role
+          has_permission_on :test_models, :to => :read do
+            if_attribute :content => "first test"
+          end
+        end
+        role :second_role do
+          includes :base_role
+          has_permission_on :test_models, :to => :read do
+            if_attribute :country_id => 2
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!(:content => "first test")
+    test_model_1.test_attrs.create!(:attr => 1)
+    test_model_for_second_role = TestModel.create!(:country_id => 2)
+    test_model_for_second_role.test_attrs.create!(:attr => 1)
+    test_model_for_second_role.test_attrs.create!(:attr => 2)
+
+    user = MockUser.new(:first_role)
+    assert Authorization::Engine.instance.permit?(:read, :object => test_model_1.test_attrs.first, :user => user)
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+
+    user_with_both_roles = MockUser.new(:first_role, :second_role)
+    assert Authorization::Engine.instance.permit?(:read, :object => test_model_1.test_attrs.first, :user => user_with_both_roles)
+    assert Authorization::Engine.instance.permit?(:read, :object => test_model_for_second_role.test_attrs.first, :user => user_with_both_roles)
+    #p Authorization::Engine.instance.obligations(:read, :user => user_with_both_roles, :context => :test_attrs)
+    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user_with_both_roles).length
+
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
   def test_with_if_permitted_to_with_no_child_permissions
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
