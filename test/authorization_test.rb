@@ -69,6 +69,26 @@ class AuthorizationTest < Test::Unit::TestCase
     assert  engine.permit?(:test, :context => :permissions_4, :user => MockUser.new(:test_role))
     assert  engine.permit?(:test, :context => :permissions_5, :user => MockUser.new(:test_role))
   end
+
+  def test_permit_with_frozen_roles
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :other_role do
+          includes :test_role
+        end
+        role :test_role do
+          has_permission_on :permissions, :to => :test
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    roles = [:other_role].freeze
+    assert_nothing_raised do
+      assert engine.permit?(:test, :context => :permissions,
+        :user => MockUser.new(:role_symbols => roles))
+    end
+  end
   
   def test_obligations_without_conditions
     reader = Authorization::Reader::DSLReader.new

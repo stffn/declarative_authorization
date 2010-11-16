@@ -296,7 +296,7 @@ module Authorization
     
     def flatten_roles (roles)
       # TODO caching?
-      flattened_roles = roles.clone.to_a
+      flattened_roles = roles.dup.to_a
       flattened_roles.each do |role|
         flattened_roles.concat(@role_hierarchy[role]).uniq! if @role_hierarchy[role]
       end
