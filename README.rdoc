@@ -510,10 +510,11 @@ sbartsch at tzi.org
 
 = Contributors
 
-Thanks to John Joseph Bachir, Eike Carls, Kai Chen, Erik Dahlstrand, Jeroen van Dijk,
-Alexander Dobriakov, Sebastian Dyck, Ari Epstein, Jeremy Friesen, Tim Harper, hollownest,
-Daniel Kristensen, Brian Langenfeld, Georg Ledermann, Geoff Longman, Olly Lylo, Mark Mansour,
-Thomas Maurer, TJ Singleton, Mike Vincent
+Thanks to John Joseph Bachir, Eike Carls, Dennis Blöte, Kai Chen, Erik Dahlstrand,
+Jeroen van Dijk, Alexander Dobriakov, Sebastian Dyck, Ari Epstein, Jeremy Friesen,
+Tim Harper, hollownest, Daniel Kristensen, Brad Langhorst, Brian Langenfeld,
+Georg Ledermann, Geoff Longman, Olly Lylo, Mark Mansour, Thomas Maurer, Sharagoz,
+TJ Singleton, Mike Vincent
 
 
 = Licence
