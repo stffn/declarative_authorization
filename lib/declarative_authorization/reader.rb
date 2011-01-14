@@ -46,12 +46,78 @@ module Authorization
     # Signals errors in the syntax of an authorization DSL.
     class DSLSyntaxError < DSLError; end
     
+    # Defines the interface that a Engine expects from a Reader
+    class AbstractReader
+      # Returns an Array of AuthorizationRule objects.
+      def authorization_rules
+        raise NotImplementedError
+      end
+
+      # Returns a list of all defined privileges as symbols
+      def privileges
+        raise NotImplementedError
+      end
+
+      # Returns the hierarchy of privileges as defined in the authorization
+      # configuration.  A hash in the following format:
+      #
+      # {
+      #   :priv => [
+      #     [:lower_priv, context_or_nil],
+      #     [:other_lower_priv]
+      #   ],
+      #   :other_priv => []
+      # }
+      def privilege_hierarchy
+        raise NotImplementedError
+      end
+
+      # All present roles, an Array of Symbols
+      def roles
+        raise NotImplementedError
+      end
+
+      # All omnipotent roles, as an array of symbols
+      def omnipotent_roles
+        raise NotImplementedError
+      end
+
+      # The hierarchy of roles:
+      # {
+      #   :higher_role => [:lower_role, :other_lower_role], ...
+      # }
+      def role_hierarchy
+        raise NotImplementedError
+      end
+
+      # Human-readable titles for the roles:
+      # {
+      #   :a_role => "Long Role Name"
+      # }
+      def role_titles
+        raise NotImplementedError
+      end
+
+      # Human-readable descriptions
+      # {
+      #   :a_role => "Role description..."
+      # }
+      def role_descriptions
+        raise NotImplementedError
+      end
+
+      # All authorization rules
+      def auth_rules
+        raise NotImplementedError
+      end
+    end
+
     # Top-level reader, parses the methods +privileges+ and +authorization+.
     # +authorization+ takes a block with authorization rules as described in
     # AuthorizationRulesReader.  The block to +privileges+ defines privilege
     # hierarchies, as described in PrivilegesReader.
     #
-    class DSLReader
+    class DSLReader < AbstractReader
       attr_reader :privileges_reader, :auth_rules_reader # :nodoc:
 
       def initialize ()
@@ -65,11 +131,56 @@ module Authorization
       #   String or Array - it will treat it as if you have passed a path or an array of paths and attempt to load those.
       def self.factory(obj)
         case obj
-        when Reader::DSLReader
-          obj
         when String, Array
           load(obj)
+        else
+          obj
         end
+      end
+      
+      # See AbstractReader
+      def authorization_rules
+        @auth_rules_reader.auth_rules
+      end
+
+      # See AbstractReader
+      def privileges
+        @privileges_reader.privileges
+      end
+
+      # See AbstractReader
+      def privilege_hierarchy
+        @privileges_reader.privilege_hierarchy
+      end
+
+      # See AbstractReader
+      def roles
+        @auth_rules_reader.roles
+      end
+
+      # See AbstractReader
+      def omnipotent_roles
+        @auth_rules_reader.omnipotent_roles
+      end
+
+      # See AbstractReader
+      def role_hierarchy
+        @auth_rules_reader.role_hierarchy
+      end
+
+      # See AbstractReader
+      def role_titles
+        @auth_rules_reader.role_titles
+      end
+
+      # See AbstractReader
+      def role_descriptions
+        @auth_rules_reader.role_descriptions
+      end
+
+      # See AbstractReader
+      def auth_rules
+        @auth_rules_reader.auth_rules
       end
 
       # Parses a authorization DSL specification from the string given

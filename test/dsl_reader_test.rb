@@ -25,7 +25,7 @@ class DSLReaderTest < Test::Unit::TestCase
       end
     }
     assert_equal [[:lower_priv, :test_context]], 
-      reader.privileges_reader.privilege_hierarchy[:test_priv]
+      reader.privilege_hierarchy[:test_priv]
   end
   
   def test_privileges_one_line
@@ -38,11 +38,11 @@ class DSLReaderTest < Test::Unit::TestCase
       end
     }
     assert_equal [[:lower_priv, :test_context]], 
-      reader.privileges_reader.privilege_hierarchy[:test_priv]
+      reader.privilege_hierarchy[:test_priv]
     assert_equal [[:lower_priv, :test_context]], 
-      reader.privileges_reader.privilege_hierarchy[:test_priv_2]
+      reader.privilege_hierarchy[:test_priv_2]
     assert_equal [[:lower_priv, nil]], 
-      reader.privileges_reader.privilege_hierarchy[:test_priv_3]
+      reader.privilege_hierarchy[:test_priv_3]
   end
   
   def test_auth_role
@@ -55,9 +55,9 @@ class DSLReaderTest < Test::Unit::TestCase
         end
       end
     }
-    assert_equal 1, reader.auth_rules_reader.roles.length
-    assert_equal [:lesser_role], reader.auth_rules_reader.role_hierarchy[:test_role]
-    assert_equal 1, reader.auth_rules_reader.auth_rules.length
+    assert_equal 1, reader.roles.length
+    assert_equal [:lesser_role], reader.role_hierarchy[:test_role]
+    assert_equal 1, reader.auth_rules.length
   end
   
   def test_auth_role_permit_on
@@ -72,10 +72,10 @@ class DSLReaderTest < Test::Unit::TestCase
         end
       end
     |
-    assert_equal 1, reader.auth_rules_reader.roles.length
-    assert_equal 1, reader.auth_rules_reader.auth_rules.length
-    assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:test_perm], :test_context)
-    assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:manage], :test_context)
+    assert_equal 1, reader.roles.length
+    assert_equal 1, reader.auth_rules.length
+    assert reader.auth_rules[0].matches?(:test_role, [:test_perm], :test_context)
+    assert reader.auth_rules[0].matches?(:test_role, [:manage], :test_context)
   end
   
   def test_permit_block
@@ -98,9 +98,9 @@ class DSLReaderTest < Test::Unit::TestCase
         end
       end
     |
-    assert_equal 1, reader.auth_rules_reader.roles.length
-    assert_equal 1, reader.auth_rules_reader.auth_rules.length
-    assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:test], :perms)
+    assert_equal 1, reader.roles.length
+    assert_equal 1, reader.auth_rules.length
+    assert reader.auth_rules[0].matches?(:test_role, [:test], :perms)
   end
   
   def test_has_permission_to_with_context
@@ -112,9 +112,9 @@ class DSLReaderTest < Test::Unit::TestCase
         end
       end
     |
-    assert_equal 1, reader.auth_rules_reader.roles.length
-    assert_equal 1, reader.auth_rules_reader.auth_rules.length
-    assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:test], :perms)
+    assert_equal 1, reader.roles.length
+    assert_equal 1, reader.auth_rules.length
+    assert reader.auth_rules[0].matches?(:test_role, [:test], :perms)
   end
   
   def test_context

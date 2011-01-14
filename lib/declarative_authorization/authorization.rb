@@ -67,16 +67,16 @@ module Authorization
     def initialize (reader = nil)
       reader = Reader::DSLReader.factory(reader || AUTH_DSL_FILES)
 
-      @privileges = reader.privileges_reader.privileges
+      @privileges = reader.privileges
       # {priv => [[priv, ctx],...]}
-      @privilege_hierarchy = reader.privileges_reader.privilege_hierarchy
-      @auth_rules = reader.auth_rules_reader.auth_rules
-      @roles = reader.auth_rules_reader.roles
-      @omnipotent_roles = reader.auth_rules_reader.omnipotent_roles
-      @role_hierarchy = reader.auth_rules_reader.role_hierarchy
+      @privilege_hierarchy = reader.privilege_hierarchy
+      @auth_rules = reader.auth_rules
+      @roles = reader.roles
+      @omnipotent_roles = reader.omnipotent_roles
+      @role_hierarchy = reader.role_hierarchy
 
-      @role_titles = reader.auth_rules_reader.role_titles
-      @role_descriptions = reader.auth_rules_reader.role_descriptions
+      @role_titles = reader.role_titles
+      @role_descriptions = reader.role_descriptions
       @reader = reader
       
       # {[priv, ctx] => [priv, ...]}
