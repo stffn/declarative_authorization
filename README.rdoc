@@ -256,6 +256,11 @@ public pages, :+guest+ can be used to allow access for users that are not
 logged in.  All other roles are application defined and need to be associated
 with users by the application.
 
+If you need to change the default role, you can do so by adding an initializer
+that contains the following statement:
+
+    Authorization.default_role = :anonymous
+
 Privileges, such as :create, may be put into hierarchies to simplify
 maintenance.  So the example above has the same meaning as
 

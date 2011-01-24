@@ -316,6 +316,25 @@ class AuthorizationTest < Test::Unit::TestCase
     assert !engine.permit?(:test, :context => :permissions_2)
   end
   
+  def test_default_role
+    previous_default_role = Authorization.default_role
+    Authorization.default_role = :anonymous
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :anonymous do
+          has_permission_on :permissions, :to => :test
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert engine.permit?(:test, :context => :permissions)
+    assert !engine.permit?(:test, :context => :permissions, 
+      :user => MockUser.new(:guest))
+    # reset the default role, so that it does not mess up other tests
+    Authorization.default_role = previous_default_role
+  end
+  
   def test_invalid_user_model
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

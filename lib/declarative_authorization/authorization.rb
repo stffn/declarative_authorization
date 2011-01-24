@@ -25,7 +25,7 @@ module Authorization
   # Controller-independent method for retrieving the current user.
   # Needed for model security where the current controller is not available.
   def self.current_user
-    Thread.current["current_user"] || GuestUser.new
+    Thread.current["current_user"] || AnonymousUser.new
   end
   
   # Controller-independent method for setting the current user.
@@ -50,6 +50,15 @@ module Authorization
 
   def self.dot_path= (path)
     @@dot_path = path
+  end
+  
+  @@default_role = :guest
+  def self.default_role
+    @@default_role
+  end
+
+  def self.default_role= (role)
+    @@default_role = role.to_sym
   end
   
   # Authorization::Engine implements the reference monitor.  It may be used
@@ -241,7 +250,7 @@ module Authorization
         "doesn't return an Array of Symbols (#{roles.inspect})" \
             if !roles.is_a?(Array) or (!roles.empty? and !roles[0].is_a?(Symbol))
 
-      (roles.empty? ? [:guest] : roles)
+      (roles.empty? ? [Authorization.default_role] : roles)
     end
     
     # Returns the role symbols and inherritted role symbols for the given user
@@ -685,10 +694,10 @@ module Authorization
     end
   end
   
-  # Represents a pseudo-user to facilitate guest users in applications
-  class GuestUser
+  # Represents a pseudo-user to facilitate anonymous users in applications
+  class AnonymousUser
     attr_reader :role_symbols
-    def initialize (roles = [:guest])
+    def initialize (roles = [Authorization.default_role])
       @role_symbols = roles
     end
   end
