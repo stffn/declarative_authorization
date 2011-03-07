@@ -56,5 +56,9 @@ module Authorization
     def has_role_with_hierarchy?(*roles, &block)
       controller.has_role_with_hierarchy?(*roles, &block)
     end
+    
+    def has_any_role?(*roles,&block)
+      controller.has_any_role?(*roles,&block)
+    end
   end
 end

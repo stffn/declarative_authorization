@@ -86,6 +86,17 @@ module Authorization
       result
     end
     
+    # Intended to be used where you want to allow users with any single listed role to view 
+    # the content in question
+    def has_any_role?(*roles,&block)
+      user_roles = authorization_engine.roles_for(current_user)
+      result = roles.any? do |role|
+        user_roles.include?(role)
+      end
+      yield if result and block_given?
+      result
+    end
+    
     # As has_role? except checks all roles included in the role hierarchy
     def has_role_with_hierarchy?(*roles, &block)
       user_roles = authorization_engine.roles_with_hierarchy_for(current_user)
