@@ -609,7 +609,7 @@ module Authorization
         unless object
           begin
             object = load_object_model.find(contr.params[:id])
-          rescue RuntimeError => e
+          rescue => e
             contr.logger.debug("filter_access_to tried to find " +
                 "#{load_object_model} from params[:id] " +
                 "(#{contr.params[:id].inspect}), because attribute_check is enabled " +

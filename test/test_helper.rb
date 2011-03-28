@@ -62,7 +62,7 @@ class MockDataObject
   end
   
   def self.find(*args)
-    raise "Couldn't find #{self.name} with id #{args[0].inspect}" unless args[0]
+    raise StandardError, "Couldn't find #{self.name} with id #{args[0].inspect}" unless args[0]
     new :id => args[0]
   end
 end

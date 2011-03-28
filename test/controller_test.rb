@@ -262,7 +262,7 @@ class LoadObjectControllerTest < ActionController::TestCase
       end
     }
 
-    assert_raise RuntimeError, "No id param supplied" do
+    assert_raise StandardError, "No id param supplied" do
       request!(MockUser.new(:test_role), "show", reader)
     end
     
