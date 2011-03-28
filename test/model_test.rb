@@ -71,6 +71,7 @@ class TestAttr < ActiveRecord::Base
   belongs_to :branch
   belongs_to :company
   has_many :test_attr_throughs
+  has_many :test_model_security_model_with_finds
   attr_reader :role_symbols
   def initialize (*args)
     @role_symbols = []
@@ -89,6 +90,7 @@ end
 class TestModelSecurityModelWithFind < ActiveRecord::Base
   set_table_name "test_model_security_models"
   has_many :test_attrs
+  belongs_to :test_attr
   using_access_control :include_read => true, 
     :context => :test_model_security_models
 end
@@ -1589,6 +1591,32 @@ class ModelTest < Test::Unit::TestCase
     assert_raise Authorization::AttributeAuthorizationError do
       object_with_find.class.find(object_with_find.id)
     end
+  end
+
+  def test_model_security_with_read_restrictions_and_exists
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_model_security_models do
+            to :read, :create, :update, :delete
+            if_attribute :test_attr => is { user.test_attr }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_attr = TestAttr.create
+    Authorization.current_user = MockUser.new(:test_role, :test_attr => test_attr)
+    object_with_find = TestModelSecurityModelWithFind.create :test_attr => test_attr
+    assert_nothing_raised do
+      object_with_find.class.find(object_with_find.id)
+    end
+    assert_equal 1, test_attr.test_model_security_model_with_finds.length
+    
+    # Raises error since AR does not populate the object
+    #assert test_attr.test_model_security_model_with_finds.exists?(object_with_find)
   end
 
   def test_model_security_delete_unallowed
