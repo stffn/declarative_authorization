@@ -381,12 +381,12 @@ module Authorization
       #
       #   role :branch_manager
       #     has_permission_on :branches, :to => :manage do
-      #       if_attribute :employees => includes { user }
+      #       if_attribute :employees => contains { user }
       #     end
       #     has_permission_on :employees, :to => :read do
       #       if_permitted_to :read, :branch
       #       # instead of
-      #       # if_attribute :branch => { :employees => includes { user } }
+      #       # if_attribute :branch => { :employees => contains { user } }
       #     end
       #   end
       #
@@ -404,7 +404,7 @@ module Authorization
       # To check permissions based on the current object, the attribute has to
       # be left out:
       #   has_permission_on :branches, :to => :manage do
-      #     if_attribute :employees => includes { user }
+      #     if_attribute :employees => contains { user }
       #   end
       #   has_permission_on :branches, :to => :paint_green do
       #     if_permitted_to :update
