@@ -6,7 +6,7 @@ module Authorization
   # Parses an authorization configuration file in the authorization DSL and
   # constructs a data model of its contents.
   # 
-  # For examples and the modelled data model, see the 
+  # For examples and the modeled data model, see the 
   # README[link:files/README_rdoc.html].
   #
   # Also, see role definition methods
@@ -409,14 +409,14 @@ module Authorization
       #   has_permission_on :branches, :to => :paint_green do
       #     if_permitted_to :update
       #   end
-      # Normally, one would merge those rules into one.  Deviding makes sense
+      # Normally, one would merge those rules into one.  Dividing makes sense
       # if additional if_attribute are used in the second rule or those rules
       # are applied to different roles.
       #
       # Options:
       # [:+context+]
       #   When using with_permissions_to, the target context of the if_permitted_to
-      #   statement is infered from the last reflections target class.  Still,
+      #   statement is inferred from the last reflections target class.  Still,
       #   you may override this algorithm by setting the context explicitly.
       #     if_permitted_to :read, :home_branch, :context => :branches
       #     if_permitted_to :read, :branch => :main_company, :context => :companies

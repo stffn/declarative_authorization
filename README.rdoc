@@ -192,13 +192,13 @@ See also Authorization::AuthorizationHelper.
 
 == Models
 
-There are two destinct features for model security built into this plugin:
+There are two distinct features for model security built into this plugin:
 authorizing CRUD operations on objects as well as query rewriting to limit
 results according to certain privileges.
 
 See also Authorization::AuthorizationInModel.
 
-=== Model security for CRUD opterations
+=== Model security for CRUD operations
 To activate model security, all it takes is an explicit enabling for each
 model that model security should be enforced on, i.e.
 
@@ -215,7 +215,7 @@ happened if an operation is denied, the filters throw
 Authorization::NotAuthorized exceptions.
 
 As access control on read are costly, with possibly lots of objects being
-loaded at a time in one query, checks on read need to be actived explicitly by
+loaded at a time in one query, checks on read need to be activated explicitly by
 adding the :include_read option.
 
 === Query rewriting through named scopes
@@ -522,7 +522,7 @@ Georg Ledermann, Geoff Longman, Olly Lylo, Mark Mansour, Thomas Maurer, Sharagoz
 TJ Singleton, Mike Vincent
 
 
-= Licence
+= License
 
 Copyright (c) 2008 Steffen Bartsch, TZI, Universität Bremen, Germany
 released under the MIT license

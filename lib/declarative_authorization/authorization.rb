@@ -9,7 +9,7 @@ module Authorization
   # NotAuthorized is raised if the current user is not allowed to perform
   # the given operation possibly on a specific object.
   class NotAuthorized < AuthorizationError ; end
-  # AttributeAuthorizationError is more specific than NotAuthorized, signalling
+  # AttributeAuthorizationError is more specific than NotAuthorized, signaling
   # that the access was denied on the grounds of attribute conditions.
   class AttributeAuthorizationError < NotAuthorized ; end
   # AuthorizationUsageError is used whenever a situation is encountered
@@ -122,7 +122,7 @@ module Authorization
     #   The context part of the privilege.
     #   Defaults either to the tableized +class_name+ of the given :+object+, if given.
     #   That is, :+users+ for :+object+ of type User.  
-    #   Raises AuthorizationUsageError if context is missing and not to be infered.
+    #   Raises AuthorizationUsageError if context is missing and not to be inferred.
     # [:+object+] An context object to test attribute checks against.
     # [:+skip_attribute_test+]
     #   Skips those attribute checks in the 

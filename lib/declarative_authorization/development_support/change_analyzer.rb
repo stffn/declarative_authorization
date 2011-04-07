@@ -32,7 +32,7 @@ module Authorization
 
         # * strategy for removing: [remove privilege, add privilege to different role]
         @seen_states = Set.new
-        # * heurisic: change of failed tests;  small number of policy items
+        # * heuristic: change of failed tests;  small number of policy items
         strategy = case [change_action, type]
                    when [:remove, :permission]
                      [:remove_role_from_user, :remove_privilege, :add_privilege,

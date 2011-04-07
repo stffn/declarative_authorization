@@ -12,13 +12,13 @@ module Authorization
     
     DEFAULT_DENY = false
     
-    # If attribute_check is set for filter_access_to, decl_auth will try to
+    # If attribute_check is set for filter_access_to, decl_auth_context will try to
     # load the appropriate object from the current controller's model with
     # the id from params[:id].  If that fails, a 404 Not Found is often the
     # right way to handle the error.  If you have additional measures in place
     # that restricts the find scope, handling this error as a permission denied
     # might be a better way.  Set failed_auto_loading_is_not_found to false
-    # for the latter behaviour.
+    # for the latter behavior.
     @@failed_auto_loading_is_not_found = true
     def self.failed_auto_loading_is_not_found?
       @@failed_auto_loading_is_not_found
@@ -214,7 +214,7 @@ module Authorization
       #     end
       #   end
       # 
-      # By default, required privileges are infered from the action name and
+      # By default, required privileges are inferred from the action name and
       # the controller name.  Thus, in UserController :+edit+ requires
       # :+edit+ +users+.  To specify required privilege, use the option :+require+
       #   filter_access_to :new, :create, :require => :create, :context => :users
@@ -276,7 +276,7 @@ module Authorization
       #   to load the object.  Both should return the loaded object.
       #   If a Proc object is given, e.g. by way of
       #   +lambda+, it is called in the instance of the controller.  
-      #   Example demonstrating the default behaviour:
+      #   Example demonstrating the default behavior:
       #     filter_access_to :show, :attribute_check => true,
       #                      :load_method => lambda { User.find(params[:id]) }
       # 
@@ -357,7 +357,7 @@ module Authorization
       #
       # In many cases, the default seven CRUD actions are not sufficient.  As in
       # the resource definition for routing you may thus give additional member,
-      # new and collection methods.  The options allow you to specify the
+      # new and collection methods.  The +options+ allow you to specify the
       # required privileges for each action by providing a hash or an array of
       # pairs.  By default, for each action the action name is taken as privilege
       # (action search in the example below requires the privilege :index
@@ -368,7 +368,21 @@ module Authorization
       #         :additional_member => {:mark_as_key_company => :update}
       #   end
       # The +additional_+* options add to the respective CRUD actions,
-      # the other options replace the respective CRUD actions.
+      # the other options (:+member+, :+collection+, :+new+) replace their
+      # respective CRUD actions.
+      #    filter_resource_access :member => { :extra => :new }
+      # Would declare :extra as the only member action in the controller and
+      # require that permission on action :new be granted for the current user.
+      #    filter_resource_access :additional_member => { :extra => :new }
+      # Would add a permission requirement of :+extra+ that uses the :+new+ and
+      # :additional_new behavior when checking against the authorization rules, in
+      # the case of the above example using the +new_branch_from_params+ before_filter.
+      #
+      # If :+collection+ is an array of method names filter_resource_access will 
+      # associate a permission with the method that is the same as the method 
+      # name and no attribute checks will be performed unless 
+      #   :attribute_check => true
+      # is added in the options.
       # 
       # You can override the default object loading by implementing any of the
       # following instance methods on the controller.  Examples are given for the
@@ -410,7 +424,7 @@ module Authorization
       #   +nested_in+, attribute check is deactivated for these actions.  By
       #   default, collection is set to :+index+.
       # [:+additional_collection+]
-      #   Allows to add additional collaction actions to the default resource +collection+
+      #   Allows to add additional collection actions to the default resource +collection+
       #   actions.
       # [:+new+]
       #   +new+ methods are actions such as +new+ and +create+, which don't
@@ -442,7 +456,7 @@ module Authorization
       #   +additional_member+ or rather the default member actions (:+show+, :+edit+,
       #   :+update+, :+destroy+).
       # [:+no_attribute_check+]
-      #   Allows to set actions for which no attribute check should be perfomed.
+      #   Allows to set actions for which no attribute check should be performed.
       #   See filter_access_to on details.  By default, with no +nested_in+,
       #   +no_attribute_check+ is set to all collections.  If +nested_in+ is given
       #   +no_attribute_check+ is empty by default.
@@ -463,8 +477,8 @@ module Authorization
           :nested_in  => nil,
         }.merge(options)
 
-        new_actions = actions_from_option(options[:new]).merge(
-            actions_from_option(options[:additional_new]))
+        new_actions = actions_from_option( options[:new] ).merge(
+            actions_from_option(options[:additional_new]) )
         members = actions_from_option(options[:member]).merge(
             actions_from_option(options[:additional_member]))
         collections = actions_from_option(options[:collection]).merge(

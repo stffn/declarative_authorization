@@ -18,7 +18,7 @@ module Authorization
     # * merging roles
     # * role hierarchy
     #
-    # Mergeable Rules:  respect if_permitted_to hash
+    # Merge-able Rules:  respect if_permitted_to hash
     #
     class Analyzer < AbstractAnalyzer
       def analyze (rules)
