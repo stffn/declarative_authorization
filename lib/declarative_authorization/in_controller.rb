@@ -370,13 +370,11 @@ module Authorization
       # The +additional_+* options add to the respective CRUD actions,
       # the other options (:+member+, :+collection+, :+new+) replace their
       # respective CRUD actions.
-      #    filter_resource_access :member => { :extra => :new }
-      # Would declare :extra as the only member action in the controller and
-      # require that permission on action :new be granted for the current user.
-      #    filter_resource_access :additional_member => { :extra => :new }
-      # Would add a permission requirement of :+extra+ that uses the :+new+ and
-      # :additional_new behavior when checking against the authorization rules, in
-      # the case of the above example using the +new_branch_from_params+ before_filter.
+      #    filter_resource_access :member => { :toggle_open => :update }
+      # Would declare :toggle_open as the only member action in the controller and
+      # require that permission :update is granted for the current user.
+      #    filter_resource_access :additional_member => { :toggle_open => :update }
+      # Would add a member action :+toggle_open+ to the default members, such as :+show+.
       #
       # If :+collection+ is an array of method names filter_resource_access will 
       # associate a permission with the method that is the same as the method 
