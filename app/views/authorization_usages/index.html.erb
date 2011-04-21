@@ -17,7 +17,7 @@
   <% @auth_usages_by_controller.keys.sort {|c1, c2| c1.name <=> c2.name}.each do |controller| %>
     <% default_context = controller.controller_name.to_sym rescue nil %>
     <tr>
-      <th colspan="3"><%= h controller.controller_name %></th>
+      <th colspan="3"><%= h controller.name.underscore.sub(/_controller\Z/, '') %></th>
     </tr>
     <% @auth_usages_by_controller[controller].keys.sort {|c1, c2| c1.to_s <=> c2.to_s}.each do |action| %>
       <% auth_info = @auth_usages_by_controller[controller][action] %>
