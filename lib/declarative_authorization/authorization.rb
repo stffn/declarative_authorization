@@ -1,7 +1,7 @@
 # Authorization
 require File.dirname(__FILE__) + '/reader.rb'
 require "set"
-
+require "forwardable"
 
 module Authorization
   # An exception raised if anything goes wrong in the Authorization realm
@@ -66,50 +66,49 @@ module Authorization
   # a certain privilege is granted for the current user.
   #
   class Engine
-    attr_reader :roles, :omnipotent_roles, :role_titles, :role_descriptions, :privileges,
-      :privilege_hierarchy, :auth_rules, :role_hierarchy, :rev_priv_hierarchy,
-      :rev_role_hierarchy
+    extend Forwardable
+    attr_reader :reader
+
+    def_delegators :@reader, :auth_rules_reader, :privileges_reader, :load, :load!
+    def_delegators :auth_rules_reader, :auth_rules, :roles, :omnipotent_roles, :role_hierarchy, :role_titles, :tole_descriptions
+    def_delegators :privileges_reader, :privileges, :privilege_hierarchy
     
     # If +reader+ is not given, a new one is created with the default
     # authorization configuration of +AUTH_DSL_FILES+.  If given, may be either
     # a Reader object or a path to a configuration file.
     def initialize (reader = nil)
-      reader = Reader::DSLReader.factory(reader || AUTH_DSL_FILES)
-
-      @privileges = reader.privileges_reader.privileges
-      # {priv => [[priv, ctx],...]}
-      @privilege_hierarchy = reader.privileges_reader.privilege_hierarchy
-      @auth_rules = reader.auth_rules_reader.auth_rules
-      @roles = reader.auth_rules_reader.roles
-      @omnipotent_roles = reader.auth_rules_reader.omnipotent_roles
-      @role_hierarchy = reader.auth_rules_reader.role_hierarchy
-
-      @role_titles = reader.auth_rules_reader.role_titles
-      @role_descriptions = reader.auth_rules_reader.role_descriptions
-      @reader = reader
-      
-      # {[priv, ctx] => [priv, ...]}
-      @rev_priv_hierarchy = {}
-      @privilege_hierarchy.each do |key, value|
-        value.each do |val| 
-          @rev_priv_hierarchy[val] ||= []
-          @rev_priv_hierarchy[val] << key
-        end
-      end
-      @rev_role_hierarchy = {}
-      @role_hierarchy.each do |higher_role, lower_roles|
-        lower_roles.each do |role|
-          (@rev_role_hierarchy[role] ||= []) << higher_role
-        end
-      end
+      @reader = Reader::DSLReader.factory(reader || AUTH_DSL_FILES)
     end
 
     def initialize_copy (from) # :nodoc:
-      [
-        :privileges, :privilege_hierarchy, :roles, :role_hierarchy, :role_titles,
-        :role_descriptions, :rev_priv_hierarchy, :rev_role_hierarchy
-      ].each {|attr| instance_variable_set(:"@#{attr}", from.send(attr).clone) }
-      @auth_rules = from.auth_rules.collect {|rule| rule.clone}
+      [ :reader ].each {|attr| instance_variable_set(:"@#{attr}", from.send(attr).clone) }
+    end
+
+    # {[priv, ctx] => [priv, ...]}
+    def rev_priv_hierarchy
+      if @rev_priv_hierarchy.nil?
+        @rev_priv_hierarchy = {}
+        privilege_hierarchy.each do |key, value|
+          value.each do |val| 
+            @rev_priv_hierarchy[val] ||= []
+            @rev_priv_hierarchy[val] << key
+          end
+        end
+      end
+      @rev_priv_hierarchy
+    end
+   
+    # {[priv, ctx] => [priv, ...]}
+    def rev_role_hierarchy  
+      if @rev_role_hierarchy.nil?
+        @rev_role_hierarchy = {}
+        role_hierarchy.each do |higher_role, lower_roles|
+          lower_roles.each do |role|
+            (@rev_role_hierarchy[role] ||= []) << higher_role
+          end
+        end
+      end
+      @rev_role_hierarchy
     end
     
     # Returns true if privilege is met by the current user.  Raises
@@ -163,7 +162,7 @@ module Authorization
       
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 
-      return true if roles.is_a?(Array) and not (roles & @omnipotent_roles).empty?
+      return true if roles.is_a?(Array) and not (roles & omnipotent_roles).empty?
 
       # find a authorization rule that matches for at least one of the roles and 
       # at least one of the given privileges
@@ -262,7 +261,7 @@ module Authorization
     # yet.  If +dsl_file+ is given, it is passed on to Engine.new and 
     # a new instance is always created.
     def self.instance (dsl_file = nil)
-      if dsl_file or ENV['RAILS_ENV'] == 'development'
+      if dsl_file
         @@instance = new(dsl_file)
       else
         @@instance ||= new
@@ -307,7 +306,7 @@ module Authorization
       # TODO caching?
       flattened_roles = roles.dup.to_a
       flattened_roles.each do |role|
-        flattened_roles.concat(@role_hierarchy[role]).uniq! if @role_hierarchy[role]
+        flattened_roles.concat(role_hierarchy[role]).uniq! if role_hierarchy[role]
       end
     end
     
@@ -317,13 +316,13 @@ module Authorization
       raise AuthorizationUsageError, "No context given or inferable from object" unless context
       flattened_privileges = privileges.clone
       flattened_privileges.each do |priv|
-        flattened_privileges.concat(@rev_priv_hierarchy[[priv, nil]]).uniq! if @rev_priv_hierarchy[[priv, nil]]
-        flattened_privileges.concat(@rev_priv_hierarchy[[priv, context]]).uniq! if @rev_priv_hierarchy[[priv, context]]
+        flattened_privileges.concat(rev_priv_hierarchy[[priv, nil]]).uniq! if rev_priv_hierarchy[[priv, nil]]
+        flattened_privileges.concat(rev_priv_hierarchy[[priv, context]]).uniq! if rev_priv_hierarchy[[priv, context]]
       end
     end
     
     def matching_auth_rules (roles, privileges, context)
-      @auth_rules.select {|rule| rule.matches? roles, privileges, context}
+      auth_rules.select {|rule| rule.matches? roles, privileges, context}
     end
   end
   

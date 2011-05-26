@@ -84,17 +84,25 @@ module Authorization
         raise DSLSyntaxError, "Illegal DSL syntax: #{e}"
       end
 
-      # Loads and parses a DSL from the given file name.
+      # Load and parse a DSL from the given file name.
+      def load (dsl_file)
+        parse(File.read(dsl_file), dsl_file) if File.exist?(dsl_file)
+      end
+
+      # Load and parse a DSL from the given file name. Raises Authorization::Reader::DSLFileNotFoundError
+      # if the file cannot be found.
+      def load! (dsl_file)
+        raise ::Authorization::Reader::DSLFileNotFoundError, "Error reading authorization rules file with path '#{dsl_file}'!  Please ensure it exists and that it is accessible." unless File.exist?(dsl_file)
+        load(dsl_file)
+      end
+
+      # Loads and parses DSL files and returns a new reader
       def self.load (dsl_files)
         # TODO cache reader in production mode?
         reader = new
         dsl_files = [dsl_files].flatten
         dsl_files.each do |file|
-          begin
-            reader.parse(File.read(file), file)
-          rescue SystemCallError
-            raise ::Authorization::Reader::DSLFileNotFoundError, "Error reading authorization rules file with path '#{file}'!  Please ensure it exists and that it is accessible."
-          end
+          reader.load(file)
         end
         reader
       end

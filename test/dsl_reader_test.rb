@@ -171,7 +171,7 @@ class DSLReaderTest < Test::Unit::TestCase
 
   def test_load_file_not_found
     assert_raise(Authorization::Reader::DSLFileNotFoundError) do
-      Authorization::Reader::DSLReader.load("nonexistent_file.rb")
+      Authorization::Reader::DSLReader.new.load!("nonexistent_file.rb")
     end
   end
 end
