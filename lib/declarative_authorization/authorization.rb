@@ -129,13 +129,17 @@ module Authorization
     # [:+user+] 
     #   The user to check the authorization for.
     #   Defaults to Authorization#current_user.
+    # [:+bang+]
+    #   Should NotAuthorized exceptions be raised
+    #   Defaults to true.
     #
     def permit! (privilege, options = {})
       return true if Authorization.ignore_access_control
       options = {
         :object => nil,
         :skip_attribute_test => false,
-        :context => nil
+        :context => nil,
+        :bang => true
       }.merge(options)
       
       # Make sure we're handling all privileges as symbols.
@@ -168,17 +172,23 @@ module Authorization
       # at least one of the given privileges
       attr_validator = AttributeValidator.new(self, user, options[:object], privilege, options[:context])
       rules = matching_auth_rules(roles, privileges, options[:context])
-      if rules.empty?
-        raise NotAuthorized, "No matching rules found for #{privilege} for #{user.inspect} " +
-          "(roles #{roles.inspect}, privileges #{privileges.inspect}, " +
-          "context #{options[:context].inspect})."
-      end
       
       # Test each rule in turn to see whether any one of them is satisfied.
-      unless rules.any? {|rule| rule.validate?(attr_validator, options[:skip_attribute_test])}
-        raise AttributeAuthorizationError, "#{privilege} not allowed for #{user.inspect} on #{(options[:object] || options[:context]).inspect}."
+      rules.each do |rule|
+        return true if rule.validate?(attr_validator, options[:skip_attribute_test])
       end
-      true
+
+      if options[:bang]
+        if rules.empty?
+          raise NotAuthorized, "No matching rules found for #{privilege} for #{user.inspect} " +
+            "(roles #{roles.inspect}, privileges #{privileges.inspect}, " +
+            "context #{options[:context].inspect})."
+        else
+          raise AttributeAuthorizationError, "#{privilege} not allowed for #{user.inspect} on #{(options[:object] || options[:context]).inspect}."
+        end
+      else
+        false
+      end
     end
     
     # Calls permit! but rescues the AuthorizationException and returns false
