@@ -1095,10 +1095,10 @@ class AuthorizationTest < Test::Unit::TestCase
 
     engine = Authorization::Engine.new(reader)
     cloned_engine = engine.clone
-    assert_not_equal engine.auth_rules[0].contexts.object_id,
-        cloned_engine.auth_rules[0].contexts.object_id
-    assert_not_equal engine.auth_rules[0].attributes[0].send(:instance_variable_get, :@conditions_hash)[:attr].object_id,
-        cloned_engine.auth_rules[0].attributes[0].send(:instance_variable_get, :@conditions_hash)[:attr].object_id
+    assert_not_equal engine.auth_rules.first.contexts.object_id,
+        cloned_engine.auth_rules.first.contexts.object_id
+    assert_not_equal engine.auth_rules.first.attributes.first.send(:instance_variable_get, :@conditions_hash)[:attr].object_id,
+        cloned_engine.auth_rules.first.attributes.first.send(:instance_variable_get, :@conditions_hash)[:attr].object_id
   end
 end
 

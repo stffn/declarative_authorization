@@ -79,7 +79,7 @@ module Authorization
       @privileges = reader.privileges_reader.privileges
       # {priv => [[priv, ctx],...]}
       @privilege_hierarchy = reader.privileges_reader.privilege_hierarchy
-      @auth_rules = reader.auth_rules_reader.auth_rules
+      @auth_rules = AuthorizationRuleSet.new reader.auth_rules_reader.auth_rules
       @roles = reader.auth_rules_reader.roles
       @omnipotent_roles = reader.auth_rules_reader.omnipotent_roles
       @role_hierarchy = reader.auth_rules_reader.role_hierarchy
@@ -107,9 +107,8 @@ module Authorization
     def initialize_copy (from) # :nodoc:
       [
         :privileges, :privilege_hierarchy, :roles, :role_hierarchy, :role_titles,
-        :role_descriptions, :rev_priv_hierarchy, :rev_role_hierarchy
+        :role_descriptions, :rev_priv_hierarchy, :rev_role_hierarchy, :auth_rules
       ].each {|attr| instance_variable_set(:"@#{attr}", from.send(attr).clone) }
-      @auth_rules = from.auth_rules.collect {|rule| rule.clone}
     end
     
     # Returns true if privilege is met by the current user.  Raises
@@ -323,10 +322,56 @@ module Authorization
     end
     
     def matching_auth_rules (roles, privileges, context)
-      @auth_rules.select {|rule| rule.matches? roles, privileges, context}
+      @auth_rules.matching(roles, privileges, context)
     end
   end
   
+
+  class AuthorizationRuleSet
+    include Enumerable
+
+    def initialize rules
+      @rules = rules
+      reset!
+    end
+    def initialize_copy source
+      initialize @rules.collect {|rule| rule.clone}
+    end
+    def matching(roles, privileges, context)
+      roles = [roles] unless roles.is_a?(Array)
+      rules = cached_auth_rules[context] || []
+      rules.select do |rule|
+        rule.matches? roles, privileges, context
+      end
+    end
+    def delete rule
+      @rules.delete rule
+      reset!
+    end
+    def << rule
+      @rules << rule
+      reset!
+    end
+    def each &block
+      @rules.each &block
+    end
+
+    private
+    def reset!
+      @cached_auth_rules =nil
+    end
+    def cached_auth_rules
+      return @cached_auth_rules if @cached_auth_rules
+      @cached_auth_rules = {}
+      @rules.each do |rule|
+        rule.contexts.each do |context|
+          @cached_auth_rules[context] ||= []
+          @cached_auth_rules[context] << rule
+        end
+      end
+      @cached_auth_rules
+    end
+  end
   class AuthorizationRule
     attr_reader :attributes, :contexts, :role, :privileges, :join_operator,
         :source_file, :source_line
