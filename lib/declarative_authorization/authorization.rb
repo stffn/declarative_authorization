@@ -191,15 +191,15 @@ module Authorization
       end
     end
     
-    # Calls permit! but rescues the AuthorizationException and returns false
-    # instead.  If no exception is raised, permit? returns true and yields
-    # to the optional block.
-    def permit? (privilege, options = {}, &block) # :yields:
-      permit!(privilege, options)
-      yield if block_given?
-      true
-    rescue NotAuthorized
-      false
+    # Calls permit! but doesn't raise authorization errors. If no exception is
+    # raised, permit? returns true and yields  to the optional block.
+    def permit? (privilege, options = {}) # :yields:
+      if permit!(privilege, options.merge(:bang=> false))
+        yield if block_given?
+        true
+      else
+        false
+      end
     end
     
     # Returns the obligations to be met by the current user for the given 

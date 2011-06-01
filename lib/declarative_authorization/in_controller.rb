@@ -42,35 +42,19 @@ module Authorization
     # If no object or context is specified, the controller_name is used as
     # context.
     #
-    def permitted_to? (privilege, object_or_sym = nil, options = {}, &block)
-      permitted_to!(privilege, object_or_sym, options.merge(:non_bang => true), &block)
+    def permitted_to? (privilege, object_or_sym = nil, options = {})
+      if authorization_engine.permit!(privilege, options_for_permit(object_or_sym, options, false))
+        yield if block_given?
+        true
+      else
+        false
+      end
     end
     
     # Works similar to the permitted_to? method, but
     # throws the authorization exceptions, just like Engine#permit!
-    def permitted_to! (privilege, object_or_sym = nil, options = {}, &block)
-      context = object = nil
-      if object_or_sym.nil?
-        context = self.class.decl_auth_context
-      elsif !object_or_sym.respond_to?(:proxy_reflection) and object_or_sym.is_a?(Symbol)
-        context = object_or_sym
-      else
-        object = object_or_sym
-      end
-
-      non_bang = options.delete(:non_bang)
-      args = [
-        privilege,
-        {:user => current_user,
-         :object => object,
-         :context => context,
-         :skip_attribute_test => object.nil?}.merge(options)
-      ]
-      if non_bang
-        authorization_engine.permit?(*args, &block)
-      else
-        authorization_engine.permit!(*args, &block)
-      end
+    def permitted_to! (privilege, object_or_sym = nil, options = {})
+      authorization_engine.permit!(privilege, options_for_permit(object_or_sym, options, true))
     end
 
     # While permitted_to? is used for authorization, in some cases
@@ -180,6 +164,23 @@ module Authorization
            context_without_namespace.to_s.classify.constantize
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
       instance_variable_set(instance_var, model_or_proxy.new)
+    end
+
+    def options_for_permit (object_or_sym = nil, options = {}, bang = true)
+      context = object = nil
+      if object_or_sym.nil?
+        context = self.class.decl_auth_context
+      elsif !object_or_sym.respond_to?(:proxy_reflection) and object_or_sym.is_a?(Symbol)
+        context = object_or_sym
+      else
+        object = object_or_sym
+      end
+
+      {:user => current_user,
+        :object => object,
+        :context => context,
+        :skip_attribute_test => object.nil?,
+        :bang => bang}.merge(options)
     end
 
     module ClassMethods
