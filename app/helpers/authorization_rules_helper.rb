@@ -13,7 +13,7 @@ module AuthorizationRulesHelper
     }
     regexps.each do |name, res|
       res.each do |re|
-        rules.gsub!(
+        rules = rules.gsub(
           re.is_a?(String) ? Regexp.new("(^|[^:])\\b(#{Regexp.escape(re)})\\b") :
              (re.is_a?(Symbol) ? Regexp.new("()(:#{Regexp.escape(re.to_s)})\\b") : re), 
           "\\1<span class=\"#{name}\">\\2</span>")
