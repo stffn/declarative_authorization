@@ -390,10 +390,8 @@ One of three options to install the plugin:
     gem tumble
   And call from your application's root directory
     rake gems:install
-* Alternatively, to install from github, execute in your application's root directory
+* Alternativelyi, in Rails 2, to install from github, execute in your application's root directory
     cd vendor/plugins && git clone git://github.com/stffn/declarative_authorization.git
-* Or, download one of the released versions from Github at
-  http://github.com/stffn/declarative_authorization/downloads
 
 Then, 
 * provide the requirements as noted below, 
