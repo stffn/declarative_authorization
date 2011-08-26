@@ -312,23 +312,25 @@ module Authorization
       [user, roles, privileges]
     end
     
-    def flatten_roles (roles)
+    def flatten_roles (roles, flattened_roles = Set.new)
       # TODO caching?
-      flattened_roles = roles.dup.to_a
-      flattened_roles.each do |role|
-        flattened_roles.concat(@role_hierarchy[role]).uniq! if @role_hierarchy[role]
+      roles.reject {|role| flattened_roles.include?(role)}.each do |role|
+        flattened_roles << role
+        flatten_roles(@role_hierarchy[role], flattened_roles) if @role_hierarchy[role]
       end
+      flattened_roles.to_a
     end
     
     # Returns the privilege hierarchy flattened for given privileges in context.
-    def flatten_privileges (privileges, context = nil)
+    def flatten_privileges (privileges, context = nil, flattened_privileges = Set.new)
       # TODO caching?
       raise AuthorizationUsageError, "No context given or inferable from object" unless context
-      flattened_privileges = privileges.clone
-      flattened_privileges.each do |priv|
-        flattened_privileges.concat(@rev_priv_hierarchy[[priv, nil]]).uniq! if @rev_priv_hierarchy[[priv, nil]]
-        flattened_privileges.concat(@rev_priv_hierarchy[[priv, context]]).uniq! if @rev_priv_hierarchy[[priv, context]]
+      privileges.reject {|priv| flattened_privileges.include?(priv)}.each do |priv|
+        flattened_privileges << priv
+        flatten_privileges(@rev_priv_hierarchy[[priv, nil]], context, flattened_privileges) if @rev_priv_hierarchy[[priv, nil]]
+        flatten_privileges(@rev_priv_hierarchy[[priv, context]], context, flattened_privileges) if @rev_priv_hierarchy[[priv, context]]
       end
+      flattened_privileges.to_a
     end
     
     def matching_auth_rules (roles, privileges, context)
