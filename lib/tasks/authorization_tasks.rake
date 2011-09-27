@@ -60,7 +60,7 @@ namespace :auth do
         privilege ||= :read
       end
       if privilege.nil? or context.nil?
-        puts "Could not handle: #{ptu}"
+        puts "Could not handle: #{wpt}"
       else
         perms << [privilege, context]
       end
