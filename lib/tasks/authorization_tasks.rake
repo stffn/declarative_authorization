@@ -23,8 +23,15 @@ namespace :auth do
       end
       all += contr_perms.reject {|cp| cp[0].nil?}.collect {|cp| cp[0..1]}
     end
-    
-    model_files = `grep -l "^[[:space:]]*using_access_control" #{RAILS_ROOT}/app/models/*.rb`.split("\n")
+
+    model_all = `grep -l "Base\.using_access_control" #{RAILS_ROOT}/config/*.rb #{RAILS_ROOT}/config/initializers/*.rb`.split("\n")
+    if model_all.count > 0
+      model_files = Dir.glob( "#{RAILS_ROOT}/app/models/*.rb").reject do |item|
+        item.match(/_observer\.rb/)
+      end
+    else
+      model_files = `grep -l "^[[:space:]]*using_access_control" #{RAILS_ROOT}/app/models/*.rb`.split("\n")
+    end
     models_with_ac = model_files.collect {|mf| mf.sub(/^.*\//, "").sub(".rb", "").tableize.to_sym}
     model_security_privs = [:create, :read, :update, :delete]
     models_with_ac.each {|m| perms += model_security_privs.collect{|msp| [msp, m]}}
@@ -60,7 +67,7 @@ namespace :auth do
         privilege ||= :read
       end
       if privilege.nil? or context.nil?
-        puts "Could not handle: #{ptu}"
+        puts "Could not handle: #{wpt}"
       else
         perms << [privilege, context]
       end
