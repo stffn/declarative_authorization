@@ -20,8 +20,6 @@ module Authorization
   # The exception is raised to ensure that the entire rule is invalidated.
   class NilAttributeValueError < AuthorizationError; end
   
-  AUTH_DSL_FILES = [Pathname.new(Rails.root || '').join("config", "authorization_rules.rb").to_s] unless defined? AUTH_DSL_FILES
-  
   # Controller-independent method for retrieving the current user.
   # Needed for model security where the current controller is not available.
   def self.current_user
@@ -71,10 +69,10 @@ module Authorization
       :rev_role_hierarchy
     
     # If +reader+ is not given, a new one is created with the default
-    # authorization configuration of +AUTH_DSL_FILES+.  If given, may be either
+    # authorization configuration of config/authorization_rules.rb inside the Rails.root.  If given, may be either
     # a Reader object or a path to a configuration file.
     def initialize (reader = nil)
-      reader = Reader::DSLReader.factory(reader || AUTH_DSL_FILES)
+      reader = Reader::DSLReader.factory(reader || [Pathname.new(Rails.root || '').join("config", "authorization_rules.rb").to_s])
 
       @privileges = reader.privileges_reader.privileges
       # {priv => [[priv, ctx],...]}
