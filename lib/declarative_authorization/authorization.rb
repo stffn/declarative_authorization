@@ -82,7 +82,7 @@ module Authorization
     end
 
     def initialize_copy (from) # :nodoc:
-      [ :reader ].each {|attr| instance_variable_set(:"@#{attr}", from.send(attr).clone) }
+      @reader = from.reader.clone
     end
 
     # {[priv, ctx] => [priv, ...]}
@@ -349,9 +349,12 @@ module Authorization
       @rules = rules.clone
       reset!
     end
-    def initialize_copy source
-      initialize @rules.collect {|rule| rule.clone}
+
+    def initialize_copy (source)
+      @rules = @rules.collect {|rule| rule.clone}
+      reset!
     end
+
     def matching(roles, privileges, context)
       roles = [roles] unless roles.is_a?(Array)
       rules = cached_auth_rules[context] || []

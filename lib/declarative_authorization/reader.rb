@@ -59,6 +59,11 @@ module Authorization
         @auth_rules_reader = AuthorizationRulesReader.new
       end
 
+      def initialize_copy (from) # :nodoc:
+        @privileges_reader = from.privileges_reader.clone
+        @auth_rules_reader = from.auth_rules_reader.clone
+      end
+
       # ensures you get back a DSLReader
       # if you provide a:
       #   DSLReader - you will get it back.
@@ -141,6 +146,11 @@ module Authorization
         @privilege_hierarchy = {}
       end
 
+      def initialize_copy (from) # :nodoc:
+        @privileges = from.privileges.clone
+        @privilege_hierarchy = from.privilege_hierarchy.clone
+      end
+
       def append_privilege (priv) # :nodoc:
         @privileges << priv unless @privileges.include?(priv)
       end
@@ -191,6 +201,13 @@ module Authorization
         @role_titles = {}
         @role_descriptions = {}
         @auth_rules = AuthorizationRuleSet.new
+      end
+
+      def initialize_copy (from) # :nodoc:
+        [:roles, :role_hierarchy, :auth_rules,
+            :role_descriptions, :role_titles, :omnipotent_roles].each do |attribute|
+          instance_variable_set(:"@#{attribute}", from.send(attribute).clone)
+        end
       end
 
       def append_role (role, options = {}) # :nodoc:
