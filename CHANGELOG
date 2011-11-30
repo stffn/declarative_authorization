@@ -1,3 +1,11 @@
+** RELEASE 0.5.4 (Nov 30, 2011)
+
+* Cumulative loading of authorization rules [Damian Curso/sb]
+
+* Improved used_privileges rake task [urkle]
+
+* Performance improvements [John Hawthorn]
+
 ** RELEASE 0.5.3 (May 25, 2011)
 
 * Bugfixes and documentation cleanup
