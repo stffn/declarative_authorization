@@ -1,3 +1,7 @@
+** RELEASE 0.5.5 (Jan 10, 2012)
+
+* Update of handling of association proxies for Rails 3.2
+
 ** RELEASE 0.5.4 (Nov 30, 2011)
 
 * Cumulative loading of authorization rules [Damian Curso/sb]
