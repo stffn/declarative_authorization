@@ -170,7 +170,7 @@ module Authorization
       context = object = nil
       if object_or_sym.nil?
         context = self.class.decl_auth_context
-      elsif !object_or_sym.respond_to?(:proxy_reflection) and object_or_sym.is_a?(Symbol)
+      elsif !Authorization.is_a_association_proxy?(object_or_sym) and object_or_sym.is_a?(Symbol)
         context = object_or_sym
       else
         object = object_or_sym

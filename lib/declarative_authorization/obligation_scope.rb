@@ -140,9 +140,13 @@ module Authorization
     # Returns the model associated with the given path.
     def model_for (path)
       reflection = reflection_for(path)
-      
-      if reflection.respond_to?(:proxy_reflection)
-        reflection.proxy_reflection.klass
+
+      if Authorization.is_a_association_proxy?(reflection)
+        if Rails.version < "3.2"
+          reflection.proxy_reflection.klass
+        else
+          reflection.proxy_association.reflection.klass
+        end
       elsif reflection.respond_to?(:klass)
         reflection.klass
       else
@@ -167,7 +171,7 @@ module Authorization
 
       reflection = path.empty? ? top_level_model : begin
         parent = reflection_for( path[0..-2] )
-        if !parent.respond_to?(:proxy_reflection) and parent.respond_to?(:klass)
+        if !Authorization.is_a_association_proxy?(parent) and parent.respond_to?(:klass)
           parent.klass.reflect_on_association( path.last )
         else
           parent.reflect_on_association( path.last )
@@ -182,7 +186,7 @@ module Authorization
 
       # Claim alias for join table
       # TODO change how this is checked
-      if !reflection.respond_to?(:proxy_reflection) and !reflection.respond_to?(:proxy_scope) and reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
+      if !Authorization.is_a_association_proxy?(reflection) and !reflection.respond_to?(:proxy_scope) and reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
         join_table_path = path[0..-2] + [reflection.options[:through]]
         reflection_for(join_table_path, true)
       end

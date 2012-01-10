@@ -88,7 +88,11 @@ class TestModelSecurityModel < ActiveRecord::Base
   using_access_control
 end
 class TestModelSecurityModelWithFind < ActiveRecord::Base
-  set_table_name "test_model_security_models"
+  if Rails.version < "3.2"
+    set_table_name "test_model_security_models"
+  else
+    self.table_name = "test_model_security_models"
+  end
   has_many :test_attrs
   belongs_to :test_attr
   using_access_control :include_read => true, 
@@ -209,6 +213,9 @@ class NamedScopeModelTest < Test::Unit::TestCase
       end
     }
     Authorization::Engine.instance(reader)
+    TestModel.delete_all
+    TestAttrThrough.delete_all
+    TestAttr.delete_all
 
     allowed_model = TestModel.create!
     allowed_model.test_attrs.create!(:attr => 1).test_attr_throughs.create!
@@ -383,6 +390,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
       end
     }
     Authorization::Engine.instance(reader)
+    TestModel.delete_all
 
     test_model_1 = TestModel.create!
     TestModel.create!
@@ -911,6 +919,9 @@ class NamedScopeModelTest < Test::Unit::TestCase
         end
       }
       Authorization::Engine.instance(reader)
+      TestModel.delete_all
+      TestAttrThrough.delete_all
+      TestAttr.delete_all
 
       test_attr_through_1 = TestAttrThrough.create!
       test_item = NWayJoinItem.create!
@@ -1061,6 +1072,8 @@ class NamedScopeModelTest < Test::Unit::TestCase
       end
     }
     Authorization::Engine.instance(reader)
+    TestModel.delete_all
+    TestAttr.delete_all
 
     test_model_1 = TestModel.create!
     test_model_2 = TestModel.create!
@@ -1803,6 +1816,9 @@ class ModelTest < Test::Unit::TestCase
       end
     }
     Authorization::Engine.instance(reader)
+    TestModel.delete_all
+    TestAttr.delete_all
+    TestAttrThrough.delete_all
 
     test_model_1 = TestModel.create! :content => 'test_1'
     test_model_2 = TestModel.create! :content => 'test_2'

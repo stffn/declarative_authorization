@@ -60,6 +60,14 @@ module Authorization
   def self.default_role= (role)
     @@default_role = role.to_sym
   end
+
+  def self.is_a_association_proxy? (object)
+    if Rails.version < "3.2"
+      object.respond_to?(:proxy_reflection)
+    else
+      object.respond_to?(:proxy_association)
+    end
+  end
   
   # Authorization::Engine implements the reference monitor.  It may be used
   # for querying the permission and retrieving obligations under which
@@ -155,7 +163,7 @@ module Authorization
       #
       # Example: permit!( :edit, :object => user.posts )
       #
-      if options[:object].respond_to?( :proxy_reflection ) && options[:object].respond_to?( :new )
+      if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
         options[:object] = options[:object].new
       end
       
