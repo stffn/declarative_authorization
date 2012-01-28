@@ -34,7 +34,7 @@ class AuthorizationTest < Test::Unit::TestCase
       :user => MockUser.new(:test_role))
   end
 
-  def test_permit_elevated_people
+  def test_permit_with_has_omnipotence
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
       authorization do
@@ -119,6 +119,26 @@ class AuthorizationTest < Test::Unit::TestCase
     assert_equal [{:attr => [:is, 1]}], 
       engine.obligations(:test, :context => :permissions, 
           :user => MockUser.new(:test_role, :attr => 1))
+  end
+
+  def test_obligations_with_omnipotence
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :admin do
+          has_omnipotence
+        end
+        role :test_role do
+          has_permission_on :permissions, :to => :test do
+            if_attribute :attr => is { user.attr }
+          end
+        end
+      end
+    }
+    engine = Authorization::Engine.new(reader)
+    assert_equal [],
+      engine.obligations(:test, :context => :permissions,
+          :user => MockUser.new(:test_role, :admin, :attr => 1))
   end
 
   def test_obligations_with_anded_conditions

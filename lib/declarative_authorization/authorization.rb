@@ -233,6 +233,8 @@ module Authorization
 
       permit!(privilege, :skip_attribute_test => true, :user => user, :context => options[:context])
       
+      return [] if roles.is_a?(Array) and not (roles & omnipotent_roles).empty?
+      
       attr_validator = AttributeValidator.new(self, user, nil, privilege, options[:context])
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
         rule.obligations(attr_validator)
