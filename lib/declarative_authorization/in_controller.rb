@@ -472,6 +472,7 @@ module Authorization
           #:new_method => nil,                 # only symbol method name
           #:load_method => nil,                # only symbol method name
           :no_attribute_check => nil,
+          :additional_no_attribute_check => nil,
           :context    => nil,
           :nested_in  => nil,
         }.merge(options)
@@ -484,6 +485,7 @@ module Authorization
             actions_from_option(options[:additional_collection]))
 
         options[:no_attribute_check] ||= collections.keys unless options[:nested_in]
+        options[:no_attribute_check].concat([*options[:additional_no_attribute_check]]) if options[:additional_no_attribute_check]
 
         unless options[:nested_in].blank?
           load_parent_method = :"load_#{options[:nested_in].to_s.singularize}"
