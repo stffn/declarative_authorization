@@ -637,7 +637,7 @@ module Authorization
       else
         load_object_model = @load_object_model ||
             (@context ? @context.to_s.classify.constantize : contr.class.controller_name.classify.constantize)
-        instance_var = :"@#{load_object_model.name.underscore}"
+        instance_var = :"@#{load_object_model.name.demodulize.underscore}"
         object = contr.instance_variable_get(instance_var)
         unless object
           begin
