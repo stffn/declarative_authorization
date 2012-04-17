@@ -277,12 +277,23 @@ module Authorization
     def roles_with_hierarchy_for(user)
       flatten_roles(roles_for(user))
     end
-    
+
+    def self.development_reload?
+      if Rails.env.development?
+        mod_time = AUTH_DSL_FILES.map { |m| File.mtime(m) }.flatten.max
+        @@auth_dsl_last_modified ||= mod_time
+        if mod_time > @@auth_dsl_last_modified
+          @@auth_dsl_last_modified = mod_time
+          return true
+        end
+      end
+    end
+
     # Returns an instance of Engine, which is created if there isn't one
     # yet.  If +dsl_file+ is given, it is passed on to Engine.new and 
     # a new instance is always created.
     def self.instance (dsl_file = nil)
-      if dsl_file
+      if dsl_file or development_reload?
         @@instance = new(dsl_file)
       else
         @@instance ||= new
