@@ -242,7 +242,7 @@ the conditions for manual rewrites.
 == Authorization Rules
 
 Authorization rules are defined in config/authorization_rules.rb
-(Or redefine rules files path via +Authorization::AUTH_RULE_FILES+).  E.g.
+(Or redefine rules files path via +Authorization::AUTH_DSL_FILES+).  E.g.
 
     authorization do
       role :admin do
