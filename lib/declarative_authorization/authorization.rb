@@ -280,7 +280,7 @@ module Authorization
 
     def self.development_reload?
       if Rails.env.development?
-        mod_time = AUTH_DSL_FILES.map { |m| File.mtime(m) rescue 0 }.flatten.max
+        mod_time = AUTH_DSL_FILES.map { |m| File.mtime(m) rescue Time.at(0) }.flatten.max
         @@auth_dsl_last_modified ||= mod_time
         if mod_time > @@auth_dsl_last_modified
           @@auth_dsl_last_modified = mod_time
