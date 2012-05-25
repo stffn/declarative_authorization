@@ -155,7 +155,7 @@ module Authorization
       privilege = privilege.is_a?( Array ) ?
                   privilege.flatten.collect { |priv| priv.to_sym } :
                   privilege.to_sym
-      
+      begin
       #
       # If the object responds to :proxy_reflection, we're probably working with
       # an association proxy.  Use 'new' to leverage ActiveRecord's builder
@@ -164,7 +164,8 @@ module Authorization
       # Example: permit!( :edit, :object => user.posts )
       #
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
-        options[:object] = options[:object].new
+        proxy = options[:object]
+        temporary_build = options[:object] = options[:object].new
       end
       
       options[:context] ||= options[:object] && (
@@ -197,6 +198,11 @@ module Authorization
         end
       else
         false
+      end
+      ensure
+        if temporary_build
+          proxy.delete temporary_build
+        end
       end
     end
     
