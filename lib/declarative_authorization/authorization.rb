@@ -165,7 +165,11 @@ module Authorization
       #
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
         proxy = options[:object]
-        temporary_build = options[:object] = options[:object].new
+        if options[:reverse_relation]
+          temporary_build = options[:object] = options[:object].new(options[:reverse_relation] => [proxy.proxy_association.owner])
+        else
+          temporary_build = options[:object] = options[:object].new
+        end
       end
       
       options[:context] ||= options[:object] && (
