@@ -1,8 +1,10 @@
 require File.join(%w{declarative_authorization rails_legacy})
 require File.join(%w{declarative_authorization helper})
 require File.join(%w{declarative_authorization in_controller})
-require File.join(%w{declarative_authorization in_model})
-require File.join(%w{declarative_authorization obligation_scope})
+if defined?(ActiveRecord)
+  require File.join(%w{declarative_authorization in_model})
+  require File.join(%w{declarative_authorization obligation_scope})
+end
 
 min_rails_version = "2.1.0"
 if Rails::VERSION::STRING < min_rails_version
@@ -14,4 +16,4 @@ require File.join(%w{declarative_authorization railsengine}) if defined?(::Rails
 ActionController::Base.send :include, Authorization::AuthorizationInController
 ActionController::Base.helper Authorization::AuthorizationHelper
 
-ActiveRecord::Base.send :include, Authorization::AuthorizationInModel
+ActiveRecord::Base.send :include, Authorization::AuthorizationInModel if defined?(ActiveRecord)
