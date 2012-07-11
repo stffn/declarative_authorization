@@ -1,0 +1,8 @@
+source 'https://rubygems.org'
+
+gem 'rails', '~> 2.3.0'
+gem 'sqlite3'
+gem 'ruby_parser'
+gem 'rdoc'
+gemspec :path => '..'
+
