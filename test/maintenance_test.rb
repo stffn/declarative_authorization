@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), 'test_helper.rb')
+require 'test_helper'
 require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization maintenance})
 
 class MaintenanceTest < Test::Unit::TestCase
