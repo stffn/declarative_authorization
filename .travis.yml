@@ -9,3 +9,9 @@ gemfile:
   - gemfiles/3.0.gemfile
   - gemfiles/3.1.gemfile
   - gemfiles/3.2.gemfile
+matrix:
+  allow_failures:
+    - rvm: 1.9.2
+      gemfile: gemfiles/2.3.gemfile
+    - rvm: 1.9.3
+      gemfile: gemfiles/2.3.gemfile
