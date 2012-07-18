@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), %w{.. test_helper.rb})
+require 'test_helper'
 
 auth_analyzer_loadable = false
 begin
