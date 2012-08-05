@@ -1,31 +1,24 @@
 require 'test/unit'
 require 'pathname'
 
-unless defined?(RAILS_ROOT)
-  RAILS_ROOT = ENV['RAILS_ROOT'] ?
-      ENV['RAILS_ROOT'] + "" :
-      File.join(File.dirname(__FILE__), %w{.. .. .. ..})
-end
+ENV['RAILS_ENV'] = 'test'
 
-unless defined?(ActiveRecord)
-  if File.directory? RAILS_ROOT + '/config'
-    puts 'Using config/boot.rb'
-    ENV['RAILS_ENV'] = 'test'
-    require File.join(RAILS_ROOT, 'config', 'environment.rb')
-  else
-    # simply use installed gems if available
-    version_requirement = ENV['RAILS_VERSION'] ? "= #{ENV['RAILS_VERSION']}" : "> 2.1.0"
-    puts "Using Rails from RubyGems (#{version_requirement || "default"})"
-    require 'rubygems'
-    %w{actionpack activerecord activesupport rails}.each do |gem_name|
-      gem gem_name, version_requirement
-    end
-  end
-
-  unless defined?(Rails)  # needs to be explicit in Rails < 3
-    %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
-  end
+require 'bundler/setup'
+begin
+  # rails 3
+  require 'rails/all'
+rescue LoadError
+  # rails 2.3
+  %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
 end
+Bundler.require
+
+# rails 2.3 and ruby 1.9.3 fix
+MissingSourceFile::REGEXPS.push([/^cannot load such file -- (.+)$/i, 1])
+
+puts "Testing against rails #{Rails::VERSION::STRING}"
+
+RAILS_ROOT = File.dirname(__FILE__)
 
 DA_ROOT = Pathname.new(File.expand_path("..", File.dirname(__FILE__)))
 
@@ -114,10 +107,25 @@ class MocksController < ActionController::Base
 end
 
 if Rails.version < "3"
+  ActiveRecord::Base.establish_connection({:adapter => 'sqlite3', :database => ':memory:'})
   ActionController::Routing::Routes.draw do |map|
     map.connect ':controller/:action/:id'
   end
 else
+  class TestApp
+    class Application < ::Rails::Application
+      config.active_support.deprecation = :stderr
+      database_path = File.expand_path('../database.yml', __FILE__)
+      if Rails.version.start_with? '3.0.'
+        config.paths.config.database database_path
+      else
+        config.paths['config/database'] = database_path
+      end
+      initialize!
+    end
+  end
+  class ApplicationController < ActionController::Base
+  end
   #Rails::Application.routes.draw do
   Rails.application.routes.draw do
     match '/name/spaced_things(/:action)' => 'name/spaced_things'
