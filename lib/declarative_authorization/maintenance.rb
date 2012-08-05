@@ -60,9 +60,10 @@ module Authorization
           end
         rescue Errno::ENOENT
         end
-        controllers = []
-        ObjectSpace.each_object(Class) do |obj|
-          controllers << obj if obj.ancestors.include?(ActionController::Base) and obj != ActionController::Base and obj.name.demodulize != 'ApplicationController'
+        controllers = ObjectSpace.each_object(Class).select do |obj|
+          obj.ancestors.include?(ActionController::Base) &&
+            obj != ActionController::Base &&
+            (!obj.name || obj.name.demodulize != 'ApplicationController')
         end
 
         controllers.inject({}) do |memo, controller|
