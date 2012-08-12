@@ -1801,6 +1801,7 @@ class ModelTest < Test::Unit::TestCase
     test_model = TestModel.create(:content => "content")
     assert engine.permit?(:read, :object => test_model.test_attrs,
                           :user => MockUser.new(:test_role))
+    assert test_model.test_attrs.empty?
     assert !engine.permit?(:read, :object => TestAttr.new,
                           :user => MockUser.new(:test_role))
     TestModel.delete_all
