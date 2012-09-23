@@ -515,8 +515,10 @@ sbartsch at tzi.org
 
 Thanks to John Joseph Bachir, Dennis Blöte, Eike Carls, Damian Caruso, Kai Chen, Erik Dahlstrand,
 Jeroen van Dijk, Alexander Dobriakov, Sebastian Dyck, Ari Epstein, Jeremy Friesen,
-Tim Harper, John Hawthorn, hollownest, Daniel Kristensen, Jeremy Kleindl, Brad Langhorst, Brian Langenfeld,
-Georg Ledermann, Geoff Longman, Olly Lylo, Mark Mansour, Thomas Maurer, Tyler Pickett, Edward Rudd, Sharagoz,
+Tim Harper, John Hawthorn, hollownest, Daniel Kristensen, Jeremy Kleindl,
+Benjamin ter Kuile, Brad Langhorst, Brian Langenfeld,
+Georg Ledermann, Geoff Longman, Olly Lylo, Mark Mansour, Thomas Maurer, Kevin Moore,
+Tyler Pickett, Edward Rudd, Sharagoz,
 TJ Singleton, Mike Vincent, Joel Westerberg
 
 

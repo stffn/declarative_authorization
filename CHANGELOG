@@ -1,3 +1,13 @@
+** RELEASE 0.5.6 (Sep 23, 2012)
+
+* Fix handling of stray object associations [jhawthorn]
+
+* Improve test infrastructure [jhawthorn]
+
+* Allow decl_auth to be used without ActiveRecord [bterkuile]
+
+* Rule reloading in development based on changes [urkle/sb]
+
 ** RELEASE 0.5.5 (Jan 10, 2012)
 
 * Update of handling of association proxies for Rails 3.2
