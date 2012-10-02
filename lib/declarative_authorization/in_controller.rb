@@ -163,7 +163,7 @@ module Authorization
            instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
            context_without_namespace.to_s.classify.constantize
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
-      instance_variable_set(instance_var, model_or_proxy.new)
+      instance_variable_set(instance_var, (model_or_proxy.respond_to?(:scoped) ? model_or_proxy.scoped : model_or_proxy).new)
     end
 
     def options_for_permit (object_or_sym = nil, options = {}, bang = true)
