@@ -127,7 +127,7 @@ module Authorization
         elsif auth_exception
           logger.info "Permission denied: #{auth_exception}"
         end
-        if respond_to?(:permission_denied)
+        if respond_to?(:permission_denied, true)
           # permission_denied needs to render or redirect
           send(:permission_denied)
         else
@@ -315,7 +315,7 @@ module Authorization
       # filter_access_to in child controllers with the same action.
       def all_filter_access_permissions # :nodoc:
         ancestors.inject([]) do |perms, mod|
-          if mod.respond_to?(:filter_access_permissions)
+          if mod.respond_to?(:filter_access_permissions, true)
             perms + 
               mod.filter_access_permissions.collect do |p1| 
                 p1.clone.remove_actions(perms.inject(Set.new) {|actions, p2| actions + p2.actions})
@@ -489,7 +489,7 @@ module Authorization
           load_parent_method = :"load_#{options[:nested_in].to_s.singularize}"
           shallow_exceptions = options[:shallow] ? {:except => members.keys} : {}
           before_filter shallow_exceptions do |controller|
-            if controller.respond_to?(load_parent_method)
+            if controller.respond_to?(load_parent_method, true)
               controller.send(load_parent_method)
             else
               controller.send(:load_parent_controller_object, options[:nested_in])
@@ -499,7 +499,7 @@ module Authorization
           new_for_collection_method = :"new_#{controller_name.singularize}_for_collection"
           before_filter :only => collections.keys do |controller|
             # new_for_collection
-            if controller.respond_to?(new_for_collection_method)
+            if controller.respond_to?(new_for_collection_method, true)
               controller.send(new_for_collection_method)
             else
               controller.send(:new_controller_object_for_collection,
@@ -511,7 +511,7 @@ module Authorization
         new_from_params_method = :"new_#{controller_name.singularize}_from_params"
         before_filter :only => new_actions.keys do |controller|
           # new_from_params
-          if controller.respond_to?(new_from_params_method)
+          if controller.respond_to?(new_from_params_method, true)
             controller.send(new_from_params_method)
           else
             controller.send(:new_controller_object_from_params,
@@ -521,7 +521,7 @@ module Authorization
         load_method = :"load_#{controller_name.singularize}"
         before_filter :only => members.keys do |controller|
           # load controller object
-          if controller.respond_to?(load_method)
+          if controller.respond_to?(load_method, true)
             controller.send(load_method)
           else
             controller.send(:load_controller_object, options[:context] || controller_name)
@@ -558,7 +558,7 @@ module Authorization
       def filter_access_permissions # :nodoc:
         unless filter_access_permissions?
           ancestors[1..-1].reverse.each do |mod|
-            mod.filter_access_permissions if mod.respond_to?(:filter_access_permissions)
+            mod.filter_access_permissions if mod.respond_to?(:filter_access_permissions, true)
           end
         end
         class_variable_set(:@@declarative_authorization_permissions, {}) unless filter_access_permissions?
