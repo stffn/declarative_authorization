@@ -279,6 +279,17 @@ module Authorization
         context = args.flatten
         
         raise DSLError, "has_permission_on only allowed in role blocks" if @current_role.nil?
+
+        # Adding the option to set permission on all actions in a controller.
+        # For example: has_permission_on :users, :to => :all
+        if options[:to].include? :all
+          controller = Object::const_get(context[0].to_s.camelize + "Controller")
+          actions = []
+          controller.action_methods.each { |m| actions << m.to_sym }
+          options[:to] = actions
+        end
+        ##########################################################################
+
         options = {:to => [], :join_by => :or}.merge(options)
         
         privs = options[:to] 
