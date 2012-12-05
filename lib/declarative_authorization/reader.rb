@@ -45,7 +45,7 @@ module Authorization
     class DSLError < Exception; end
     # Signals errors in the syntax of an authorization DSL.
     class DSLSyntaxError < DSLError; end
-    
+
     # Top-level reader, parses the methods +privileges+ and +authorization+.
     # +authorization+ takes a block with authorization rules as described in
     # AuthorizationRulesReader.  The block to +privileges+ defines privilege
@@ -70,10 +70,10 @@ module Authorization
       #   String or Array - it will treat it as if you have passed a path or an array of paths and attempt to load those.
       def self.factory(obj)
         case obj
-        when Reader::DSLReader
-          obj
-        when String, Array
-          load(obj)
+          when Reader::DSLReader
+            obj
+          when String, Array
+            load(obj)
         end
       end
 
@@ -189,7 +189,7 @@ module Authorization
 
     class AuthorizationRulesReader
       attr_reader :roles, :role_hierarchy, :auth_rules,
-        :role_descriptions, :role_titles, :omnipotent_roles # :nodoc:
+                  :role_descriptions, :role_titles, :omnipotent_roles # :nodoc:
 
       def initialize # :nodoc:
         @current_role = nil
@@ -205,7 +205,7 @@ module Authorization
 
       def initialize_copy (from) # :nodoc:
         [:roles, :role_hierarchy, :auth_rules,
-            :role_descriptions, :role_titles, :omnipotent_roles].each do |attribute|
+         :role_descriptions, :role_titles, :omnipotent_roles].each do |attribute|
           instance_variable_set(:"@#{attribute}", from.send(attribute).clone)
         end
       end
@@ -245,7 +245,13 @@ module Authorization
         @role_hierarchy[@current_role] ||= []
         @role_hierarchy[@current_role] += roles.flatten
       end
-      
+
+      def class_from_string(str)
+        str.split('::').inject(Object) do |mod, class_name|
+          mod.const_get(class_name)
+        end
+      end
+
       # Allows the definition of privileges to be allowed for the current role,
       # either in a has_permission_on block or directly in one call.
       #   role :admin
@@ -277,28 +283,38 @@ module Authorization
       def has_permission_on (*args, &block)
         options = args.extract_options!
         context = args.flatten
-        
+
         raise DSLError, "has_permission_on only allowed in role blocks" if @current_role.nil?
 
         # Adding the option to set permission on all actions in a controller.
         # For example: has_permission_on :users, :to => :all
         if options[:to].include? :all
-          controller = Object::const_get(context[0].to_s.camelize + "Controller")
-          actions = []
-          controller.action_methods.each { |m| actions << m.to_sym }
-          options[:to] = actions
+          begin
+            routes = Rails.application.routes.routes.routes
+            raw_name = context[0].to_s
+            results = routes.select { |route| route.defaults.blank? ? false : route.defaults[:controller].split(/[\/_]/).join('_') == raw_name }
+            controller_parts = results.first.defaults[:controller].split('/')
+            controller_parts.each { |part| part.capitalize! }
+            controller_name = controller_parts.push(controller_parts.pop.camelize).join("::")
+            controller = class_from_string(controller_name.camelize + "Controller")
+
+            actions = []
+            controller.action_methods.each { |m| actions << m.to_sym }
+            options[:to] = actions
+          rescue
+          end
         end
         ##########################################################################
 
         options = {:to => [], :join_by => :or}.merge(options)
-        
-        privs = options[:to] 
+
+        privs = options[:to]
         privs = [privs] unless privs.is_a?(Array)
         raise DSLError, "has_permission_on either needs a block or :to option" if !block_given? and privs.empty?
 
         file, line = file_and_line_number_from_call_stack
         rule = AuthorizationRule.new(@current_role, privs, context, options[:join_by],
-                   :source_file => file, :source_line => line)
+                                     :source_file => file, :source_line => line)
         @auth_rules << rule
         if block_given?
           @current_rule = rule
@@ -327,7 +343,7 @@ module Authorization
         raise DSLError, "description only allowed in role blocks" if @current_role.nil?
         role_descriptions[@current_role] = text
       end
-      
+
       # Sets a human-readable title for the current role.  E.g.
       #   role :admin
       #     title "Administrator"
@@ -337,7 +353,7 @@ module Authorization
         raise DSLError, "title only allowed in role blocks" if @current_role.nil?
         role_titles[@current_role] = text
       end
-      
+
       # Used in a has_permission_on block, to may be used to specify privileges
       # to be assigned to the current role under the conditions specified in
       # the current block.
@@ -463,9 +479,9 @@ module Authorization
         # only :context option in attr_or_hash:
         attr_or_hash = nil if attr_or_hash.is_a?(Hash) and attr_or_hash.empty?
         @current_rule.append_attribute AttributeWithPermission.new(privilege,
-            attr_or_hash, options[:context])
+                                                                   attr_or_hash, options[:context])
       end
-      
+
       # In an if_attribute statement, is says that the value has to be
       # met exactly by the if_attribute attribute.  For information on the block
       # argument, see if_attribute.
@@ -498,7 +514,7 @@ module Authorization
       def intersects_with (&block)
         [:intersects_with, block]
       end
-      
+
       # In an if_attribute statement, is_in says that the value has to
       # contain the attribute value.
       # For information on the block argument, see if_attribute.
@@ -510,7 +526,7 @@ module Authorization
       def is_not_in (&block)
         [:is_not_in, block]
       end
-      
+
       # Less than
       def lt (&block)
         [:lt, block]
@@ -545,11 +561,11 @@ module Authorization
         end
         hash.merge!(merge_hash)
       end
-      
+
       def file_and_line_number_from_call_stack
         caller_parts = caller(2).first.split(':')
         [caller_parts[0] == "(eval)" ? nil : caller_parts[0],
-          caller_parts[1] && caller_parts[1].to_i]
+         caller_parts[1] && caller_parts[1].to_i]
       end
     end
   end
