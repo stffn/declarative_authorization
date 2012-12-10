@@ -176,11 +176,12 @@ module Authorization
         object = object_or_sym
       end
 
-      {:user => current_user,
-        :object => object,
+      result = {:object => object,
         :context => context,
         :skip_attribute_test => object.nil?,
         :bang => bang}.merge(options)
+      result[:user] = current_user unless result.key?(:user)
+      result
     end
 
     module ClassMethods
