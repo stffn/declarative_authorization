@@ -283,8 +283,8 @@ module Authorization
             end
           end
         end
-        obligation_conds << "1=1" if obligation_conds.empty?
-        conds << "(#{obligation_conds.join(' AND ')})"
+        obligation_conds << "1=1" if (obligation_conds.empty? && conds.empty?)
+        conds << "(#{obligation_conds.join(' AND ')})" unless obligation_conds.empty?
       end
       (delete_paths - used_paths).each {|path| reflections.delete(path)}
 
