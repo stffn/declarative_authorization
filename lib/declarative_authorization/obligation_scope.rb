@@ -256,7 +256,7 @@ module Authorization
             else
               attribute_name = model.columns_hash["#{attribute}_id"] && :"#{attribute}_id" ||
                                model.columns_hash[attribute.to_s]    && attribute ||
-                               :id
+                               model.primary_key
               attribute_table_alias = table_alias
               used_paths << path
             end
