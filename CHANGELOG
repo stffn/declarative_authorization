@@ -1,3 +1,7 @@
+** RELEASE 0.5.7 (Mar 10, 2013)
+
+* Ruby 2.0 compatibility [jhawthorn]
+
 ** RELEASE 0.5.6 (Sep 23, 2012)
 
 * Fix handling of stray object associations [jhawthorn]
