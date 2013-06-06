@@ -231,7 +231,12 @@ returns all employee records that the current user is authorized to read.  In
 addition, just like normal named scopes, query rewriting may be chained with
 the usual find method:
 
-    Employee.with_permissions_to(:read).find(:all, :conditions => ...)
+    Employee.with_permissions_to(:read).where(conditions).all
+    
+If you need to specify a specific user who is not the current_user, you can 
+specify the user explicitely this way:
+
+    Employee.with_permissions_to(:read, user: user)
 
 If the current user is completely missing the permissions, an 
 Authorization::NotAuthorized exception is raised.  Through 
