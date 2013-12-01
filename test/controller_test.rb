@@ -334,7 +334,9 @@ class AccessOverwritesController < MocksController
   filter_access_to :test_action, :test_action_2, 
     :require => :test, :context => :permissions_2
   filter_access_to :test_action, :require => :test, :context => :permissions
-  define_action_methods :test_action, :test_action_2
+  filter_access_to :test_action_3, :require => :test_2, :context => :permissions
+  filter_access_to :test_action_3, :require => :test, :context => :permissions, :overwrite => false
+  define_action_methods :test_action, :test_action_2, :test_action_3
 end
 class AccessOverwritesControllerTest < ActionController::TestCase
   def test_filter_access_overwrite
@@ -350,6 +352,26 @@ class AccessOverwritesControllerTest < ActionController::TestCase
     assert !@controller.authorized?
     
     request!(MockUser.new(:test_role), "test_action", reader)
+    assert @controller.authorized?
+  end
+
+  def test_filter_access_overwrite_disabled
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test
+        end
+
+        role :test_role_2 do
+          has_permission_on :permissions, :to => [ :test, :test_2 ]
+        end
+      end
+    }
+    request!(MockUser.new(:test_role), "test_action_3", reader)
+    assert !@controller.authorized?
+
+    request!(MockUser.new(:test_role_2), "test_action_3", reader)
     assert @controller.authorized?
   end
 end

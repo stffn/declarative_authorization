@@ -281,7 +281,9 @@ module Authorization
       #   Example demonstrating the default behavior:
       #     filter_access_to :show, :attribute_check => true,
       #                      :load_method => lambda { User.find(params[:id]) }
-      # 
+      # [:+overwrite+]
+      #   Specifify if this filter will overwrite any access filter for the actions
+      #   they have in common. Defaults to +true+.
       
       def filter_access_to (*args, &filter_block)
         options = args.last.is_a?(Hash) ? args.pop : {}
@@ -290,7 +292,8 @@ module Authorization
           :context => nil,
           :attribute_check => false,
           :model => nil,
-          :load_method => nil
+          :load_method => nil,
+          :overwrite => true
         }.merge!(options)
         privilege = options[:require]
         context = options[:context]
@@ -300,8 +303,10 @@ module Authorization
         skip_before_filter :filter_access_filter
         before_filter :filter_access_filter
         
-        filter_access_permissions.each do |perm|
-          perm.remove_actions(actions)
+        if options[:overwrite]
+          filter_access_permissions.each do |perm|
+            perm.remove_actions(actions)
+          end
         end
         filter_access_permissions << 
           ControllerPermission.new(actions, privilege, context,
