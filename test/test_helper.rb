@@ -127,10 +127,18 @@ else
   class ApplicationController < ActionController::Base
   end
   #Rails::Application.routes.draw do
-  Rails.application.routes.draw do
-    match '/name/spaced_things(/:action)' => 'name/spaced_things'
-    match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things'
-    match '/:controller(/:action(/:id))'
+  if Rails.version.start_with? '4'
+    Rails.application.routes.draw do
+      match '/name/spaced_things(/:action)' => 'name/spaced_things', via: [:get, :post, :put, :patch, :delete]
+      match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things', via: [:get, :post, :put, :patch, :delete]
+      match '/:controller(/:action(/:id))', via: [:get, :post, :put, :patch, :delete]
+    end
+  else
+    Rails.application.routes.draw do
+      match '/name/spaced_things(/:action)' => 'name/spaced_things'
+      match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things'
+      match '/:controller(/:action(/:id))'
+    end
   end
 end
 
