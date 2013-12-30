@@ -26,7 +26,9 @@ class TestModel < ActiveRecord::Base
     :class_name => "TestAttrThrough", :source => :test_attr_throughs,
     :conditions => "test_attrs.attr = 1"
 
-  attr_accessible :content, :test_attr_through_id, :country_id
+  if Rails.version < '4'
+    attr_accessible :content, :test_attr_through_id, :country_id
+  end
 
   # TODO currently not working in Rails 3
   if Rails.version < "3"
@@ -75,9 +77,13 @@ class TestAttr < ActiveRecord::Base
   has_many :test_attr_throughs
   has_many :test_model_security_model_with_finds
   attr_reader :role_symbols
-  attr_accessible :test_model, :test_another_model, :attr, :branch, :company, :test_attr,
-	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id, 
-	  :test_model_id, :test_another_model_id
+
+  if Rails.version < '4'
+    attr_accessible :test_model, :test_another_model, :attr, :branch, :company, :test_attr,
+  	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id, 
+  	  :test_model_id, :test_another_model_id
+  end
+
   def initialize (*args)
     @role_symbols = []
     super(*args)
@@ -91,7 +97,10 @@ end
 class TestModelSecurityModel < ActiveRecord::Base
   has_many :test_attrs
   using_access_control
-  attr_accessible :attr, :attr_2, :test_attrs
+
+  if Rails.version < '4'
+    attr_accessible :attr, :attr_2, :test_attrs
+  end
 end
 class TestModelSecurityModelWithFind < ActiveRecord::Base
   if Rails.version < "3.2"
@@ -103,19 +112,28 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
   belongs_to :test_attr
   using_access_control :include_read => true, 
     :context => :test_model_security_models
-  attr_accessible :test_attr, :attr
+  
+  if Rails.version < '4'
+    attr_accessible :test_attr, :attr
+  end
 end
 
 class Branch < ActiveRecord::Base
   has_many :test_attrs
   belongs_to :company
-  attr_accessible :name, :company
+  
+  if Rails.version < '4'
+    attr_accessible :name, :company
+  end
 end
 class Company < ActiveRecord::Base
   has_many :test_attrs
   has_many :branches
   belongs_to :country
-  attr_accessible :name, :country, :country_id
+  
+  if Rails.version < '4'
+    attr_accessible :name, :country, :country_id
+  end
 end
 class SmallCompany < Company
   def self.decl_auth_context
@@ -125,7 +143,10 @@ end
 class Country < ActiveRecord::Base
   has_many :test_models
   has_many :companies
-  attr_accessible :name
+  
+  if Rails.version < '4'
+    attr_accessible :name
+  end
 end
 
 class NamedScopeModelTest < Test::Unit::TestCase
