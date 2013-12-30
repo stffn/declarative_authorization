@@ -152,24 +152,51 @@ if Rails.version < "3"
   require "action_controller/test_process"
 end
 
-class Test::Unit::TestCase
-  include Authorization::TestHelper
-  
-  def request! (user, action, reader, params = {})
-    action = action.to_sym if action.is_a?(String)
-    @controller.current_user = user
-    @controller.authorization_engine = Authorization::Engine.new(reader)
+
+if Rails.version < "4"
+  class Test::Unit::TestCase
+    include Authorization::TestHelper
     
-    ((params.delete(:clear) || []) + [:@authorized]).each do |var|
-      @controller.instance_variable_set(var, nil)
+    def request! (user, action, reader, params = {})
+      action = action.to_sym if action.is_a?(String)
+      @controller.current_user = user
+      @controller.authorization_engine = Authorization::Engine.new(reader)
+      
+      ((params.delete(:clear) || []) + [:@authorized]).each do |var|
+        @controller.instance_variable_set(var, nil)
+      end
+      get action, params
     end
-    get action, params
+
+    unless Rails.version < "3"
+      def setup
+        #@routes = Rails::Application.routes
+        @routes = Rails.application.routes
+      end
+    end
   end
 
-  unless Rails.version < "3"
-    def setup
-      #@routes = Rails::Application.routes
-      @routes = Rails.application.routes
+else
+
+  class ActiveSupport::TestCase
+    include Authorization::TestHelper
+    
+    def request! (user, action, reader, params = {})
+      action = action.to_sym if action.is_a?(String)
+      @controller.current_user = user
+      @controller.authorization_engine = Authorization::Engine.new(reader)
+      
+      ((params.delete(:clear) || []) + [:@authorized]).each do |var|
+        @controller.instance_variable_set(var, nil)
+      end
+      get action, params
+    end
+
+    unless Rails.version < "3"
+      def setup
+        #@routes = Rails::Application.routes
+        @routes = Rails.application.routes
+      end
     end
   end
 end
