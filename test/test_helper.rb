@@ -133,6 +133,11 @@ else
       match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things', via: [:get, :post, :put, :patch, :delete]
       match '/:controller(/:action(/:id))', via: [:get, :post, :put, :patch, :delete]
     end
+    class TestApp
+      class Application < ::Rails::Application
+        config.secret_key_base = 'thisstringdoesnothing'
+      end
+    end
   else
     Rails.application.routes.draw do
       match '/name/spaced_things(/:action)' => 'name/spaced_things'
