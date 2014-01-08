@@ -208,9 +208,10 @@ module Authorization
             s(:call, klass, name)
           when :has_permission_on
             arglist_line = exp[0].line
-            arglist = process(exp.shift).shift
-            context = arglist.shift
-            args_hash = arglist.shift
+            # what is the purpose of arglist?  Used to be process(exp.shift).shift, which broke args_hash
+            arglist = process(exp.shift)
+            context = arglist
+            args_hash = process(exp.shift).shift
             @has_permission << {
               :context => context,
               :rules => [],
