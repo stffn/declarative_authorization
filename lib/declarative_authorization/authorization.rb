@@ -625,7 +625,7 @@ module Authorization
     protected
     def object_attribute_value (object, attr)
       begin
-        object.send(attr)
+        object.respond_to?(:proxy_association) ? object.shift.send(attr) : object.send(attr)
       rescue ArgumentError, NoMethodError => e
         raise AuthorizationUsageError, "Error occurred while validating attribute ##{attr} on #{object.inspect}: #{e}.\n" +
           "Please check your authorization rules and ensure the attribute is correctly spelled and \n" +

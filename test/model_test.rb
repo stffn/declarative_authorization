@@ -349,7 +349,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 1, TestModel.query_count if Rails.version < "3"
 
     TestModel.query_count = 0
-    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length if Rails.version < "4"
     assert_equal 1, TestModel.query_count if Rails.version < "3"
 
     TestModel.query_count = 0

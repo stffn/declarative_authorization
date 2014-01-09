@@ -129,9 +129,9 @@ else
   #Rails::Application.routes.draw do
   if Rails.version.start_with? '4'
     Rails.application.routes.draw do
-      match '/name/spaced_things(/:action)' => 'name/spaced_things', via: [:get, :post, :put, :patch, :delete]
-      match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things', via: [:get, :post, :put, :patch, :delete]
-      match '/:controller(/:action(/:id))', via: [:get, :post, :put, :patch, :delete]
+      match '/name/spaced_things(/:action)' => 'name/spaced_things', :via => [:get, :post, :put, :patch, :delete]
+      match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things', :via => [:get, :post, :put, :patch, :delete]
+      match '/:controller(/:action(/:id))', :via => [:get, :post, :put, :patch, :delete]
     end
     class TestApp
       class Application < ::Rails::Application
@@ -177,6 +177,9 @@ if Rails.version < "4"
   end
 
 else
+  class Test::Unit::TestCase
+    include Authorization::TestHelper
+  end
 
   class ActiveSupport::TestCase
     include Authorization::TestHelper
