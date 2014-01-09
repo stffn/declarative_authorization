@@ -211,7 +211,7 @@ module Authorization
             # what is the purpose of arglist?  Used to be process(exp.shift).shift, which broke args_hash
             arglist = process(exp.shift)
             context = arglist
-            args_hash = process(exp.shift).shift
+            args_hash = exp[0].nil? ? nil : process(exp.shift).shift
             @has_permission << {
               :context => context,
               :rules => [],
@@ -224,15 +224,23 @@ module Authorization
             @has_permission.last[:privilege] = process(exp.shift).shift if @has_permission
             s(:call, klass, name)
           when :if_attribute
-            rules = process(exp.shift).shift
+            rules = process(exp.shift)
             rules.unshift :if_attribute
             @has_permission.last[:rules] << rules if @has_permission
             s(:call, klass, name)
           when :if_permitted_to
-            rules = process(exp.shift).shift
+            rules = process(exp.shift).push(process(exp.shift).shift)
             rules.unshift :if_permitted_to
             @has_permission.last[:rules] << rules if @has_permission
             s(:call, klass, name)
+          when :privilege
+            privilege = process(exp.shift)
+            includes = process(exp.shift).shift
+            privelege_hash = {
+              :privilege => privilege,
+              :options => includes
+            }
+            s(:call, klass, name, privelege_hash)
           else
             s(:call, klass, name, process(exp.shift))
           end
