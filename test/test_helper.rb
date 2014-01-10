@@ -58,6 +58,11 @@ class MockDataObject
     raise StandardError, "Couldn't find #{self.name} with id #{args[0].inspect}" unless args[0]
     new :id => args[0]
   end
+
+  def self.find_or_initialize_by(args)
+    raise StandardError, "Syntax error: find_or_initialize by expects a hash: User.find_or_initialize_by(:id => @user.id)" unless args.is_a?(Hash)
+    new :id => args[:id]
+  end
 end
 
 class MockUser < MockDataObject
