@@ -523,7 +523,7 @@ if Rails.version >= '4'
     def self.controller_name
       "strong_resources"
     end
-    filter_resource_access
+    filter_resource_access :strong_parameters => true
     define_resource_actions
 
     private
@@ -532,12 +532,12 @@ if Rails.version >= '4'
     end
   end
   class StrongResourcesControllerTest < ActionController::TestCase
-    def test_new_strong_resource
+    def test_still_authorized_with_strong_params
       reader = Authorization::Reader::DSLReader.new
       reader.parse %{
         authorization do
           role :allowed_role do
-            has_permission_on :strong_resources, :to => :new do
+            has_permission_on :strong_resources, :to => :show do
               if_attribute :id => "1"
             end
           end
@@ -545,10 +545,26 @@ if Rails.version >= '4'
       }
 
       allowed_user = MockUser.new(:allowed_role)
-      request!(allowed_user, :new, reader, :id => "2")
+      request!(allowed_user, :show, reader, :id => "2")
       assert !@controller.authorized?
-      request!(MockUser.new(:allowed_role), :new, reader, :id => "1", :clear => [:@strong_resource])
+      request!(allowed_user, :show, reader, :id => "1", :clear => [:@strong_resource])
       assert @controller.authorized?
+    end
+
+    def test_create_strong_resource
+      reader = Authorization::Reader::DSLReader.new
+      reader.parse %{
+        authorization do
+          role :allowed_role do
+            has_permission_on :strong_resources, :to => :create
+          end
+        end
+      }
+
+      allowed_user = MockUser.new(:allowed_role)
+      request!(allowed_user, :create, reader, :strong_resource => {:id => "1"}, :clear => [:@strong_resource])
+      assert @controller.authorized?
+      assert assigns :strong_resource
     end
   end
 end

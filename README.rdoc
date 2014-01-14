@@ -21,6 +21,7 @@ Plugin features
   * Authorize CRUD (Create, Read, Update, Delete) activities
   * Query rewriting to automatically only fetch authorized records
 * DSL for specifying Authorization rules in an authorization configuration
+* Support for Rails 4, with backwards compatibility through Rails 2
 
 
 Requirements
@@ -91,6 +92,15 @@ filter_access_to with the appropriate parameters to protect the CRUD methods.
 
 See Authorization::AuthorizationInController::ClassMethods for options on
 nested resources and custom member and collection actions.
+
+By default, declarative_authorization will enable filter_resource_access compatibility with strong_parameters in Rails 4.  If you want to disable this behavior, you can use the `:strong_parameters` option.
+
+    class EmployeesController < ApplicationController
+      filter_resource_access :strong_parameters => false
+      ...
+    end
+
+Simalarly, you can use `:strong_parameters => true` if you are using strong_parameters in Rails 3.
 
 If you prefer less magic or your controller has no resemblance with the resource
 controllers, directly calling filter_access_to may be the better option.  Examples

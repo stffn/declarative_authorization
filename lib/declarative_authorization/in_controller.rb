@@ -296,11 +296,15 @@ module Authorization
           :context => nil,
           :attribute_check => false,
           :model => nil,
-          :load_method => nil
+          :load_method => nil,
+          :strong_parameters => nil
         }.merge!(options)
         privilege = options[:require]
         context = options[:context]
         actions = args.flatten
+
+        puts "filter_access_to strong_parameters = " + options[:strong_parameters].inspect
+        puts "filter_access_to options = " + options.inspect + args.inspect if options[:strong_parameters]
 
         # prevent setting filter_access_filter multiple times
         skip_before_filter :filter_access_filter
@@ -311,8 +315,8 @@ module Authorization
         end
         filter_access_permissions << 
           ControllerPermission.new(actions, privilege, context,
-                                   options[:attribute_check],
                                    options[:strong_parameters],
+                                   options[:attribute_check],
                                    options[:model],
                                    options[:load_method],
                                    filter_block)
@@ -486,6 +490,8 @@ module Authorization
         }.merge(options)
         options.merge!({ :strong_parameters => true }) if Rails.version >= '4' && options[:strong_parameters] == nil
 
+        puts "options[:strong_parameters] = " + options[:strong_parameters].inspect
+
         new_actions = actions_from_option( options[:new] ).merge(
             actions_from_option(options[:additional_new]) )
         members = actions_from_option(options[:member]).merge(
@@ -605,8 +611,8 @@ module Authorization
   end
   
   class ControllerPermission # :nodoc:
-    attr_reader :actions, :privilege, :context, :attribute_check
-    def initialize (actions, privilege, context, attribute_check = false, strong_params = nil,
+    attr_reader :actions, :privilege, :context, :attribute_check, :strong_params
+    def initialize (actions, privilege, context, strong_params, attribute_check = false,
                     load_object_model = nil, load_object_method = nil,
                     filter_block = nil)
       @actions = actions.to_set
@@ -617,6 +623,7 @@ module Authorization
       @filter_block = filter_block
       @attribute_check = attribute_check
       @strong_params = strong_params
+      puts "ControllerPermission initialize strong_params = " + @strong_params.inspect
     end
     
     def matches? (action_name)
@@ -642,7 +649,7 @@ module Authorization
       self
     end
     
-     private
+    private
     def load_object(contr)
       if @load_object_method and @load_object_method.is_a?(Symbol)
         contr.send(@load_object_method)
@@ -655,6 +662,7 @@ module Authorization
         object = contr.instance_variable_get(instance_var)
         unless object
           begin
+            puts "@strong_params = " + @strong_params.inspect
             object = @strong_params ? load_object_model.find_or_initialize_by(:id => contr.params[:id]) : load_object_model.find(contr.params[:id])
           rescue => e
             contr.logger.debug("filter_access_to tried to find " +
@@ -670,3 +678,4 @@ module Authorization
     end
   end
 end
+

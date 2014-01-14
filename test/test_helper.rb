@@ -16,6 +16,14 @@ Bundler.require
 # rails 2.3 and ruby 1.9.3 fix
 MissingSourceFile::REGEXPS.push([/^cannot load such file -- (.+)$/i, 1])
 
+# Silence Rails 4 deprecation warnings in test suite
+# TODO: Model.scoped is deprecated
+# TODO: Eager loading Post.includes(:comments).where("comments.title = 'foo'") becomes Post.includes(:comments).where("comments.title = 'foo'").references(:comments)
+# TODO: has_many conditions is deprecated for a scoped block
+if Rails.version >= '4'
+  ActiveSupport::Deprecation.silenced = true
+end
+
 puts "Testing against rails #{Rails::VERSION::STRING}"
 
 RAILS_ROOT = File.dirname(__FILE__)
