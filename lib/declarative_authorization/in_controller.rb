@@ -155,8 +155,12 @@ module Authorization
            context_without_namespace.to_s.classify.constantize
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
       instance_variable_set(instance_var,
-          model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
+          model_or_proxy.new(item_params))
     end
+
+  def item_params
+    params.require(context_without_namespace.to_s.singularize).permit!
+  end
 
     def new_controller_object_for_collection (context_without_namespace, parent_context_without_namespace) # :nodoc:
       model_or_proxy = parent_context_without_namespace ?
