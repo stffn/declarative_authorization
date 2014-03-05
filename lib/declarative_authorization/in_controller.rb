@@ -155,11 +155,13 @@ module Authorization
            context_without_namespace.to_s.classify.constantize
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
       instance_variable_set(instance_var,
-          model_or_proxy.new(item_params))
+          model_or_proxy.new(object_params))
     end
 
-  def item_params
+  def object_params
     params.require(context_without_namespace.to_s.singularize).permit!
+    rescue
+      nil
   end
 
     def new_controller_object_for_collection (context_without_namespace, parent_context_without_namespace) # :nodoc:
