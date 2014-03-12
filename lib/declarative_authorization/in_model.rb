@@ -105,7 +105,7 @@ module Authorization
             privilege = (args[0] || :read).to_sym
             privileges = [privilege]
 
-            parent_scope = scoped
+            parent_scope = Rails.version >= "4.1" ? all : scoped
             context =
                 if options[:context]
                   options[:context]

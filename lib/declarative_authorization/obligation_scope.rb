@@ -55,6 +55,14 @@ module Authorization
     def scope
       if Rails.version < "3"
         self
+      elsif Rails.version >= "4.1"
+        # Method "scoped" is deprecated in Rails 4.0 and removed form Rails 4.1.
+        # TODO: rewrite finder_options for Rails 4+.
+        chain = self.klass.all
+        chain = chain.where(@finder_options[:conditions]) if @finder_options[:conditions].present?
+        chain = chain.joins(@finder_options[:joins]) if @finder_options[:joins].present?
+        chain = chain.includes(@finder_options[:includes]) if @finder_options[:includes].present?
+        chain
       else
         # for Rails < 3: scope, after setting proxy_options
         self.klass.scoped(@finder_options)
