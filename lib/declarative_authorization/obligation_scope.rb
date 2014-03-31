@@ -54,10 +54,13 @@ module Authorization
 
     def scope
       if Rails.version < "3"
-        self
-      else
         # for Rails < 3: scope, after setting proxy_options
+        self
+      elsif Rails.version < "4"
+        # for Rails < 4: use scoped method
         self.klass.scoped(@finder_options)
+      else
+        self.klass.all(@finder_options)
       end
     end
 
