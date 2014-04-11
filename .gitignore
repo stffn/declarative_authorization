@@ -3,3 +3,4 @@ garlic
 nbproject
 rdoc
 gemfiles/*.lock
+log/*

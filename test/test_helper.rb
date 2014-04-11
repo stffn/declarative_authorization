@@ -114,6 +114,7 @@ if Rails.version < "3"
 else
   class TestApp
     class Application < ::Rails::Application
+      config.secret_key_base = "testingpurposesonly"
       config.active_support.deprecation = :stderr
       database_path = File.expand_path('../database.yml', __FILE__)
       if Rails.version.start_with? '3.0.'
@@ -128,9 +129,11 @@ else
   end
   #Rails::Application.routes.draw do
   Rails.application.routes.draw do
-    match '/name/spaced_things(/:action)' => 'name/spaced_things'
-    match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things'
-    match '/:controller(/:action(/:id))'
+    match '/name/spaced_things(/:action)' => 'name/spaced_things',
+      :via => [ :get, :post ]
+    match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things',
+      :via => [ :get, :post ]
+    match '/:controller(/:action(/:id))', :via => [ :get, :post ]
   end
 end
 
@@ -141,8 +144,12 @@ end
 
 class Test::Unit::TestCase
   include Authorization::TestHelper
+end
   
-  def request! (user, action, reader, params = {})
+class ActionController::TestCase
+  include Authorization::TestHelper
+
+  def request!(user, action, reader, params = {})
     action = action.to_sym if action.is_a?(String)
     @controller.current_user = user
     @controller.authorization_engine = Authorization::Engine.new(reader)
