@@ -156,8 +156,10 @@ module Authorization
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
       if strong_params
         # This does not work because strong_parameters method is private.  Possibly allow option to define public method?
+        # instance_variable_set(instance_var,
+        #   model_or_proxy.new("#{context_without_namespace}_controller".classify.constantize.send("#{context_without_namespace.to_s.singularize}_params".to_sym)))
         instance_variable_set(instance_var,
-          model_or_proxy.new("#{context_without_namespace}_controller".classify.constantize.send("#{context_without_namespace.to_s.singularize}_params".to_sym)))
+            model_or_proxy.new(object_params))
       else
         instance_variable_set(instance_var,
           model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
@@ -650,6 +652,13 @@ module Authorization
     end
     
     private
+
+    def object_params
+      params.require(context_without_namespace.to_s.singularize).permit!
+      rescue
+        nil
+    end
+
     def load_object(contr)
       if @load_object_method and @load_object_method.is_a?(Symbol)
         contr.send(@load_object_method)
