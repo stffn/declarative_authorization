@@ -471,6 +471,10 @@ module Authorization
       #   See filter_access_to on details.  By default, with no +nested_in+,
       #   +no_attribute_check+ is set to all collections.  If +nested_in+ is given
       #   +no_attribute_check+ is empty by default.
+      # [:+strong_parameters+]
+      #   If set to true, relies on controller to provide instance variable and
+      #   create new object in :create action.  Set true if you use strong_params
+      #   and false if you use protected_attributes.
       #
       def filter_resource_access(options = {})
         options = {
@@ -489,6 +493,7 @@ module Authorization
           :strong_parameters => nil
         }.merge(options)
         options.merge!({ :strong_parameters => true }) if Rails.version >= '4' && options[:strong_parameters] == nil
+        options.merge!({ :strong_parameters => false }) if Rails.version < '4' && options[:strong_parameters] == nil
 
         new_actions = actions_from_option( options[:new] ).merge(
             actions_from_option(options[:additional_new]) )
