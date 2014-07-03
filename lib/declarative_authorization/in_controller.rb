@@ -154,19 +154,17 @@ module Authorization
            instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
            context_without_namespace.to_s.classify.constantize
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
-      if strong_params
-        instance_variable_set(instance_var,
-            model_or_proxy.new(object_params))
-      else
-        instance_variable_set(instance_var,
-          model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
-      end
+      instance_variable_set(instance_var,
+        model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
     end
 
-    def object_params
-      params.require(context_without_namespace.to_s.singularize).permit!
-      rescue
-        nil
+    def new_blank_controller_object (context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
+      model_or_proxy = parent_context_without_namespace ?
+           instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
+           context_without_namespace.to_s.classify.constantize
+      instance_var = :"@#{context_without_namespace.to_s.singularize}"
+      instance_variable_set(instance_var,
+        model_or_proxy.new())
     end
 
     def new_controller_object_for_collection (context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
@@ -307,9 +305,6 @@ module Authorization
         privilege = options[:require]
         context = options[:context]
         actions = args.flatten
-
-        puts "filter_access_to strong_parameters = " + options[:strong_parameters].inspect
-        puts "filter_access_to options = " + options.inspect + args.inspect if options[:strong_parameters]
 
         # prevent setting filter_access_filter multiple times
         skip_before_filter :filter_access_filter
@@ -495,8 +490,6 @@ module Authorization
         }.merge(options)
         options.merge!({ :strong_parameters => true }) if Rails.version >= '4' && options[:strong_parameters] == nil
 
-        puts "options[:strong_parameters] = " + options[:strong_parameters].inspect
-
         new_actions = actions_from_option( options[:new] ).merge(
             actions_from_option(options[:additional_new]) )
         members = actions_from_option(options[:member]).merge(
@@ -504,7 +497,9 @@ module Authorization
         collections = actions_from_option(options[:collection]).merge(
             actions_from_option(options[:additional_collection]))
 
-        options[:no_attribute_check] ||= collections.keys unless options[:nested_in]
+        no_attribute_check_actions = options[:strong_parameters] ? actions_from_option(options[:collection]).merge(actions_from_option([:create])) : collections
+
+        options[:no_attribute_check] ||= no_attribute_check_actions.keys unless options[:nested_in]
 
         unless options[:nested_in].blank?
           load_parent_method = :"load_#{options[:nested_in].to_s.singularize}"
@@ -529,18 +524,30 @@ module Authorization
           end
         end
 
-        new_from_params_method = :"new_#{controller_name.singularize}_from_params"
-        before_filter :only => new_actions.keys do |controller|
-          # new_from_params
-          # unless options[:strong_parameters] == true
-          if controller.respond_to?(new_from_params_method, true)
-            controller.send(new_from_params_method)
-          else
-            controller.send(:new_controller_object_from_params,
-                options[:context] || controller_name, options[:nested_in], options[:strong_parameters])
+        unless options[:strong_parameters]
+          new_from_params_method = :"new_#{controller_name.singularize}_from_params"
+          before_filter :only => new_actions.keys do |controller|
+            # new_from_params
+            if controller.respond_to?(new_from_params_method, true)
+              controller.send(new_from_params_method)
+            else
+              controller.send(:new_controller_object_from_params,
+                  options[:context] || controller_name, options[:nested_in], options[:strong_parameters])
+            end
           end
-          # end
+        else
+          new_object_method = :"new_#{controller_name.singularize}"
+          before_filter :only => :new do |controller|
+            # new_from_params
+            if controller.respond_to?(new_object_method, true)
+              controller.send(new_object_method)
+            else
+              controller.send(:new_blank_controller_object,
+                  options[:context] || controller_name, options[:nested_in], options[:strong_parameters])
+            end
+          end          
         end
+
         load_method = :"load_#{controller_name.singularize}"
         before_filter :only => members.keys do |controller|
           # load controller object
@@ -628,7 +635,6 @@ module Authorization
       @filter_block = filter_block
       @attribute_check = attribute_check
       @strong_params = strong_params
-      puts "ControllerPermission initialize strong_params = " + @strong_params.inspect
     end
     
     def matches? (action_name)
@@ -668,7 +674,6 @@ module Authorization
         object = contr.instance_variable_get(instance_var)
         unless object
           begin
-            puts "@strong_params = " + @strong_params.inspect
             object = @strong_params ? load_object_model.find_or_initialize_by(:id => contr.params[:id]) : load_object_model.find(contr.params[:id])
           rescue => e
             contr.logger.debug("filter_access_to tried to find " +

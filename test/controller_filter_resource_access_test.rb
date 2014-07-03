@@ -551,20 +551,25 @@ if Rails.version >= '4'
       assert @controller.authorized?
     end
 
-    def test_create_strong_resource
+    def test_new_strong_resource
       reader = Authorization::Reader::DSLReader.new
       reader.parse %{
         authorization do
           role :allowed_role do
-            has_permission_on :strong_resources, :to => :create
+            has_permission_on :strong_resources, :to => :new
           end
         end
       }
 
       allowed_user = MockUser.new(:allowed_role)
-      request!(allowed_user, :create, reader, :strong_resource => {:id => "1"}, :clear => [:@strong_resource])
+      request!(allowed_user, :new, reader, :strong_resource => {:id => "1"},
+          :clear => [:@strong_resource])
       assert @controller.authorized?
-      assert assigns :strong_resource
+
+      # allowed_user = MockUser.new(:allowed_role)
+      # request!(allowed_user, :new, reader, :strong_resource => {:id => "1"}, :clear => [:@strong_resource])
+      # assert @controller.authorized?
+      # assert assigns :strong_resource
     end
   end
 end
