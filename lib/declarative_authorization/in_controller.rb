@@ -155,15 +155,18 @@ module Authorization
            context_without_namespace.to_s.classify.constantize
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
       if strong_params
-        # This does not work because strong_parameters method is private.  Possibly allow option to define public method?
-        # instance_variable_set(instance_var,
-        #   model_or_proxy.new("#{context_without_namespace}_controller".classify.constantize.send("#{context_without_namespace.to_s.singularize}_params".to_sym)))
         instance_variable_set(instance_var,
             model_or_proxy.new(object_params))
       else
         instance_variable_set(instance_var,
           model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
       end
+    end
+
+    def object_params
+      params.require(context_without_namespace.to_s.singularize).permit!
+      rescue
+        nil
     end
 
     def new_controller_object_for_collection (context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
@@ -529,14 +532,14 @@ module Authorization
         new_from_params_method = :"new_#{controller_name.singularize}_from_params"
         before_filter :only => new_actions.keys do |controller|
           # new_from_params
-          unless options[:strong_parameters] == true
-            if controller.respond_to?(new_from_params_method, true)
-              controller.send(new_from_params_method)
-            else
-              controller.send(:new_controller_object_from_params,
-                  options[:context] || controller_name, options[:nested_in], options[:strong_parameters])
-            end
+          # unless options[:strong_parameters] == true
+          if controller.respond_to?(new_from_params_method, true)
+            controller.send(new_from_params_method)
+          else
+            controller.send(:new_controller_object_from_params,
+                options[:context] || controller_name, options[:nested_in], options[:strong_parameters])
           end
+          # end
         end
         load_method = :"load_#{controller_name.singularize}"
         before_filter :only => members.keys do |controller|
@@ -652,12 +655,6 @@ module Authorization
     end
     
     private
-
-    def object_params
-      params.require(context_without_namespace.to_s.singularize).permit!
-      rescue
-        nil
-    end
 
     def load_object(contr)
       if @load_object_method and @load_object_method.is_a?(Symbol)
