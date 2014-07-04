@@ -7,7 +7,7 @@ module Authorization
 
     argument :name, type: :string, default: "User"
     argument :attributes, type: :array, default: ['name:string'], banner: "field[:type] field[:type]"
-    class_option :skip_model_creation, type: :boolean, default: false, desc: "Skips the creation of a new User model.  Use if the model already exists."
+    class_option :create_user, type: :boolean, default: false, desc: "Skips the creation of a new User model.  Use if the model already exists."
     class_option :commit, type: :boolean, default: false, desc: "Performs rake tasks such as migrate and seed."
 
     def self.next_migration_number dirname
@@ -22,7 +22,7 @@ module Authorization
       habtm_table_name  = "#{name.pluralize}" <= "Roles" ? "#{name.pluralize}Roles" : "Roles#{name.pluralize}"
       habtm_file_glob  = "#{name.pluralize}" <= "Roles" ? 'db/migrate/*create_*_roles*' : 'db/migrate/*create_roles_*'
 
-      generate 'model', "#{name} #{attributes.join(' ')}" unless options[:skip_model_creation]
+      generate 'model', "#{name} #{attributes.join(' ')}" if options[:create_user]
       generate 'model', 'Role title:string'
 
       generate 'migration', "Create#{habtm_table_name} #{name.downcase}:integer role:integer"
