@@ -8,7 +8,7 @@ module Authorization
     argument :name, type: :string, default: "User"
     argument :attributes, type: :array, default: ['name:string'], banner: "field[:type] field[:type]"
     class_option :skip_model_creation, type: :boolean, default: false, desc: "Skips the creation of a new User model.  Use if the model already exists."
-    class_option :skip_commit, type: :boolean, default: false, desc: "Skip rake tasks such as migrate and seed."
+    class_option :commit, type: :boolean, default: false, desc: "Performs rake tasks such as migrate and seed."
 
     def self.next_migration_number dirname
       if ActiveRecord::Base.timestamped_migrations
@@ -29,7 +29,7 @@ module Authorization
       gsub_file Dir.glob(habtm_file_glob).last, 'integer', 'references'
       inject_into_file Dir.glob(habtm_file_glob).last, ", id: false", before: ' do |t|'
 
-      rake 'db:migrate' unless options[:skip_commit]
+      rake 'db:migrate' if options[:commit]
 
       inject_into_file "app/models/role.rb", "  has_and_belongs_to_many :#{name.downcase.pluralize}\n", after: "ActiveRecord::Base\n"
 
@@ -52,10 +52,10 @@ roles = Role.create([
 RUBY
       end
 
-      rake 'db:seed' unless options[:skip_commit]
+      rake 'db:seed' if options[:commit]
 
       generate 'authorization:rules'
-      puts "Please run `rake db:migrate` and `rake db:seed` to finish installing." if options[:skip_commit]
+      puts "Please run `rake db:migrate` and `rake db:seed` to finish installing." unless options[:commit]
     end
   end
 end
