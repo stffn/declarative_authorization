@@ -14,6 +14,7 @@ Bundler.require
 
 if Rails.version >= '4.1'
   require 'minitest/autorun'
+  require 'test_support/minitest_compatibility'
 else
   require 'test/unit'
 end
