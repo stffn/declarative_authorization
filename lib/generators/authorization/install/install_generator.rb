@@ -7,8 +7,9 @@ module Authorization
 
     argument :name, type: :string, default: "User"
     argument :attributes, type: :array, default: ['name:string'], banner: "field[:type] field[:type]"
-    class_option :create_user, type: :boolean, default: false, desc: "Skips the creation of a new User model.  Use if the model already exists."
+    class_option :create_user, type: :boolean, default: false, desc: "Creates the defined User model with attributes given."
     class_option :commit, type: :boolean, default: false, desc: "Performs rake tasks such as migrate and seed."
+    class_option :user_belongs_to_role, type: :boolean, default: false, desc: "Users have only one role, which can inherit others roles."
 
     def self.next_migration_number dirname
       if ActiveRecord::Base.timestamped_migrations
@@ -19,21 +20,25 @@ module Authorization
     end
 
     def install_decl_auth
-      habtm_table_name  = "#{name.pluralize}" <= "Roles" ? "#{name.pluralize}Roles" : "Roles#{name.pluralize}"
-      habtm_file_glob  = "#{name.pluralize}" <= "Roles" ? 'db/migrate/*create_*_roles*' : 'db/migrate/*create_roles_*'
+      habtm_table_name  = "#{name.pluralize}" <= "Roles" ? "#{name.pluralize}Roles" : "Roles#{name.pluralize}" unless options[:user_belongs_to_role]
+      habtm_file_glob  = "#{name.pluralize}" <= "Roles" ? 'db/migrate/*create_*_roles*' : 'db/migrate/*create_roles_*' unless options[:user_belongs_to_role]
 
       generate 'model', "#{name} #{attributes.join(' ')}" if options[:create_user]
       generate 'model', 'Role title:string'
 
-      generate 'migration', "Create#{habtm_table_name} #{name.downcase}:integer role:integer"
-      gsub_file Dir.glob(habtm_file_glob).last, 'integer', 'references'
-      inject_into_file Dir.glob(habtm_file_glob).last, ", id: false", before: ' do |t|'
+      if options[:user_belongs_to_role]
+        inject_into_file "app/models/#{name.singularize.downcase}.rb", "  belongs_to :role\n", after: "ActiveRecord::Base\n"
+      else
+        generate 'migration', "Create#{habtm_table_name} #{name.downcase}:integer role:integer"
+        gsub_file Dir.glob(habtm_file_glob).last, 'integer', 'references'
+        inject_into_file Dir.glob(habtm_file_glob).last, ", id: false", before: ' do |t|'
+        inject_into_file "app/models/role.rb", "  has_and_belongs_to_many :#{name.downcase.pluralize}\n", after: "ActiveRecord::Base\n"
+        inject_into_file "app/models/#{name.singularize.downcase}.rb", "  has_and_belongs_to_many :roles\n", after: "ActiveRecord::Base\n"
+      end
 
       rake 'db:migrate' if options[:commit]
 
-      inject_into_file "app/models/role.rb", "  has_and_belongs_to_many :#{name.downcase.pluralize}\n", after: "ActiveRecord::Base\n"
 
-      inject_into_file "app/models/#{name.singularize.downcase}.rb", "  has_and_belongs_to_many :roles\n", after: "ActiveRecord::Base\n"
       inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do <<-'RUBY'
 
 
