@@ -51,12 +51,22 @@ First, include declarative_authorization in your gemfile.
 Next, bundle and install.
 
     $ bundle
-    $ rails g authorization:install [UserModel=User] [field:type field:type] [--create-user --commit]
+    $ rails g authorization:install [UserModel=User] [field:type field:type ...] [--create-user --commit --user-belongs-to-role]
 
 This installer will create a Role model, an admin and a user role, and set a
 has_and_belongs_to_many relationship between the User model and the Role model.
 It will also add a `role_symbols` method to the user model to meet
-declarative_authorization's requirements.  The default User model is User.  You can override this by simply typing the name of a model as above.  You can create the model with the fields provided by using the `--create-user` option.  The `--commit` option will run `rake db:migrate` and `rake db:seed`.  Finally, the installer also copies default authorization rules, as below.
+declarative_authorization's requirements.  The default User model is User.  You can override this by simply typing the name of a model as above.
+
+You can create the model with the fields provided by using the `--create-user` option.
+
+The `--commit` option will run `rake db:migrate` and `rake db:seed`.
+
+The `--user-belongs-to-role` option will set up a one-to-many relationship between Users and Roles.
+That is, each user has a role_id column and can only have one role.  Role inheritance can be used
+in authorization rules.
+
+Finally, the installer also copies default authorization rules, as below.
 
 === Generate Authorization Rules
 
