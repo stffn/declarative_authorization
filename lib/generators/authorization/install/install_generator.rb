@@ -28,6 +28,7 @@ module Authorization
 
       if options[:user_belongs_to_role]
         inject_into_file "app/models/#{name.singularize.downcase}.rb", "  belongs_to :role\n", after: "ActiveRecord::Base\n"
+        generate 'migration', "AddRoleIdTo#{name.camelcase} role_id:integer"
       else
         generate 'migration', "Create#{habtm_table_name} #{name.downcase}:integer role:integer"
         gsub_file Dir.glob(habtm_file_glob).last, 'integer', 'references'
@@ -38,14 +39,24 @@ module Authorization
 
       rake 'db:migrate' if options[:commit]
 
+      if options[:user_belongs_to_role]
+        inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do <<-'RUBY'
 
-      inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do <<-'RUBY'
+
+  def role_symbols
+    [role.title.to_sym]
+  end
+        RUBY
+        end
+      else
+        inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do <<-'RUBY'
 
 
   def role_symbols
     (roles || []).map {|r| r.title.to_sym}
   end
-RUBY
+        RUBY
+        end
       end
 
       inject_into_file 'db/seeds.rb', after: ".first)\n" do <<-'RUBY'
