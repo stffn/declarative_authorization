@@ -1,4 +1,3 @@
-require 'test/unit'
 require 'pathname'
 
 ENV['RAILS_ENV'] = 'test'
@@ -13,16 +12,22 @@ rescue LoadError
 end
 Bundler.require
 
+if Rails.version >= '4.1'
+  require 'minitest/autorun'
+  require 'test_support/minitest_compatibility'
+else
+  require 'test/unit'
+end
+
 # rails 2.3 and ruby 1.9.3 fix
 MissingSourceFile::REGEXPS.push([/^cannot load such file -- (.+)$/i, 1])
 
 # Silence Rails 4 deprecation warnings in test suite
 # TODO: Model.scoped is deprecated
 # TODO: Eager loading Post.includes(:comments).where("comments.title = 'foo'") becomes Post.includes(:comments).where("comments.title = 'foo'").references(:comments)
-# TODO: has_many conditions is deprecated for a scoped block
-if Rails.version >= '4'
-  ActiveSupport::Deprecation.silenced = true
-end
+# if Rails.version >= '4'
+#   ActiveSupport::Deprecation.silenced = true
+# end
 
 puts "Testing against rails #{Rails::VERSION::STRING}"
 
@@ -189,8 +194,39 @@ if Rails.version < "4"
     end
   end
 
-else
+elsif Rails.version < '4.1'
   class Test::Unit::TestCase
+    include Authorization::TestHelper
+  end
+
+  class ActiveSupport::TestCase
+    include Authorization::TestHelper
+    
+    def request! (user, action, reader, params = {})
+      action = action.to_sym if action.is_a?(String)
+      @controller.current_user = user
+      @controller.authorization_engine = Authorization::Engine.new(reader)
+      
+      ((params.delete(:clear) || []) + [:@authorized]).each do |var|
+        @controller.instance_variable_set(var, nil)
+      end
+      get action, params
+    end
+
+    unless Rails.version < "3"
+      def setup
+        #@routes = Rails::Application.routes
+        @routes = Rails.application.routes
+      end
+    end
+  end
+else
+  module Test
+    module Unit
+    end
+  end
+
+  class Test::Unit::TestCase < Minitest::Test
     include Authorization::TestHelper
   end
 
