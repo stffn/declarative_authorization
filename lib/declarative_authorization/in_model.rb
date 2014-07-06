@@ -105,7 +105,7 @@ module Authorization
             privilege = (args[0] || :read).to_sym
             privileges = [privilege]
 
-            parent_scope = self.all
+            parent_scope = where(nil)
             context =
                 if options[:context]
                   options[:context]
