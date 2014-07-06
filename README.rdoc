@@ -37,6 +37,99 @@ There is a decl_auth screencast by Ryan Bates, nicely introducing the main conce
 http://railscasts.com/episodes/188-declarative-authorization
 
 
+= Quick Start
+
+=== Installer
+
+Declarative Authorization comes with an installer to make setup easy.
+
+First, include declarative_authorization in your gemfile.
+
+    #! Gemfile
+    gem 'declarative_authorization'
+
+Next, bundle and install.
+
+    $ bundle
+    $ rails g authorization:install [UserModel=User] [field:type field:type ...] [--create-user --commit --user-belongs-to-role]
+
+This installer will create a Role model, an admin and a user role, and set a
+has_and_belongs_to_many relationship between the User model and the Role model.
+It will also add a `role_symbols` method to the user model to meet
+declarative_authorization's requirements.  The default User model is User.  You can override this by simply typing the name of a model as above.
+
+You can create the model with the fields provided by using the `--create-user` option.
+
+The `--commit` option will run `rake db:migrate` and `rake db:seed`.
+
+The `--user-belongs-to-role` option will set up a one-to-many relationship between Users and Roles.
+That is, each user has a role_id column and can only have one role.  Role inheritance can be used
+in authorization rules.
+
+Finally, the installer also copies default authorization rules, as below.
+
+=== Generate Authorization Rules
+
+To copy a default set of authorization rules which includes CRUD priveleges, run:
+
+    $ rails g authorization:rules
+
+This command will copy the following to `config/authorization_rules.rb`.  Remember
+to implement the requirements of this gem as described in the Installation section
+at the end of this README if you do not use the above installer.
+
+    authorization do
+      role :guest do
+        # add permissions for guests here, e.g.
+        # has_permission_on :conferences, :to => :read
+      end
+      
+      # permissions on other roles, such as
+      # role :admin do
+      #   has_permission_on :conferences, :to => :manage
+      # end
+      # role :user do
+      #   has_permission_on :conferences, :to => [:read, :create]
+      #   has_permission_on :conferences, :to => [:update, :delete] do
+      #     if_attribute :user_id => is {user.id}
+      #   end
+      # end
+      # See the readme or GitHub for more examples
+    end
+
+    privileges do
+      # default privilege hierarchies to facilitate RESTful Rails apps
+      privilege :manage, :includes => [:create, :read, :update, :delete]
+      privilege :create, :includes => :new
+      privilege :read, :includes => [:index, :show]
+      privilege :update, :includes => :edit
+      privilege :delete, :includes => :destroy
+    end
+
+=== Controller Authorization
+
+For RESTful controllers, add `filter_resource_access`:
+
+    class MyRestfulController < ApplicationController
+      filter_resource_access
+      ...
+    end
+
+For a non-RESTful controller, you can use `filter_access_to`:
+
+    class MyOtherController < ApplicationController
+      filter_access_to :all
+      # or a group: filter_access_to [:action1, :action2]
+      ...
+    end
+
+=== View Authorization
+
+Declarative Authorization will use `current_user` to check authorization.
+
+    <%= link_to 'Edit Post', edit_post_path(@post) if permitted_to? :update, @post %>
+
+
 = Authorization Data Model
 
  ----- App domain ----|-------- Authorization conf ---------|------- App domain ------
