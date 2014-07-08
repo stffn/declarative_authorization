@@ -137,9 +137,9 @@ module Authorization
       end
     end
 
-    def load_controller_object (context_without_namespace = nil) # :nodoc:
+    def load_controller_object (context_without_namespace = nil, model = nil) # :nodoc:
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
-      model = context_without_namespace.to_s.classify.constantize
+      model = model ? model.classify.constantize : context_without_namespace.to_s.classify.constantize
       instance_variable_set(instance_var, model.find(params[:id]))
     end
 
@@ -158,10 +158,14 @@ module Authorization
         model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
     end
 
-    def new_blank_controller_object (context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
-      model_or_proxy = parent_context_without_namespace ?
-           instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
-           context_without_namespace.to_s.classify.constantize
+    def new_blank_controller_object (context_without_namespace, parent_context_without_namespace, strong_params, model) # :nodoc:
+      if model
+        model_or_proxy = model.to_s.classify.constantize
+      else
+        model_or_proxy = parent_context_without_namespace ?
+        instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
+        context_without_namespace.to_s.classify.constantize
+      end
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
       instance_variable_set(instance_var,
         model_or_proxy.new())
@@ -489,6 +493,7 @@ module Authorization
           #:load_method => nil,                # only symbol method name
           :no_attribute_check => nil,
           :context    => nil,
+          :model => nil,
           :nested_in  => nil,
           :strong_parameters => nil
         }.merge(options)
@@ -548,7 +553,7 @@ module Authorization
               controller.send(new_object_method)
             else
               controller.send(:new_blank_controller_object,
-                  options[:context] || controller_name, options[:nested_in], options[:strong_parameters])
+                  options[:context] || controller_name, options[:nested_in], options[:strong_parameters], options[:model])
             end
           end          
         end
@@ -559,17 +564,18 @@ module Authorization
           if controller.respond_to?(load_method, true)
             controller.send(load_method)
           else
-            controller.send(:load_controller_object, options[:context] || controller_name)
+            controller.send(:load_controller_object, options[:context] || controller_name, options[:model])
           end
         end
-        filter_access_to :all, :attribute_check => true, :context => options[:context]
+        filter_access_to :all, :attribute_check => true, :context => options[:context], :model => options[:model]
 
         members.merge(new_actions).merge(collections).each do |action, privilege|
           if action != privilege or (options[:no_attribute_check] and options[:no_attribute_check].include?(action))
             filter_options = {
               :strong_parameters => options[:strong_parameters],
               :context          => options[:context],
-              :attribute_check  => !options[:no_attribute_check] || !options[:no_attribute_check].include?(action)
+              :attribute_check  => !options[:no_attribute_check] || !options[:no_attribute_check].include?(action),
+              :model => options[:model]
             }
             filter_options[:require] = privilege if action != privilege
             filter_access_to(action, filter_options)
@@ -675,7 +681,8 @@ module Authorization
       else
         load_object_model = @load_object_model ||
             (@context ? @context.to_s.classify.constantize : contr.class.controller_name.classify.constantize)
-        instance_var = "@#{load_object_model.name.underscore}"
+        load_object_model = load_object_model.classify.constantize if load_object_model.is_a?(String)
+        instance_var = "@#{load_object_model.name.demodulize.underscore}"
         object = contr.instance_variable_get(instance_var)
         unless object
           begin
