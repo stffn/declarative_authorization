@@ -626,9 +626,10 @@ module Authorization
     def object_attribute_value (object, attr)
       begin
         if object.respond_to?(:proxy_association)
-          first = object.first
-          object.delete(first)
-          first.send(attr)
+#          first = object.first
+#          object.delete(first)
+#          first.send(attr)
+          object.first.send(attr)
         else
           object.send(attr)
         end
