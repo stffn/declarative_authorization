@@ -8,7 +8,7 @@
   <%= select_tag :context, options_for_select(@contexts.map {|c| [human_context(c), c.to_s]}.sort, @context.to_s) %>
   <br/>
   <label></label>
-  <%= link_to_function "Show current permissions", "show_current_permissions()", :class => 'unimportant' %>
+  <%= link_to "Show current permissions", '#', onclick: "show_current_permissions()", :class => 'unimportant' %>
   <br/><br/>
   How many users should be <strong>affected</strong>?
   <br/>
@@ -53,6 +53,6 @@
 <ul id="prohibited_actions"></ul>
 
 <p class="submit">
-  <%= button_to_function "Suggest Changes", "suggest_changes()" %>
+  <%= button_to "Suggest Changes", '#', onclick: "suggest_changes()" %>
 </p>
 </form>
