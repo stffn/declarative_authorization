@@ -512,6 +512,14 @@ module Authorization
       object ||= attr_validator.object
       return false unless object
       
+      if Authorization.is_a_association_proxy?(object)
+        return false unless object.length > 0
+        object.each do |member|
+          return true if validate?(attr_validator, member, hash)
+        end
+        return false
+      end
+            
       (hash || @conditions_hash).all? do |attr, value|
         attr_value = object_attribute_value(object, attr)
         if value.is_a?(Hash)
@@ -625,14 +633,7 @@ module Authorization
     protected
     def object_attribute_value (object, attr)
       begin
-        if object.respond_to?(:proxy_association)
-#          first = object.first
-#          object.delete(first)
-#          first.send(attr)
-          object.first.send(attr)
-        else
-          object.send(attr)
-        end
+        object.send(attr)
       rescue ArgumentError, NoMethodError => e
         raise AuthorizationUsageError, "Error occurred while validating attribute ##{attr} on #{object.inspect}: #{e}.\n" +
           "Please check your authorization rules and ensure the attribute is correctly spelled and \n" +
