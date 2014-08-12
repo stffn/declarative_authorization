@@ -513,7 +513,7 @@ module Authorization
       return false unless object
       
       if Authorization.is_a_association_proxy?(object)
-        return false unless object.length > 0
+        return false if object.empty?
         object.each do |member|
           return true if validate?(attr_validator, member, hash)
         end
