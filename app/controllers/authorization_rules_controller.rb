@@ -12,7 +12,6 @@ begin
 rescue LoadError; end
 
 class AuthorizationRulesController < ApplicationController
-  unloadable
   
   filter_access_to :all, :require => :read
   def index

@@ -164,13 +164,7 @@ module Authorization
       # Example: permit!( :edit, :object => user.posts )
       #
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
-        options[:object] = ( if Rails.version < "3"
-          options[:object]
-        elsif Rails.version < "4"
-          options[:object].scoped
-        else
-          options[:object].scope
-        end ).new
+        options[:object] = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil)).new
       end
       
       options[:context] ||= options[:object] && (
@@ -631,7 +625,13 @@ module Authorization
     protected
     def object_attribute_value (object, attr)
       begin
-        object.send(attr)
+        if object.respond_to?(:proxy_association)
+          first = object.first
+          object.delete(first)
+          first.send(attr)
+        else
+          object.send(attr)
+        end
       rescue ArgumentError, NoMethodError => e
         raise AuthorizationUsageError, "Error occurred while validating attribute ##{attr} on #{object.inspect}: #{e}.\n" +
           "Please check your authorization rules and ensure the attribute is correctly spelled and \n" +
