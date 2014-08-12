@@ -42,7 +42,8 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
               if_attribute :talk => { :conference => { :attendees => contains {user} }}
             end
             has_permission_on :talk_attendees, :to => :delete do
-              if_attribute :user => is {user}
+              if_attribute :user => is {user},
+                :talk => { :conference => { :attendees => contains {user} }}
             end
           end
 

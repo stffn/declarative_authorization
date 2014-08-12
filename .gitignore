@@ -3,4 +3,5 @@ garlic
 nbproject
 rdoc
 gemfiles/*.lock
-log/*
+log
+*.sublime*

@@ -48,7 +48,7 @@ module Authorization
       if Rails.version < "3"
         super(model, options)
       else
-	super(model, model.table_name)
+	      super(model, model.table_name)
       end
     end
 
@@ -60,6 +60,7 @@ module Authorization
         # for Rails < 4: use scoped method
         self.klass.scoped(@finder_options)
       else
+        puts ( @finder_options.keys - [ :conditions, :joins ] )
         self.klass.all(@finder_options)
       end
     end

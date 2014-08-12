@@ -26,7 +26,7 @@ class TestModel < ActiveRecord::Base
     :class_name => "TestAttrThrough", :source => :test_attr_throughs,
     :conditions => "test_attrs.attr = 1"
 
-  if Rails.version < "4"
+  if Rails.version < '4'
     attr_accessible :content, :test_attr_through_id, :country_id
   end
 
@@ -77,11 +77,12 @@ class TestAttr < ActiveRecord::Base
   has_many :test_attr_throughs
   has_many :test_model_security_model_with_finds
   attr_reader :role_symbols
-  if Rails.version < "4"
+  if Rails.version < '4'
     attr_accessible :test_model, :test_another_model, :attr, :branch, :company, :test_attr,
-	    :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id, 
-	    :test_model_id, :test_another_model_id
-	end
+  	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id, 
+  	  :test_model_id, :test_another_model_id
+  end
+
   def initialize (*args)
     @role_symbols = []
     super(*args)
@@ -95,7 +96,8 @@ end
 class TestModelSecurityModel < ActiveRecord::Base
   has_many :test_attrs
   using_access_control
-  if Rails.version < "4"
+
+  if Rails.version < '4'
     attr_accessible :attr, :attr_2, :test_attrs
   end
 end
@@ -109,7 +111,8 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
   belongs_to :test_attr
   using_access_control :include_read => true, 
     :context => :test_model_security_models
-  if Rails.version < "4"
+  
+  if Rails.version < '4'
     attr_accessible :test_attr, :attr
   end
 end
@@ -117,7 +120,8 @@ end
 class Branch < ActiveRecord::Base
   has_many :test_attrs
   belongs_to :company
-  if Rails.version < "4"
+  
+  if Rails.version < '4'
     attr_accessible :name, :company
   end
 end
@@ -125,7 +129,8 @@ class Company < ActiveRecord::Base
   has_many :test_attrs
   has_many :branches
   belongs_to :country
-  if Rails.version < "4"
+  
+  if Rails.version < '4'
     attr_accessible :name, :country, :country_id
   end
 end
@@ -137,7 +142,8 @@ end
 class Country < ActiveRecord::Base
   has_many :test_models
   has_many :companies
-  if Rails.version < "4"
+  
+  if Rails.version < '4'
     attr_accessible :name
   end
 end
@@ -342,7 +348,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 1, TestModel.query_count if Rails.version < "3"
 
     TestModel.query_count = 0
-    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length if Rails.version < "4"
     assert_equal 1, TestModel.query_count if Rails.version < "3"
 
     TestModel.query_count = 0
