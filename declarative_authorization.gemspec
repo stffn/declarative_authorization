@@ -13,5 +13,6 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = ['README.rdoc', 'CHANGELOG']
   s.homepage = %q{http://github.com/stffn/declarative_authorization}
 
-  #s.add_dependency('rails', '>= 2.1.0')
+  s.add_development_dependency('rails', '~> 2.3.0')  # need Rails 2.x dependency for test_helper's requiring of "initializer" (line 26) (not compatible with Rails 3.x)
+  s.add_development_dependency('sqlite', '~> 1.3.4')
 end
