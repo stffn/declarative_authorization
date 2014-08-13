@@ -104,8 +104,7 @@ module Authorization
             options = args.last.is_a?(Hash) ? args.pop : {}
             privilege = (args[0] || :read).to_sym
             privileges = [privilege]
-
-            parent_scope = scoped
+            parent_scope = where(nil)
             context =
                 if options[:context]
                   options[:context]

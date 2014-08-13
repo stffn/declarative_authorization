@@ -17,16 +17,31 @@ class TestModel < ActiveRecord::Base
   has_many :test_attrs
   has_many :test_another_attrs, :class_name => "TestAttr", :foreign_key => :test_another_model_id
   has_many :test_attr_throughs, :through => :test_attrs
-  has_many :test_attrs_with_attr, :class_name => "TestAttr", :conditions => {:attr => 1}
-  has_many :test_attr_throughs_with_attr, :through => :test_attrs, 
-    :class_name => "TestAttrThrough", :source => :test_attr_throughs,
-    :conditions => "test_attrs.attr = 1"
   has_one :test_attr_has_one, :class_name => "TestAttr"
-  has_one :test_attr_throughs_with_attr_and_has_one, :through => :test_attrs,
-    :class_name => "TestAttrThrough", :source => :test_attr_throughs,
-    :conditions => "test_attrs.attr = 1"
+  has_many :branches
 
-  attr_accessible :content, :test_attr_through_id, :country_id
+  # :conditions is deprecated in Rails 4.1
+  if Rails.version >= '4'
+    has_many :test_attrs_with_attr, lambda { where(:attr => 1) }, :class_name => "TestAttr"
+    has_many :test_attr_throughs_with_attr, lambda { where("test_attrs.attr = 1") }, :through => :test_attrs, 
+      :class_name => "TestAttrThrough", :source => :test_attr_throughs
+
+    has_one :test_attr_throughs_with_attr_and_has_one, lambda { where("test_attrs.attr = 1") }, :through => :test_attrs,
+      :class_name => "TestAttrThrough", :source => :test_attr_throughs
+  else    
+    has_many :test_attrs_with_attr, :class_name => "TestAttr", :conditions => {:attr => 1}
+    has_many :test_attr_throughs_with_attr, :through => :test_attrs, 
+      :class_name => "TestAttrThrough", :source => :test_attr_throughs,
+      :conditions => "test_attrs.attr = 1"
+
+    has_one :test_attr_throughs_with_attr_and_has_one, :through => :test_attrs,
+      :class_name => "TestAttrThrough", :source => :test_attr_throughs,
+      :conditions => "test_attrs.attr = 1"
+  end
+
+  if Rails.version < '4'
+    attr_accessible :content, :test_attr_through_id, :country_id
+  end
 
   # TODO currently not working in Rails 3
   if Rails.version < "3"
@@ -36,8 +51,10 @@ class TestModel < ActiveRecord::Base
 
   if Rails.version < "3"
     named_scope :with_content, :conditions => "test_models.content IS NOT NULL"
-  else
+  elsif Rails.version < "4"
     scope :with_content, :conditions => "test_models.content IS NOT NULL"
+  else
+    scope :with_content, lambda { where("test_models.content IS NOT NULL") }
   end
 
   # Primary key test
@@ -75,9 +92,13 @@ class TestAttr < ActiveRecord::Base
   has_many :test_attr_throughs
   has_many :test_model_security_model_with_finds
   attr_reader :role_symbols
-  attr_accessible :test_model, :test_another_model, :attr, :branch, :company, :test_attr,
-	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id, 
-	  :test_model_id, :test_another_model_id
+
+  if Rails.version < '4'
+    attr_accessible :test_model, :test_another_model, :attr, :branch, :company, :test_attr,
+  	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id, 
+  	  :test_model_id, :test_another_model_id
+  end
+
   def initialize (*args)
     @role_symbols = []
     super(*args)
@@ -91,7 +112,10 @@ end
 class TestModelSecurityModel < ActiveRecord::Base
   has_many :test_attrs
   using_access_control
-  attr_accessible :attr, :attr_2, :test_attrs
+
+  if Rails.version < '4'
+    attr_accessible :attr, :attr_2, :test_attrs
+  end
 end
 class TestModelSecurityModelWithFind < ActiveRecord::Base
   if Rails.version < "3.2"
@@ -103,19 +127,29 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
   belongs_to :test_attr
   using_access_control :include_read => true, 
     :context => :test_model_security_models
-  attr_accessible :test_attr, :attr
+  
+  if Rails.version < '4'
+    attr_accessible :test_attr, :attr
+  end
 end
 
 class Branch < ActiveRecord::Base
   has_many :test_attrs
   belongs_to :company
-  attr_accessible :name, :company
+  belongs_to :test_model
+  
+  if Rails.version < '4'
+    attr_accessible :name, :company, :test_model
+  end
 end
 class Company < ActiveRecord::Base
   has_many :test_attrs
   has_many :branches
   belongs_to :country
-  attr_accessible :name, :country, :country_id
+  
+  if Rails.version < '4'
+    attr_accessible :name, :country, :country_id
+  end
 end
 class SmallCompany < Company
   def self.decl_auth_context
@@ -125,7 +159,10 @@ end
 class Country < ActiveRecord::Base
   has_many :test_models
   has_many :companies
-  attr_accessible :name
+  
+  if Rails.version < '4'
+    attr_accessible :name
+  end
 end
 
 class NamedScopeModelTest < Test::Unit::TestCase
@@ -149,7 +186,12 @@ class NamedScopeModelTest < Test::Unit::TestCase
                       :test_another_model_id => test_model_2.id
 
     user = MockUser.new(:test_role, :id => test_attr_1)
-    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+    if Rails.version >= '4'
+      assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).references(:test_attrs, :test_attrs_test_models, :test_attrs_test_models_2).length
+    else
+      assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+    end
+
     TestAttr.delete_all
     TestModel.delete_all
   end
@@ -328,7 +370,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 1, TestModel.query_count if Rails.version < "3"
 
     TestModel.query_count = 0
-    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).with_content.length if Rails.version < "4"
     assert_equal 1, TestModel.query_count if Rails.version < "3"
 
     TestModel.query_count = 0
@@ -781,7 +823,11 @@ class NamedScopeModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role,
                         :id => test_model_1.test_attrs.first.id)
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
-    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).find(:all, :conditions => {:id => test_model_1.id}).length
+    if Rails.version < '3'
+    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).find(:all, :conditions => {:id => test_model_1.id} ).length
+    else
+      assert_equal 1, TestModel.with_permissions_to(:read, :user => user).where(:id => test_model_1.id).length
+    end
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -1164,7 +1210,11 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert Authorization::Engine.instance.permit?(:read, :object => test_model_1.test_attrs.first, :user => user_with_both_roles)
     assert Authorization::Engine.instance.permit?(:read, :object => test_model_for_second_role.test_attrs.first, :user => user_with_both_roles)
     #p Authorization::Engine.instance.obligations(:read, :user => user_with_both_roles, :context => :test_attrs)
-    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user_with_both_roles).length
+    if Rails.version >= '4'
+      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user_with_both_roles).references(:test_attrs, :test_models).length
+    else
+      assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
+    end
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -1425,7 +1475,11 @@ class NamedScopeModelTest < Test::Unit::TestCase
     test_attr_2.test_model.test_attrs.create!
 
     user = MockUser.new(:test_role, :test_attr => test_attr_2.test_model.test_attrs.last)
-    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
+    if Rails.version >= '4'
+      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).references(:test_attrs, :test_models, :test_models_test_attrs, :test_attrs_test_models).length
+    else
+      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
+    end
     TestModel.delete_all
     TestAttr.delete_all
   end
@@ -1462,7 +1516,11 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_model => country.test_models.first)
 
-    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
+    if Rails.version >= '4'
+      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).references(:test_attrs, :test_models, :test_models_countries).length
+    else
+      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
+    end
     TestModel.delete_all
     TestAttr.delete_all
   end
@@ -1801,10 +1859,46 @@ class ModelTest < Test::Unit::TestCase
     test_model = TestModel.create(:content => "content")
     assert engine.permit?(:read, :object => test_model.test_attrs,
                           :user => MockUser.new(:test_role))
-    assert test_model.test_attrs.empty?
     assert !engine.permit?(:read, :object => TestAttr.new,
                           :user => MockUser.new(:test_role))
     TestModel.delete_all
+  end
+
+  def test_authorization_permit_nested_association_proxy
+   reader = Authorization::Reader::DSLReader.new
+   reader.parse %{
+     authorization do
+       role :test_role do
+         has_permission_on :branches, :to => :read do
+           if_attribute :test_model => { :test_attrs => {:attr => 1 } }
+         end
+       end
+     end
+   }
+   engine = Authorization::Engine.instance(reader)
+
+   test_model = TestModel.create!
+   test_model.test_attrs.create!(:attr => 0)
+   test_attr = test_model.test_attrs.create!(:attr => 1)
+   test_model.test_attrs.create!(:attr => 3)
+   test_branch = Branch.create!(:test_model => test_model)
+
+   test_model_2 = TestModel.create!
+   test_attr_2 = test_model_2.test_attrs.create!(:attr => 2)
+   test_branch_2 = Branch.create!(:test_model => test_model_2)
+   
+   test_model_3 = TestModel.create!
+   test_branch_3 = Branch.create!(:test_model => test_model_3)
+   
+   assert engine.permit?(:read, :object => test_branch,
+                         :user => MockUser.new(:test_role))
+   assert !engine.permit?(:read, :object => test_branch_2,
+                         :user => MockUser.new(:test_role))
+   assert !engine.permit?(:read, :object => test_branch_3,
+                         :user => MockUser.new(:test_role))
+   TestModel.delete_all
+   Branch.delete_all
+   TestAttr.delete_all
   end
 
   def test_multiple_roles_with_has_many_through
@@ -1839,7 +1933,11 @@ class ModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role_1, :test_role_2,
         :test_attr_through_id => test_model_1.test_attr_throughs.first.id,
         :test_attr_through_2_id => test_model_2.test_attr_throughs.first.id)
-    assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
+    if Rails.version >= '4'
+      assert_equal 2, TestModel.with_permissions_to(:read, :user => user).references(:test_models, :test_attr_throughs).length
+    else
+      assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
+    end
     TestModel.delete_all
     TestAttr.delete_all
     TestAttrThrough.delete_all

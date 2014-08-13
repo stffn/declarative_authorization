@@ -39,6 +39,7 @@ CREATE TABLE 'n_way_join_items' (
 CREATE TABLE 'branches' (
   'id' INTEGER PRIMARY KEY NOT NULL,
   'company_id' integer,
+  'test_model_id' integer,
   'name' text
 );
 

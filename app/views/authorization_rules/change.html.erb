@@ -1,9 +1,9 @@
 <h1>Suggestions on Authorization Rules Change</h1>
 <p><%= navigation %></p>
 <div style="display:none" id="suggest-graph-container">
-<%= link_to_function "Hide", "$(this).up().hide()", :class => 'important' %>
-<%= link_to_function "Toggle stacked roles", "toggle_graph_params('suggest-graph', 'stacked_roles');" %>
-<%= link_to_function "Toggle only users' roles", "toggle_graph_params('suggest-graph', 'only_relevant_roles');" %><br/>
+<%= link_to "Hide", '#', onclick: "$(this).up().hide()", :class => 'important' %>
+<%= link_to "Toggle stacked roles", '#', onclick: "toggle_graph_params('suggest-graph', 'stacked_roles');" %>
+<%= link_to "Toggle only users' roles", '#', onclick: "toggle_graph_params('suggest-graph', 'only_relevant_roles');" %><br/>
 <object id="suggest-graph" data="" type="image/svg+xml" style="max-width: 98%;max-height: 95%;margin-top: 0.5em"/>
 </div>
 <%= render 'show_graph' %>

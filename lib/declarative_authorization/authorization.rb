@@ -164,7 +164,7 @@ module Authorization
       # Example: permit!( :edit, :object => user.posts )
       #
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
-        options[:object] = (Rails.version < "3.0" ? options[:object] : options[:object].scoped).new
+        options[:object] = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil)).new
       end
       
       options[:context] ||= options[:object] && (
@@ -512,6 +512,15 @@ module Authorization
       object ||= attr_validator.object
       return false unless object
       
+      if ( Authorization.is_a_association_proxy?(object) &&
+           object.respond_to?(:empty?) )
+        return false if object.empty?
+        object.each do |member|
+          return true if validate?(attr_validator, member, hash)
+        end
+        return false
+      end
+            
       (hash || @conditions_hash).all? do |attr, value|
         attr_value = object_attribute_value(object, attr)
         if value.is_a?(Hash)
