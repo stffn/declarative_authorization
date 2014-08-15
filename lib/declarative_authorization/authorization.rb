@@ -164,7 +164,7 @@ module Authorization
       # Example: permit!( :edit, :object => user.posts )
       #
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
-        remove_from_assoc = options[:object].where(nil).limit(nil)
+        remove_from_assoc = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil).limit(nil))
         options[:object]  = remove_from_assoc.new
       end
 
