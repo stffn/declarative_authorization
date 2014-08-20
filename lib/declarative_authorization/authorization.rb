@@ -164,8 +164,13 @@ module Authorization
       # Example: permit!( :edit, :object => user.posts )
       #
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
-        remove_from_assoc = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil).limit(nil))
-        options[:object]  = remove_from_assoc.new
+        case options[:object]
+        when ActiveRecord::Associations::CollectionProxy
+          remove_from_assoc = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil).limit(nil))
+          options[:object]  = remove_from_assoc.build
+        when ActiveRecord::AssociationRelation
+          options[:object]  = options[:object].build
+        end
       end
 
       options[:context] ||= options[:object] && (
@@ -200,7 +205,9 @@ module Authorization
         false
       end
     ensure
-      remove_from_assoc.delete(options[:object]) if remove_from_assoc
+      if remove_from_assoc
+        remove_from_assoc.target.delete(options[:object])
+      end
     end
 
     # Calls permit! but doesn't raise authorization errors. If no exception is
