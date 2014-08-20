@@ -166,7 +166,7 @@ module Authorization
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
         case options[:object]
         when ActiveRecord::Associations::CollectionProxy
-          remove_from_assoc = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil).limit(nil))
+          remove_from_assoc = options[:object]
           options[:object]  = remove_from_assoc.build
         when ActiveRecord::AssociationRelation
           options[:object]  = options[:object].build
