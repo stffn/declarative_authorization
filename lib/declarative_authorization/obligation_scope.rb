@@ -263,7 +263,7 @@ module Authorization
               attribute_table_alias = table_alias
               used_paths << path
             end
-            bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
+            bindvar = "#{attribute_table_alias.gsub(".", "_")}__#{attribute_name}_#{obligation_index}".to_sym
 
             sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." +
                 "#{parent_model.connection.quote_table_name(attribute_name)}"
