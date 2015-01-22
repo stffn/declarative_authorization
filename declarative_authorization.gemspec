@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.has_rdoc = true
   s.extra_rdoc_files = ['README.rdoc', 'CHANGELOG']
   s.homepage = %q{http://github.com/stffn/declarative_authorization}
+  s.license = 'MIT'
 
   #s.add_dependency('rails', '>= 2.1.0')
 end
