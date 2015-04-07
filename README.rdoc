@@ -193,7 +193,7 @@ By default, declarative_authorization will enable filter_resource_access compati
       ...
     end
 
-Simalarly, you can use `:strong_parameters => true` if you are using strong_parameters in Rails 3.
+Similarly, you can use `:strong_parameters => true` if you are using strong_parameters in Rails 3.
 
 If you prefer less magic or your controller has no resemblance with the resource
 controllers, directly calling filter_access_to may be the better option.  Examples
