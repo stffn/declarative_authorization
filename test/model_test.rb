@@ -186,11 +186,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
                       :test_another_model_id => test_model_2.id
 
     user = MockUser.new(:test_role, :id => test_attr_1)
-    if Rails.version >= '4'
-      assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).references(:test_attrs, :test_attrs_test_models, :test_attrs_test_models_2).length
-    else
-      assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
-    end
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
 
     TestAttr.delete_all
     TestModel.delete_all
@@ -1210,11 +1206,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert Authorization::Engine.instance.permit?(:read, :object => test_model_1.test_attrs.first, :user => user_with_both_roles)
     assert Authorization::Engine.instance.permit?(:read, :object => test_model_for_second_role.test_attrs.first, :user => user_with_both_roles)
     #p Authorization::Engine.instance.obligations(:read, :user => user_with_both_roles, :context => :test_attrs)
-    if Rails.version >= '4'
-      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user_with_both_roles).references(:test_attrs, :test_models).length
-    else
-      assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
-    end
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -1475,11 +1467,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     test_attr_2.test_model.test_attrs.create!
 
     user = MockUser.new(:test_role, :test_attr => test_attr_2.test_model.test_attrs.last)
-    if Rails.version >= '4'
-      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).references(:test_attrs, :test_models, :test_models_test_attrs, :test_attrs_test_models).length
-    else
-      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
-    end
+    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
     TestAttr.delete_all
   end
@@ -1516,11 +1504,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_model => country.test_models.first)
 
-    if Rails.version >= '4'
-      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).references(:test_attrs, :test_models, :test_models_countries).length
-    else
-      assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
-    end
+    assert_equal 2, TestAttr.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
     TestAttr.delete_all
   end
@@ -1933,11 +1917,7 @@ class ModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role_1, :test_role_2,
         :test_attr_through_id => test_model_1.test_attr_throughs.first.id,
         :test_attr_through_2_id => test_model_2.test_attr_throughs.first.id)
-    if Rails.version >= '4'
-      assert_equal 2, TestModel.with_permissions_to(:read, :user => user).references(:test_models, :test_attr_throughs).length
-    else
-      assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
-    end
+    assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
     TestAttr.delete_all
     TestAttrThrough.delete_all
