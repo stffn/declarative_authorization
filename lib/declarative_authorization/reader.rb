@@ -1,7 +1,4 @@
 # Authorization::Reader
-
-require File.dirname(__FILE__) + '/authorization.rb'
-
 module Authorization
   # Parses an authorization configuration file in the authorization DSL and
   # constructs a data model of its contents.

@@ -14,4 +14,5 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://github.com/stffn/declarative_authorization}
   s.add_dependency('ruby_parser', '~> 3.6.6')
   s.add_dependency('rails', '>= 4.0.0', '< 4.2.0')
+  s.add_development_dependency('test-unit')
 end
