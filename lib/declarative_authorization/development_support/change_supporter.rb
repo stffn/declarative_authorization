@@ -476,7 +476,7 @@ module Authorization
         def apply(candidate)
           AnalyzerEngine.apply_change(candidate.engine, to_a)
         end
-        
+
         def reverse?(other)
           (other.is_a?(AssignPrivilegeToRoleAction) or
               other.is_a?(AbstractCompoundAction)) and

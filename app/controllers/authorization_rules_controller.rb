@@ -12,7 +12,7 @@ begin
 rescue LoadError; end
 
 class AuthorizationRulesController < ApplicationController
-  
+
   filter_access_to :all, :require => :read
   def index
     respond_to do |format|
@@ -32,7 +32,7 @@ class AuthorizationRulesController < ApplicationController
   def change
     @users = find_all_users
     @users.sort! {|a, b| a.login <=> b.login }
-    
+
     @privileges = authorization_engine.auth_rules.collect {|rule| rule.privileges.to_a}.flatten.uniq
     @privileges = @privileges.collect do |priv|
       priv = Authorization::DevelopmentSupport::AnalyzerEngine::Privilege.for_sym(priv, authorization_engine)
@@ -67,7 +67,7 @@ class AuthorizationRulesController < ApplicationController
     end
 
     analyzer = Authorization::DevelopmentSupport::ChangeSupporter.new(authorization_engine)
-    
+
     privilege = params[:privilege].to_sym
     context = params[:context].to_sym
     all_users = User.all
@@ -145,7 +145,7 @@ class AuthorizationRulesController < ApplicationController
     @roles = @roles.select {|r| filter_roles_flattened.include?(r) } if options[:filter_roles]
     @role_hierarchy = engine.role_hierarchy
     @privilege_hierarchy = engine.privilege_hierarchy
-    
+
     @contexts = engine.auth_rules.
                     collect {|ar| ar.contexts.to_a}.flatten.uniq
     @contexts = @contexts.select {|c| c == options[:filter_contexts] } if options[:filter_contexts]
@@ -183,7 +183,7 @@ class AuthorizationRulesController < ApplicationController
         @roles.all? {|role| !@role_privs[role] || !@role_privs[role].any? {|info| info[0] == context}}
       end
     end
-    
+
     if options[:privilege_hierarchy]
       @context_privs.each do |context, privs|
         privs.each do |priv|
@@ -194,7 +194,7 @@ class AuthorizationRulesController < ApplicationController
         end
       end
     end
-    
+
     render_to_string :template => 'authorization_rules/graph.dot.erb', :layout => false
   end
 
@@ -211,7 +211,7 @@ class AuthorizationRulesController < ApplicationController
       memo
     end
   end
-  
+
   def dot_to_svg(dot_data)
     gv = IO.popen("#{Authorization.dot_path} -q -Tsvg", "w+")
     gv.puts dot_data
@@ -220,7 +220,7 @@ class AuthorizationRulesController < ApplicationController
   rescue IOError, Errno::EPIPE => e
     raise Exception, "Error in call to graphviz: #{e}"
   end
-  
+
   def graph_options
     {
       :effective_role_privs => !params[:effective_role_privs].blank?,

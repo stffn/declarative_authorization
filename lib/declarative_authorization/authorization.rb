@@ -226,7 +226,7 @@ module Authorization
     # Options
     # [:+context+]  See permit!
     # [:+user+]  See permit!
-    # 
+    #
     def obligations(privilege, options = {})
       options = {:context => nil}.merge(options)
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
@@ -309,7 +309,7 @@ module Authorization
         @privilege = privilege
         @context = context
       end
-      
+
       def evaluate(value_block)
         # TODO cache?
         instance_eval(&value_block)
@@ -354,7 +354,7 @@ module Authorization
       end
       flattened_privileges.to_a
     end
-    
+
     def matching_auth_rules(roles, privileges, context)
       auth_rules.matching(roles, privileges, context)
     end
@@ -419,7 +419,7 @@ module Authorization
   class AuthorizationRule
     attr_reader :attributes, :contexts, :role, :privileges, :join_operator,
         :source_file, :source_line
-    
+
     def initialize(role, privileges = [], contexts = nil, join_operator = :or,
           options = {})
       @role = role
@@ -436,15 +436,15 @@ module Authorization
       @contexts = @contexts.clone
       @attributes = @attributes.collect {|attribute| attribute.clone }
     end
-    
+
     def append_privileges(privs)
       @privileges.merge(privs)
     end
-    
+
     def append_attribute(attribute)
       @attributes << attribute
     end
-    
+
     def matches?(roles, privs, context = nil)
       roles = [roles] unless roles.is_a?(Array)
       @contexts.include?(context) and roles.include?(@role) and
@@ -512,11 +512,11 @@ module Authorization
     def initialize_copy(from)
       @conditions_hash = deep_hash_clone(@conditions_hash)
     end
-    
+
     def validate?(attr_validator, object = nil, hash = nil)
       object ||= attr_validator.object
       return false unless object
-      
+
       if ( Authorization.is_a_association_proxy?(object) &&
            object.respond_to?(:empty?) )
         return false if object.empty?
@@ -525,7 +525,7 @@ module Authorization
         end
         return false
       end
-            
+
       (hash || @conditions_hash).all? do |attr, value|
         attr_value = object_attribute_value(object, attr)
         if value.is_a?(Hash)

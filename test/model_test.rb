@@ -23,14 +23,14 @@ class TestModel < ActiveRecord::Base
   # :conditions is deprecated in Rails 4.1
   if Rails.version >= '4'
     has_many :test_attrs_with_attr, lambda { where(:attr => 1) }, :class_name => "TestAttr"
-    has_many :test_attr_throughs_with_attr, lambda { where("test_attrs.attr = 1") }, :through => :test_attrs, 
+    has_many :test_attr_throughs_with_attr, lambda { where("test_attrs.attr = 1") }, :through => :test_attrs,
       :class_name => "TestAttrThrough", :source => :test_attr_throughs
 
     has_one :test_attr_throughs_with_attr_and_has_one, lambda { where("test_attrs.attr = 1") }, :through => :test_attrs,
       :class_name => "TestAttrThrough", :source => :test_attr_throughs
-  else    
+  else
     has_many :test_attrs_with_attr, :class_name => "TestAttr", :conditions => {:attr => 1}
-    has_many :test_attr_throughs_with_attr, :through => :test_attrs, 
+    has_many :test_attr_throughs_with_attr, :through => :test_attrs,
       :class_name => "TestAttrThrough", :source => :test_attr_throughs,
       :conditions => "test_attrs.attr = 1"
 
@@ -62,7 +62,7 @@ class TestModel < ActiveRecord::Base
   unless Rails.version < "2.2"
     has_many :test_attrs_with_primary_id, :class_name => "TestAttr",
       :primary_key => :test_attr_through_id, :foreign_key => :test_attr_through_id
-    has_many :test_attr_throughs_with_primary_id, 
+    has_many :test_attr_throughs_with_primary_id,
       :through => :test_attrs_with_primary_id, :class_name => "TestAttrThrough",
       :source => :n_way_join_item
   end
@@ -95,7 +95,7 @@ class TestAttr < ActiveRecord::Base
 
   if Rails.version < '4'
     attr_accessible :test_model, :test_another_model, :attr, :branch, :company, :test_attr,
-  	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id, 
+  	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id,
   	  :test_model_id, :test_another_model_id
   end
 
@@ -125,9 +125,9 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
   end
   has_many :test_attrs
   belongs_to :test_attr
-  using_access_control :include_read => true, 
+  using_access_control :include_read => true,
     :context => :test_model_security_models
-  
+
   if Rails.version < '4'
     attr_accessible :test_attr, :attr
   end
@@ -137,7 +137,7 @@ class Branch < ActiveRecord::Base
   has_many :test_attrs
   belongs_to :company
   belongs_to :test_model
-  
+
   if Rails.version < '4'
     attr_accessible :name, :company, :test_model
   end
@@ -146,7 +146,7 @@ class Company < ActiveRecord::Base
   has_many :test_attrs
   has_many :branches
   belongs_to :country
-  
+
   if Rails.version < '4'
     attr_accessible :name, :country, :country_id
   end
@@ -159,7 +159,7 @@ end
 class Country < ActiveRecord::Base
   has_many :test_models
   has_many :companies
-  
+
   if Rails.version < '4'
     attr_accessible :name
   end
@@ -1539,17 +1539,17 @@ class ModelTest < Test::Unit::TestCase
       end
     }
     instance = Authorization::Engine.instance(reader)
-    
+
     test_model = TestModel.create!
     test_attr = test_model.create_test_attr_has_one
     assert !test_attr.new_record?
-    
+
     user = MockUser.new(:test_role, :test_attr => test_attr)
-    
+
     assert_nothing_raised do
-      assert instance.permit?(:update, :user => user, :object => test_model.test_attr_has_one) 
+      assert instance.permit?(:update, :user => user, :object => test_model.test_attr_has_one)
     end
-    
+
     TestModel.delete_all
     TestAttr.delete_all
   end
@@ -1604,7 +1604,7 @@ class ModelTest < Test::Unit::TestCase
       object.update_attributes(:attr_2 => 2)
     end
   end
-  
+
   def test_model_security_write_not_allowed_wrong_attribute_value
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -1623,7 +1623,7 @@ class ModelTest < Test::Unit::TestCase
       end
     }
     Authorization::Engine.instance(reader)
-    
+
     Authorization.current_user = MockUser.new(:test_role)
     assert(object = TestModelSecurityModel.create)
     assert_raise Authorization::AttributeAuthorizationError do
@@ -1695,7 +1695,7 @@ class ModelTest < Test::Unit::TestCase
       object_with_find.class.find(object_with_find.id)
     end
     assert_equal 1, test_attr.test_model_security_model_with_finds.length
-    
+
     # Raises error since AR does not populate the object
     #assert test_attr.test_model_security_model_with_finds.exists?(object_with_find)
   end
@@ -1784,7 +1784,7 @@ class ModelTest < Test::Unit::TestCase
       end
     }
     Authorization::Engine.instance(reader)
-    
+
     test_attr = TestAttr.create
     test_attr.role_symbols << :test_role
     Authorization.current_user = test_attr
@@ -1795,7 +1795,7 @@ class ModelTest < Test::Unit::TestCase
     without_access_control do
       object.reload
     end
-    assert_equal 2, object.attr_2 
+    assert_equal 2, object.attr_2
     object.destroy
     assert_raise ActiveRecord::RecordNotFound do
       TestModelSecurityModel.find(object.id)
@@ -1886,10 +1886,10 @@ class ModelTest < Test::Unit::TestCase
    test_model_2 = TestModel.create!
    test_attr_2 = test_model_2.test_attrs.create!(:attr => 2)
    test_branch_2 = Branch.create!(:test_model => test_model_2)
-   
+
    test_model_3 = TestModel.create!
    test_branch_3 = Branch.create!(:test_model => test_model_3)
-   
+
    assert engine.permit?(:read, :object => test_branch,
                          :user => MockUser.new(:test_role))
    assert !engine.permit?(:read, :object => test_branch_2,

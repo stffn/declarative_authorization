@@ -148,7 +148,7 @@ class ChangeSupporterTest < Test::Unit::TestCase
 
     assert approaches.any? {|approach| approach.changes.first.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignRoleToUserAction}
   end
-  
+
   def test_adding_permission_with_new_role
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -343,7 +343,7 @@ class ChangeSupporterTest < Test::Unit::TestCase
       assert !permit?(:read, :context => :permissions, :user => users.first)
       assert permit?(:read, :context => :permissions, :user => users[1])
     end
-    
+
     assert approaches.any? {|approach| approach.steps.find {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::RemovePrivilegeFromRoleAction}}
     assert approaches.any? {|approach| approach.steps.find {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignPrivilegeToRoleAction}}
   end

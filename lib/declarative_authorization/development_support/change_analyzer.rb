@@ -56,7 +56,7 @@ module Authorization
 
         step_count = 0
         while !candidates.empty? and step_count < 100
-          next_step(viable_approaches, candidates, approach_checker, options[:to], 
+          next_step(viable_approaches, candidates, approach_checker, options[:to],
               options[:on], strategy)
           step_count += 1
         end
