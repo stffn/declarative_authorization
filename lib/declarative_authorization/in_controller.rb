@@ -23,7 +23,7 @@ module Authorization
     def self.failed_auto_loading_is_not_found?
       @@failed_auto_loading_is_not_found
     end
-    def self.failed_auto_loading_is_not_found= (new_value)
+    def self.failed_auto_loading_is_not_found=(new_value)
       @@failed_auto_loading_is_not_found = new_value
     end
 
@@ -42,7 +42,7 @@ module Authorization
     # If no object or context is specified, the controller_name is used as
     # context.
     #
-    def permitted_to? (privilege, object_or_sym = nil, options = {})
+    def permitted_to?(privilege, object_or_sym = nil, options = {})
       if authorization_engine.permit!(privilege, options_for_permit(object_or_sym, options, false))
         yield if block_given?
         true
@@ -53,7 +53,7 @@ module Authorization
     
     # Works similar to the permitted_to? method, but
     # throws the authorization exceptions, just like Engine#permit!
-    def permitted_to! (privilege, object_or_sym = nil, options = {})
+    def permitted_to!(privilege, object_or_sym = nil, options = {})
       authorization_engine.permit!(privilege, options_for_permit(object_or_sym, options, true))
     end
 
@@ -61,7 +61,7 @@ module Authorization
     # content should only be shown to some users without being concerned
     # with authorization.  E.g. to only show the most relevant menu options 
     # to a certain group of users.  That is what has_role? should be used for.
-    def has_role? (*roles, &block)
+    def has_role?(*roles, &block)
       user_roles = authorization_engine.roles_for(current_user)
       result = roles.all? do |role|
         user_roles.include?(role)
@@ -137,19 +137,19 @@ module Authorization
       end
     end
 
-    def load_controller_object (context_without_namespace = nil, model = nil) # :nodoc:
+    def load_controller_object(context_without_namespace = nil, model = nil) # :nodoc:
       instance_var = :"@#{context_without_namespace.to_s.singularize}"
       model = model ? model.classify.constantize : context_without_namespace.to_s.classify.constantize
       instance_variable_set(instance_var, model.find(params[:id]))
     end
 
-    def load_parent_controller_object (parent_context_without_namespace) # :nodoc:
+    def load_parent_controller_object(parent_context_without_namespace) # :nodoc:
       instance_var = :"@#{parent_context_without_namespace.to_s.singularize}"
       model = parent_context_without_namespace.to_s.classify.constantize
       instance_variable_set(instance_var, model.find(params[:"#{parent_context_without_namespace.to_s.singularize}_id"]))
     end
 
-    def new_controller_object_from_params (context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
+    def new_controller_object_from_params(context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
       model_or_proxy = parent_context_without_namespace ?
            instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
            context_without_namespace.to_s.classify.constantize
@@ -158,7 +158,7 @@ module Authorization
         model_or_proxy.new(params[context_without_namespace.to_s.singularize]))
     end
 
-    def new_blank_controller_object (context_without_namespace, parent_context_without_namespace, strong_params, model) # :nodoc:
+    def new_blank_controller_object(context_without_namespace, parent_context_without_namespace, strong_params, model) # :nodoc:
       if model
         model_or_proxy = model.to_s.classify.constantize
       else
@@ -171,7 +171,7 @@ module Authorization
         model_or_proxy.new())
     end
 
-    def new_controller_object_for_collection (context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
+    def new_controller_object_for_collection(context_without_namespace, parent_context_without_namespace, strong_params) # :nodoc:
       model_or_proxy = parent_context_without_namespace ?
            instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym) :
            context_without_namespace.to_s.classify.constantize
@@ -179,7 +179,7 @@ module Authorization
       instance_variable_set(instance_var, model_or_proxy.new)
     end
 
-    def options_for_permit (object_or_sym = nil, options = {}, bang = true)
+    def options_for_permit(object_or_sym = nil, options = {}, bang = true)
       context = object = nil
       if object_or_sym.nil?
         context = self.class.decl_auth_context
@@ -296,7 +296,7 @@ module Authorization
       #                      :load_method => lambda { User.find(params[:id]) }
       # 
       
-      def filter_access_to (*args, &filter_block)
+      def filter_access_to(*args, &filter_block)
         options = args.last.is_a?(Hash) ? args.pop : {}
         options = {
           :require => nil,
@@ -611,7 +611,7 @@ module Authorization
         class_variable_defined?(:@@declarative_authorization_permissions)
       end
 
-      def actions_from_option (option) # :nodoc:
+      def actions_from_option(option) # :nodoc:
         case option
         when nil
           {}
@@ -635,7 +635,7 @@ module Authorization
   
   class ControllerPermission # :nodoc:
     attr_reader :actions, :privilege, :context, :attribute_check, :strong_params
-    def initialize (actions, privilege, context, strong_params, attribute_check = false,
+    def initialize(actions, privilege, context, strong_params, attribute_check = false,
                     load_object_model = nil, load_object_method = nil,
                     filter_block = nil)
       @actions = actions.to_set
@@ -648,11 +648,11 @@ module Authorization
       @strong_params = strong_params
     end
     
-    def matches? (action_name)
+    def matches?(action_name)
       @actions.include?(action_name.to_sym)
     end
     
-    def permit! (contr)
+    def permit!(contr)
       if @filter_block
         return contr.instance_eval(&@filter_block)
       end
@@ -666,7 +666,7 @@ module Authorization
                                          :context => @context || contr.class.decl_auth_context)
     end
     
-    def remove_actions (actions)
+    def remove_actions(actions)
       @actions -= actions
       self
     end

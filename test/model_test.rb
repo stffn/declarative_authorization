@@ -99,7 +99,7 @@ class TestAttr < ActiveRecord::Base
   	  :test_model_id, :test_another_model_id
   end
 
-  def initialize (*args)
+  def initialize(*args)
     @role_symbols = []
     super(*args)
   end

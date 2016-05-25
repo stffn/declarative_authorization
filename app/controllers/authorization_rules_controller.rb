@@ -108,7 +108,7 @@ class AuthorizationRulesController < ApplicationController
   end
 
   private
-  def auth_to_dot (options = {})
+  def auth_to_dot(options = {})
     options = {
       :effective_role_privs => true,
       :privilege_hierarchy => false,
@@ -198,7 +198,7 @@ class AuthorizationRulesController < ApplicationController
     render_to_string :template => 'authorization_rules/graph.dot.erb', :layout => false
   end
 
-  def replay_changes (engine, users, changes)
+  def replay_changes(engine, users, changes)
     changes.inject({}) do |memo, info|
       case info[0]
       when :add_privilege, :add_role
@@ -212,7 +212,7 @@ class AuthorizationRulesController < ApplicationController
     end
   end
   
-  def dot_to_svg (dot_data)
+  def dot_to_svg(dot_data)
     gv = IO.popen("#{Authorization.dot_path} -q -Tsvg", "w+")
     gv.puts dot_data
     gv.close_write
@@ -235,7 +235,7 @@ class AuthorizationRulesController < ApplicationController
     }
   end
 
-  def deserialize_changes (changes)
+  def deserialize_changes(changes)
     if changes
       changes.split(';').collect do |info|
         info.split(',').collect do |info_part|
@@ -245,7 +245,7 @@ class AuthorizationRulesController < ApplicationController
     end
   end
 
-  def find_user_by_id (id)
+  def find_user_by_id(id)
     User.find(id)
   end
   def find_all_users

@@ -43,7 +43,7 @@ module Authorization
   # @proxy_options[:conditions] = [ 'foos_bazzes.attr = :foos_bazzes__id_0', { :foos_bazzes__id_0 => 1 } ]+
   #
   class ObligationScope < (Rails.version < "3" ? ActiveRecord::NamedScope::Scope : ActiveRecord::Relation)
-    def initialize (model, options)
+    def initialize(model, options)
       @finder_options = {}
       if Rails.version < "3"
         super(model, options)
@@ -141,7 +141,7 @@ module Authorization
     end
     
     # Returns the model associated with the given path.
-    def model_for (path)
+    def model_for(path)
       reflection = reflection_for(path)
 
       if Authorization.is_a_association_proxy?(reflection)
@@ -294,7 +294,7 @@ module Authorization
       finder_options[:conditions] = [ conds.join( " OR " ), binds ]
     end
 
-    def attribute_value (value)
+    def attribute_value(value)
       value.class.respond_to?(:descends_from_active_record?) && value.class.descends_from_active_record? && value.id ||
         value.is_a?(Array) && value[0].class.respond_to?(:descends_from_active_record?) && value[0].class.descends_from_active_record? && value.map( &:id ) ||
         value
@@ -335,7 +335,7 @@ module Authorization
       end
     end
 
-    def path_to_join (path)
+    def path_to_join(path)
       case path.length
       when 0 then nil
       when 1 then path[0]
@@ -348,7 +348,7 @@ module Authorization
       end
     end
 
-    def join_to_path (join)
+    def join_to_path(join)
       case join
       when Symbol
         [join]

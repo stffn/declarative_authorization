@@ -11,7 +11,7 @@ module Authorization
     class_option :commit, type: :boolean, default: false, desc: "Performs rake tasks such as migrate and seed."
     class_option :user_belongs_to_role, type: :boolean, default: false, desc: "Users have only one role, which can inherit others roles."
 
-    def self.next_migration_number dirname
+    def self.next_migration_number(dirname)
       if ActiveRecord::Base.timestamped_migrations
         Time.now.utc.strftime("%Y%m%d%H%M%S")
       else

@@ -28,7 +28,7 @@ module Authorization
     # options:
     #     permitted_to? :update, user, :context => :account
     # 
-    def permitted_to? (privilege, object_or_sym = nil, options = {}, &block)
+    def permitted_to?(privilege, object_or_sym = nil, options = {}, &block)
       controller.permitted_to?(privilege, object_or_sym, options, &block)
     end
   
@@ -48,7 +48,7 @@ module Authorization
     #     ...
     #     <% end %>
     # 
-    def has_role? (*roles, &block)
+    def has_role?(*roles, &block)
       controller.has_role?(*roles, &block)
     end
     

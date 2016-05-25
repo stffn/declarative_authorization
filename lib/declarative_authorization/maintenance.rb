@@ -15,7 +15,7 @@ module Authorization
     #  without_access_control do
     #    SomeModel.find(:first).save
     #  end
-    def without_access_control (&block)
+    def without_access_control(&block)
       Authorization::Maintenance.without_access_control(&block)
     end
 
@@ -36,11 +36,11 @@ module Authorization
     # Sets the current user for the declarative authorization plugin to the
     # given one for the execution of the supplied block.  Suitable for tests
     # on certain users.
-    def with_user (user, &block)
+    def with_user(user, &block)
       Authorization::Maintenance.with_user(user, &block)
     end
 
-    def self.with_user (user)
+    def self.with_user(user)
       prev_user = Authorization.current_user
       Authorization.current_user = user
       yield
@@ -140,7 +140,7 @@ module Authorization
     
     # Analogue to the Ruby's assert_raise method, only executing the block
     # in the context of the given user.
-    def assert_raise_with_user (user, *args, &block)
+    def assert_raise_with_user(user, *args, &block)
       assert_raise(*args) do
         with_user(user, &block)
       end
@@ -158,7 +158,7 @@ module Authorization
     #
     # If you use specify the object and context manually, you can also specify the user manually, skipping the with_user block:
     #   should_be_allowed_to :create, :object => car, :context => :vehicles, :user => a_normal_user
-    def should_be_allowed_to (privilege, *args)
+    def should_be_allowed_to(privilege, *args)
       options = {}
       if(args.first.class == Hash)
         options = args.extract_options!
@@ -171,7 +171,7 @@ module Authorization
     end
 
     # See should_be_allowed_to
-    def should_not_be_allowed_to (privilege, *args)
+    def should_not_be_allowed_to(privilege, *args)
       options = {}
       if(args.first.class == Hash)
         options = args.extract_options!
@@ -181,7 +181,7 @@ module Authorization
       assert !Authorization::Engine.instance.permit?(privilege, options)
     end
     
-    def request_with (user, method, xhr, action, params = {}, 
+    def request_with(user, method, xhr, action, params = {}, 
         session = {}, flash = {})
       session = session.merge({:user => user, :user_id => user && user.id})
       with_user(user) do
@@ -193,14 +193,14 @@ module Authorization
       end
     end
   
-    def self.included (base)
+    def self.included(base)
       [:get, :post, :put, :delete].each do |method|
         base.class_eval <<-EOV, __FILE__, __LINE__
-          def #{method}_with (user, *args)
+          def #{method}_with(user, *args)
             request_with(user, #{method.inspect}, false, *args)
           end
 
-          def #{method}_by_xhr_with (user, *args)
+          def #{method}_by_xhr_with(user, *args)
             request_with(user, #{method.inspect}, true, *args)
           end
         EOV

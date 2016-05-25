@@ -71,7 +71,7 @@ end
 
 
 class NestedResource < MockDataObject
-  def initialize (attributes = {})
+  def initialize(attributes = {})
     if attributes[:id]
       attributes[:parent_mock] ||= ParentMock.new(:id => attributes[:id])
     end
@@ -83,7 +83,7 @@ class NestedResource < MockDataObject
 end
 
 class ShallowNestedResource < MockDataObject
-  def initialize (attributes = {})
+  def initialize(attributes = {})
     if attributes[:id]
       attributes[:parent_mock] ||= ParentMock.new(:id => attributes[:id])
     end
@@ -97,10 +97,10 @@ end
 class ParentMock < MockDataObject
   def nested_resources
     Class.new do
-      def initialize (parent_mock)
+      def initialize(parent_mock)
         @parent_mock = parent_mock
       end
-      def new (attributes = {})
+      def new(attributes = {})
         NestedResource.new(attributes.merge(:parent_mock => @parent_mock))
       end
     end.new(self)
@@ -108,7 +108,7 @@ class ParentMock < MockDataObject
 
   alias :shallow_nested_resources :nested_resources
 
-  def == (other)
+  def ==(other)
     id == other.id
   end
   def self.name

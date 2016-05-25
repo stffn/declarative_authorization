@@ -266,7 +266,7 @@ class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
   end
 
   protected
-  def engine_analyzer_for (rules)
+  def engine_analyzer_for(rules)
     reader = Authorization::Reader::DSLReader.new
     reader.parse rules
     engine = Authorization::Engine.new(reader)

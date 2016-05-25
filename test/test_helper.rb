@@ -46,7 +46,7 @@ rescue MissingSourceFile; end
 
 
 class MockDataObject
-  def initialize (attrs = {})
+  def initialize(attrs = {})
     attrs.each do |key, value|
       instance_variable_set(:"@#{key}", value)
       self.class.class_eval do
@@ -79,12 +79,12 @@ class MockDataObject
 end
 
 class MockUser < MockDataObject
-  def initialize (*roles)
+  def initialize(*roles)
     options = roles.last.is_a?(::Hash) ? roles.pop : {}
     super({:role_symbols => roles, :login => hash}.merge(options))
   end
 
-  def initialize_copy (other)
+  def initialize_copy(other)
     @role_symbols = @role_symbols.clone
   end
 end
@@ -97,7 +97,7 @@ class MocksController < ActionController::Base
     !!@authorized
   end
   
-  def self.define_action_methods (*methods)
+  def self.define_action_methods(*methods)
     methods.each do |method|
       define_method method do
         @authorized = true
@@ -110,7 +110,7 @@ class MocksController < ActionController::Base
     define_action_methods :index, :show, :edit, :update, :new, :create, :destroy
   end
   
-  def logger (*args)
+  def logger(*args)
     Class.new do 
       def warn(*args)
         #p args
@@ -176,7 +176,7 @@ if Rails.version < "4"
   class Test::Unit::TestCase
     include Authorization::TestHelper
     
-    def request! (user, action, reader, params = {})
+    def request!(user, action, reader, params = {})
       action = action.to_sym if action.is_a?(String)
       @controller.current_user = user
       @controller.authorization_engine = Authorization::Engine.new(reader)
@@ -203,7 +203,7 @@ elsif Rails.version < '4.1'
   class ActiveSupport::TestCase
     include Authorization::TestHelper
     
-    def request! (user, action, reader, params = {})
+    def request!(user, action, reader, params = {})
       action = action.to_sym if action.is_a?(String)
       @controller.current_user = user
       @controller.authorization_engine = Authorization::Engine.new(reader)
@@ -234,7 +234,7 @@ else
   class ActiveSupport::TestCase
     include Authorization::TestHelper
     
-    def request! (user, action, reader, params = {})
+    def request!(user, action, reader, params = {})
       action = action.to_sym if action.is_a?(String)
       @controller.current_user = user
       @controller.authorization_engine = Authorization::Engine.new(reader)

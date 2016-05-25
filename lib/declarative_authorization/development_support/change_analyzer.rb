@@ -27,7 +27,7 @@ module Authorization
     #
     class ChangeAnalyzer < AbstractAnalyzer
 
-      def find_approaches_for (change_action, type, options, &tests)
+      def find_approaches_for(change_action, type, options, &tests)
         raise ArgumentError, "Missing options" if !options[:on] or !options[:to]
 
         # * strategy for removing: [remove privilege, add privilege to different role]
@@ -69,11 +69,11 @@ module Authorization
       class ApproachChecker
         attr_reader :failed_test_count, :users
 
-        def initialize (analyzer, tests)
+        def initialize(analyzer, tests)
           @analyzer, @tests = analyzer, tests
         end
 
-        def check (engine, users)
+        def check(engine, users)
           @current_engine = engine
           @failed_test_count = 0
           @users = users
@@ -82,30 +82,30 @@ module Authorization
           @ok
         end
 
-        def assert (ok)
+        def assert(ok)
           @failed_test_count += 1 unless ok
           @ok &&= ok
         end
 
-        def permit? (*args)
+        def permit?(*args)
           @current_engine.permit?(*args)
         end
       end
 
       class Approach
         attr_reader :steps, :engine, :users
-        def initialize (engine, users, steps)
+        def initialize(engine, users, steps)
           @engine, @users, @steps = engine, users, steps
         end
 
-        def check (approach_checker)
+        def check(approach_checker)
           res = approach_checker.check(@engine, @users)
           @failed_test_count = approach_checker.failed_test_count
           #puts "CHECKING #{inspect} (#{res}, #{sort_value})"
           res
         end
 
-        def clone_for_step (*step_params)
+        def clone_for_step(*step_params)
           self.class.new(@engine.clone, @users.clone, @steps + [Step.new(step_params)])
         end
 
@@ -113,7 +113,7 @@ module Authorization
           @steps.select {|step| step.length > 1}
         end
 
-        def subset? (other_approach)
+        def subset?(other_approach)
           other_approach.changes.length >= changes.length &&
               changes.all? {|step| other_approach.changes.any? {|step_2| step_2.eql?(step)} }
         end
@@ -138,13 +138,13 @@ module Authorization
              # "\n  Users: #{@users.map(&:role_symbols).inspect}"
         end
 
-        def <=> (other)
+        def <=>(other)
           sort_value <=> other.sort_value
         end
       end
 
       class Step < Array
-        def eql? (other)
+        def eql?(other)
           # TODO use approach.users.index(self[idx]) ==
           #    other.approach.users.index(other[idx])
           # instead of user.login
@@ -161,7 +161,7 @@ module Authorization
       end
 
       protected
-      def next_step (viable_approaches, candidates, approach_checker,
+      def next_step(viable_approaches, candidates, approach_checker,
             privilege, context, strategy)
         candidate = candidates.shift
         next_in_strategy = strategy[candidate.steps.length % strategy.length]
@@ -242,7 +242,7 @@ module Authorization
         candidates.sort!
       end
 
-      def relevant_roles (approach)
+      def relevant_roles(approach)
         #return AnalyzerEngine.roles(approach.engine)
         (AnalyzerEngine.relevant_roles(approach.engine, approach.users) +
             (approach.engine.roles.include?(:new_role_for_change_analyzer) ?

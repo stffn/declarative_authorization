@@ -8,7 +8,7 @@ module Authorization
 
     # If the user meets the given privilege, permitted_to? returns true
     # and yields to the optional block.
-    def permitted_to? (privilege, options = {}, &block)
+    def permitted_to?(privilege, options = {}, &block)
       options = {
         :user =>  Authorization.current_user,
         :object => self
@@ -21,7 +21,7 @@ module Authorization
 
     # Works similar to the permitted_to? method, but doesn't accept a block
     # and throws the authorization exceptions, just like Engine#permit!
-    def permitted_to! (privilege, options = {} )
+    def permitted_to!(privilege, options = {} )
       options = {
         :user =>  Authorization.current_user,
         :object => self
@@ -97,7 +97,7 @@ module Authorization
         #   User to be used for gathering obligations; defaults to the
         #   current user.
         #
-        def self.with_permissions_to (*args)
+        def self.with_permissions_to(*args)
           if Rails.version < "3.1"
             scopes[:with_permissions_to].call(self, *args)
           else
@@ -146,7 +146,7 @@ module Authorization
         # [:+context+] Specify context different from the models table name.
         # [:+include_read+] Also check for :+read+ privilege after find.
         #
-        def self.using_access_control (options = {})
+        def self.using_access_control(options = {})
           options = {
             :context => nil,
             :include_read => false
