@@ -55,14 +55,14 @@ Next, bundle and install.
 
 This installer will create a Role model, an admin and a user role, and set a
 has_and_belongs_to_many relationship between the User model and the Role model.
-It will also add a `role_symbols` method to the user model to meet
+It will also add a +role_symbols+ method to the user model to meet
 declarative_authorization's requirements.  The default User model is User.  You can override this by simply typing the name of a model as above.
 
-You can create the model with the fields provided by using the `--create-user` option.
+You can create the model with the fields provided by using the +--create-user+ option.
 
-The `--commit` option will run `rake db:migrate` and `rake db:seed`.
+The +--commit+ option will run +rake db:migrate+ and +rake db:seed+.
 
-The `--user-belongs-to-role` option will set up a one-to-many relationship between Users and Roles.
+The +--user-belongs-to-role+ option will set up a one-to-many relationship between Users and Roles.
 That is, each user has a role_id column and can only have one role.  Role inheritance can be used
 in authorization rules.
 
@@ -74,7 +74,7 @@ To copy a default set of authorization rules which includes CRUD priveleges, run
 
     $ rails g authorization:rules
 
-This command will copy the following to `config/authorization_rules.rb`.  Remember
+This command will copy the following to +config/authorization_rules.rb+.  Remember
 to implement the requirements of this gem as described in the Installation section
 at the end of this README if you do not use the above installer.
 
@@ -108,14 +108,14 @@ at the end of this README if you do not use the above installer.
 
 === Controller Authorization
 
-For RESTful controllers, add `filter_resource_access`:
+For RESTful controllers, add +filter_resource_access+:
 
     class MyRestfulController < ApplicationController
       filter_resource_access
       ...
     end
 
-For a non-RESTful controller, you can use `filter_access_to`:
+For a non-RESTful controller, you can use +filter_access_to+:
 
     class MyOtherController < ApplicationController
       filter_access_to :all
@@ -125,7 +125,7 @@ For a non-RESTful controller, you can use `filter_access_to`:
 
 === View Authorization
 
-Declarative Authorization will use `current_user` to check authorization.
+Declarative Authorization will use +current_user+ to check authorization.
 
     <%= link_to 'Edit Post', edit_post_path(@post) if permitted_to? :update, @post %>
 
@@ -186,14 +186,14 @@ filter_access_to with the appropriate parameters to protect the CRUD methods.
 See Authorization::AuthorizationInController::ClassMethods for options on
 nested resources and custom member and collection actions.
 
-By default, declarative_authorization will enable filter_resource_access compatibility with strong_parameters in Rails 4.  If you want to disable this behavior, you can use the `:strong_parameters` option.
+By default, declarative_authorization will enable filter_resource_access compatibility with strong_parameters in Rails 4.  If you want to disable this behavior, you can use the +:strong_parameters+ option.
 
     class EmployeesController < ApplicationController
       filter_resource_access :strong_parameters => false
       ...
     end
 
-Simalarly, you can use `:strong_parameters => true` if you are using strong_parameters in Rails 3.
+Simalarly, you can use +:strong_parameters => true+ if you are using strong_parameters in Rails 3.
 
 If you prefer less magic or your controller has no resemblance with the resource
 controllers, directly calling filter_access_to may be the better option.  Examples
