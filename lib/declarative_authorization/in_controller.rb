@@ -6,8 +6,20 @@ module Authorization
     
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
-    #   # base.private_class_method :authorization_engine, :permitted_to?,
-    #   #   :permitted_to!
+      if base.respond_to? :helper
+        base.helper Authorization::AuthorizationHelper
+      end
+
+      if base.respond_to? :helper_method
+          helpers = %w(
+            permitted_to? 
+            has_role? 
+            has_role_with_hierarchy?
+            has_any_role?
+            has_any_role_with_hierarchy?
+          )
+          base.helper_method(*helpers)
+        end
     end
     
     DEFAULT_DENY = false
