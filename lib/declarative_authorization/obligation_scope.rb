@@ -216,7 +216,8 @@ module Authorization
 
     # Attempts to map a table alias for the given path.  Raises if already defined.
     def map_table_alias_for( path )
-      return "table alias for #{path.inspect} already exists" unless table_aliases[path].nil?
+      return [] if path.empty?
+      raise "table alias for #{path.inspect} already exists" unless table_aliases[path].nil?
 
       table_aliases[path] = reflection_for(path).map do |ref_for|
         if polymorphic?(ref_for)
