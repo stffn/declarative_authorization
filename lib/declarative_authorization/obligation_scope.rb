@@ -138,7 +138,7 @@ module Authorization
 
     # Adds the given path to the list of obligation joins, if we haven't seen it before.
     def add_obligation_join_for( path )
-      reflection_for(path) if !reflections[path].empty?
+      reflection_for(path) if reflections.key?(path) && !reflections[path].empty?
     end
 
     # Returns the model associated with the given path.
@@ -277,6 +277,7 @@ module Authorization
       obligation_conditions.each_with_index do |array, obligation_index|
         obligation, conditions = array
         obligation_conds = []
+        obligation_conds_poly = []
 
         conditions.each do |path, expressions|
           models = models_for path
@@ -285,6 +286,8 @@ module Authorization
 
           table_alias_list = table_alias_for(path)
           parent_models = (path.length > 1 ? models_for(path[0..-2]) : [top_level_model])
+          parent_is_polymorphic = parent_models.length > 1
+
           parent_models.each do |parent_model|
 
             expressions.each do |expression|
@@ -308,31 +311,44 @@ module Authorization
 
                 sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." +
                     "#{parent_model.connection.quote_table_name(attribute_name)}"
-                if value.nil? and [:is, :is_not].include?(operator)
-                  obligation_conds << "#{sql_attribute} IS #{[:contains, :is].include?(operator) ? '' : 'NOT '}NULL"
+
+                obligation_cond =
+                  if value.nil? and [:is, :is_not].include?(operator)
+                    "#{sql_attribute} IS #{[:contains, :is].include?(operator) ? '' : 'NOT '}NULL"
+                  else
+                    attribute_operator = case operator
+                                         when :contains, :is             then "= :#{bindvar}"
+                                         when :does_not_contain, :is_not then "<> :#{bindvar}"
+                                         when :is_in, :intersects_with   then "IN (:#{bindvar})"
+                                         when :is_not_in                 then "NOT IN (:#{bindvar})"
+                                         when :lt                        then "< :#{bindvar}"
+                                         when :lte                       then "<= :#{bindvar}"
+                                         when :gt                        then "> :#{bindvar}"
+                                         when :gte                       then ">= :#{bindvar}"
+                                         else raise AuthorizationUsageError, "Unknown operator: #{operator}"
+                                         end
+
+                    binds[bindvar] = attribute_value(value)
+                    "#{sql_attribute} #{attribute_operator}"
+                  end
+
+                if parent_is_polymorphic && attribute == :id
+                  obligation_conds_poly << obligation_cond
                 else
-                  attribute_operator = case operator
-                                       when :contains, :is             then "= :#{bindvar}"
-                                       when :does_not_contain, :is_not then "<> :#{bindvar}"
-                                       when :is_in, :intersects_with   then "IN (:#{bindvar})"
-                                       when :is_not_in                 then "NOT IN (:#{bindvar})"
-                                       when :lt                        then "< :#{bindvar}"
-                                       when :lte                       then "<= :#{bindvar}"
-                                       when :gt                        then "> :#{bindvar}"
-                                       when :gte                       then ">= :#{bindvar}"
-                                       else raise AuthorizationUsageError, "Unknown operator: #{operator}"
-                                       end
-                  obligation_conds << "#{sql_attribute} #{attribute_operator}"
-                  binds[bindvar] = attribute_value(value)
+                  obligation_conds << obligation_cond
                 end
               end
             end
           end
         end
 
-        # remove any duplicate conditions (due to polymorphic relations)
+        # join conditions directly connecting a parent to its polymorphic children by OR
+        poly_conds_sql = obligation_conds_poly.empty? ? nil : "(#{obligation_conds_poly.uniq.join(' OR ')})"
+
+        # remove any duplicate ordinary conditions (defined multiple times because of polymorphism)
         obligation_conds.uniq!
 
+        obligation_conds << poly_conds_sql if poly_conds_sql
         obligation_conds << "1=1" if obligation_conds.empty?
         conds << "(#{obligation_conds.join(' AND ')})"
       end
