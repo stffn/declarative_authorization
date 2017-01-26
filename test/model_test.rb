@@ -774,13 +774,14 @@ class NamedScopeModelTest < Test::Unit::TestCase
     TestAttr.delete_all
   end
 
-  def test_with_pickle
+  def test_with_multiple_conditions
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
             if_attribute :test_model => {:content => is { "pickle" } }
+            if_attribute :test_model => {:content => is { "hotdog" } }
           end
         end
       end
