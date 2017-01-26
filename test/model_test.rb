@@ -774,6 +774,31 @@ class NamedScopeModelTest < Test::Unit::TestCase
     TestAttr.delete_all
   end
 
+  def test_with_pickle
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :test_role do
+          has_permission_on :test_attrs, :to => :read do
+            if_attribute :test_model => {:content => is { "pickle" } }
+          end
+        end
+      end
+    }
+    Authorization::Engine.instance(reader)
+
+    test_model_1 = TestModel.create!(content: "pickle")
+    test_model_1.test_attrs.create!
+    TestModel.create!.test_attrs.create!
+
+    user = MockUser.new(:test_role, :test_model_id => test_model_1.id)
+    assert_equal 1, TestAttr.with_permissions_to(:read,
+      :context => :test_attrs, :user => user).length
+
+    TestModel.delete_all
+    TestAttr.delete_all
+  end
+
   def test_with_anded_rules
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
