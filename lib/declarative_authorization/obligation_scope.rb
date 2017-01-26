@@ -60,7 +60,7 @@ module Authorization
         self.klass.scoped(@finder_options)
       else
         # TODO Refactor this.  There is certainly a better way.
-        self.klass.joins(@finder_options[:joins]).includes(@finder_options[:include]).where(@finder_options[:conditions])
+        self.klass.joins(@finder_options[:joins]).includes(@finder_options[:include]).where(@finder_options[:conditions]).references(@finder_options[:include])
       end
     end
 
