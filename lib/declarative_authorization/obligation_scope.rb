@@ -59,7 +59,7 @@ module Authorization
         self
       elsif Rails.version < "4"
         # for Rails < 4: use scoped method
-        self.klass.scoped(@finder_options)
+        self.klass.scoped(@finder_options.merge(readonly: false))
       else
         # TODO Refactor this.  There is certainly a better way.
         self.klass.joins(@finder_options[:joins]).includes(@finder_options[:include]).where(@finder_options[:conditions])
