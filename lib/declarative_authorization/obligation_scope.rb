@@ -338,9 +338,21 @@ module Authorization
     end
 
     def attribute_value (value)
-      value.class.respond_to?(:descends_from_active_record?) && value.class.descends_from_active_record? && value.id ||
-        value.is_a?(Array) && value[0].class.respond_to?(:descends_from_active_record?) && value[0].class.descends_from_active_record? && value.map( &:id ) ||
-        value
+      value_record?(value) && value.id ||
+      (value_array?(value) || value_relation?(value)) && value.to_a.map( &:id ) ||
+      value
+    end
+
+    def value_record?(value)
+      value.class.respond_to?(:descends_from_active_record?) && value.class.descends_from_active_record?
+    end
+
+    def value_array?(value)
+      value.is_a?(Array) && value[0].class.respond_to?(:descends_from_active_record?) && value[0].class.descends_from_active_record?
+    end
+
+    def value_relation?(value)
+      value.is_a?(ActiveRecord::Relation)
     end
 
     # Parses all of the defined obligation joins and defines the scope's :joins or :includes option.
