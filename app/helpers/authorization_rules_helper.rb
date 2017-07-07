@@ -1,7 +1,7 @@
 module AuthorizationRulesHelper
   def syntax_highlight(rules)
     regexps = {
-      :constant => [/(:)(\w+)/], 
+      :constant => [/(:)(\w+)/],
       :proc => ['role', 'authorization', 'privileges'],
       :statement => ['has_permission_on', 'if_attribute', 'if_permitted_to', 'includes', 'privilege', 'to'],
       :operator => ['is', 'contains', 'is_in', 'is_not', 'is_not_in', 'intersects'],
@@ -15,7 +15,7 @@ module AuthorizationRulesHelper
       res.each do |re|
         rules = rules.gsub(
           re.is_a?(String) ? Regexp.new("(^|[^:])\\b(#{Regexp.escape(re)})\\b") :
-             (re.is_a?(Symbol) ? Regexp.new("()(:#{Regexp.escape(re.to_s)})\\b") : re), 
+             (re.is_a?(Symbol) ? Regexp.new("()(:#{Regexp.escape(re.to_s)})\\b") : re),
           "\\1<span class=\"#{name}\">\\2</span>")
       end
     end
@@ -52,7 +52,7 @@ module AuthorizationRulesHelper
   #  'Edit | ' <<
   #  link_to("XACML export", :action => 'index', :format => 'xacml')
   end
-  
+
   def role_color(role, fill = false)
     if @has_changes
       if has_changed(:add_role, role)
@@ -73,7 +73,7 @@ module AuthorizationRulesHelper
       @@role_colors[role][fill ? 1 : 0]
     end
   end
-  
+
   def role_fill_color(role)
     role_color(role, true)
   end
@@ -125,7 +125,7 @@ module AuthorizationRulesHelper
           "Don't suggest adding #{h human_privilege_context(step[1], step[2])}.", options)
       "Add privilege <strong>#{h human_privilege_context(step[1], step[2])}</strong>#{dont_assign} to role <strong>#{h human_role(step[3].to_sym)}</strong>"
     when :remove_privilege
-      dont_remove = prohibit_link(step[0,3], 
+      dont_remove = prohibit_link(step[0,3],
           "Remove privilege <strong>#{h human_privilege_context(step[1], step[2])}</strong> from any role",
           "Don't suggest removing #{h human_privilege_context(step[1], step[2])}.", options)
       "Remove privilege <strong>#{h human_privilege_context(step[1], step[2])}</strong>#{dont_remove} from role <strong>#{h human_role(step[3].to_sym)}</strong>"
@@ -153,7 +153,7 @@ module AuthorizationRulesHelper
                     :class => 'prohibit', :title => title) :
           ''
   end
-  
+
   def readable_step_info(info)
     case info
     when Symbol   then info.inspect

@@ -16,7 +16,7 @@ class SpecificMocksController < MocksController
   filter_access_to :edit_2, :require => :test, :context => :permissions,
     :attribute_check => true, :model => LoadMockObject
   filter_access_to :new, :require => :test, :context => :permissions
-  
+
   filter_access_to [:action_group_action_1, :action_group_action_2]
   define_action_methods :test_action, :test_action_2, :show, :edit, :create,
     :edit_2, :new, :unprotected_action, :action_group_action_1, :action_group_action_2
@@ -24,7 +24,7 @@ end
 
 class BasicControllerTest < ActionController::TestCase
   tests SpecificMocksController
-  
+
   def test_filter_access_to_receiving_an_explicit_array
     reader = Authorization::Reader::DSLReader.new
 
@@ -43,10 +43,10 @@ class BasicControllerTest < ActionController::TestCase
     request!(nil, "action_group_action_2", reader)
     assert !@controller.authorized?
   end
-  
+
   def test_filter_access
     assert !@controller.class.before_filters.empty?
-    
+
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
       authorization do
@@ -56,21 +56,21 @@ class BasicControllerTest < ActionController::TestCase
         end
       end
     }
-    
+
     request!(MockUser.new(:test_role), "test_action", reader)
     assert @controller.authorized?
-    
+
     request!(MockUser.new(:test_role), "test_action_2", reader)
     assert !@controller.authorized?
-    
+
     request!(MockUser.new(:test_role_2), "test_action", reader)
     assert_response :forbidden
     assert !@controller.authorized?
-    
+
     request!(MockUser.new(:test_role), "show", reader)
     assert @controller.authorized?
   end
-  
+
   def test_filter_access_multi_actions
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -79,11 +79,11 @@ class BasicControllerTest < ActionController::TestCase
           has_permission_on :permissions, :to => :test
         end
       end
-    } 
+    }
     request!(MockUser.new(:test_role), "create", reader)
     assert @controller.authorized?
   end
-  
+
   def test_filter_access_unprotected_actions
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -113,7 +113,7 @@ class BasicControllerTest < ActionController::TestCase
     request!(MockUser.new(:test_role), "show", reader)
     assert @controller.authorized?
   end
-  
+
   def test_filter_access_skip_attribute_test
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -128,7 +128,7 @@ class BasicControllerTest < ActionController::TestCase
     request!(MockUser.new(:test_role), "new", reader)
     assert @controller.authorized?
   end
-  
+
   def test_existing_instance_var_remains_unchanged
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -144,7 +144,7 @@ class BasicControllerTest < ActionController::TestCase
     @controller.send(:instance_variable_set, :"@load_mock_object",
         mock_object)
     request!(MockUser.new(:test_role), "edit_2", reader)
-    assert_equal mock_object, 
+    assert_equal mock_object,
       @controller.send(:instance_variable_get, :"@load_mock_object")
     assert @controller.authorized?
   end
@@ -183,13 +183,13 @@ class AllActionsControllerTest < ActionController::TestCase
         end
       end
     }
-    
+
     request!(MockUser.new(:test_role), "show", reader)
     assert @controller.authorized?
-    
+
     request!(MockUser.new(:test_role), "view", reader)
     assert @controller.authorized?
-    
+
     request!(MockUser.new(:test_role_2), "show", reader)
     assert !@controller.authorized?
   end
@@ -223,7 +223,7 @@ class LoadMockObjectsController < MocksController
 end
 class LoadObjectControllerTest < ActionController::TestCase
   tests LoadMockObjectsController
-  
+
   def test_filter_access_with_object_load
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -236,14 +236,14 @@ class LoadObjectControllerTest < ActionController::TestCase
         end
       end
     }
-    
+
     request!(MockUser.new(:test_role), "show", reader, :id => 2)
     assert !@controller.authorized?
-    
+
     request!(MockUser.new(:test_role), "show", reader, :id => 1,
       :clear => [:@load_mock_object])
     assert @controller.authorized?
-    
+
     request!(MockUser.new(:test_role), "edit", reader, :id => 1,
       :clear => [:@load_mock_object])
     assert @controller.authorized?
@@ -265,7 +265,7 @@ class LoadObjectControllerTest < ActionController::TestCase
     assert_raise StandardError, "No id param supplied" do
       request!(MockUser.new(:test_role), "show", reader)
     end
-    
+
     Authorization::AuthorizationInController.failed_auto_loading_is_not_found = false
     assert_nothing_raised "Load error is only logged" do
       request!(MockUser.new(:test_role), "show", reader)
@@ -273,7 +273,7 @@ class LoadObjectControllerTest < ActionController::TestCase
     assert !@controller.authorized?
     Authorization::AuthorizationInController.failed_auto_loading_is_not_found = true
   end
-  
+
   def test_filter_access_with_object_load_custom
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -291,14 +291,14 @@ class LoadObjectControllerTest < ActionController::TestCase
         end
       end
     }
-    
+
     request!(MockUser.new(:test_role), "delete", reader)
     assert !@controller.authorized?
-    
+
     request!(MockUser.new(:test_role), "view", reader)
     assert @controller.authorized?
     assert_equal 1, @controller.class.load_method_call_count
-    
+
     request!(MockUser.new(:test_role_2), "view", reader)
     assert !@controller.authorized?
     assert_equal 1, @controller.class.load_method_call_count
@@ -306,7 +306,7 @@ class LoadObjectControllerTest < ActionController::TestCase
     request!(MockUser.new(:test_role), "update", reader)
     assert @controller.authorized?
   end
-  
+
   def test_filter_access_custom
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -319,10 +319,10 @@ class LoadObjectControllerTest < ActionController::TestCase
         end
       end
     }
-    
+
     request!(MockUser.new(:test_role), "create", reader)
     assert @controller.authorized?
-    
+
     request!(MockUser.new(:test_role_2), "create", reader)
     assert !@controller.authorized?
   end
@@ -331,7 +331,7 @@ end
 
 ##################
 class AccessOverwritesController < MocksController
-  filter_access_to :test_action, :test_action_2, 
+  filter_access_to :test_action, :test_action_2,
     :require => :test, :context => :permissions_2
   filter_access_to :test_action, :require => :test, :context => :permissions
   define_action_methods :test_action, :test_action_2
@@ -348,7 +348,7 @@ class AccessOverwritesControllerTest < ActionController::TestCase
     }
     request!(MockUser.new(:test_role), "test_action_2", reader)
     assert !@controller.authorized?
-    
+
     request!(MockUser.new(:test_role), "test_action", reader)
     assert @controller.authorized?
   end
@@ -362,7 +362,7 @@ class PeopleController < MocksController
 end
 class PluralizationControllerTest < ActionController::TestCase
   tests PeopleController
-  
+
   def test_filter_access_people_controller
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{

@@ -11,10 +11,10 @@ class DSLReaderTest < Test::Unit::TestCase
       end
     }
     assert_equal 2, reader.privileges_reader.privileges.length
-    assert_equal [[:lower_priv, nil]], 
+    assert_equal [[:lower_priv, nil]],
       reader.privileges_reader.privilege_hierarchy[:test_priv]
   end
-  
+
   def test_privileges_with_context
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -24,10 +24,10 @@ class DSLReaderTest < Test::Unit::TestCase
         end
       end
     }
-    assert_equal [[:lower_priv, :test_context]], 
+    assert_equal [[:lower_priv, :test_context]],
       reader.privileges_reader.privilege_hierarchy[:test_priv]
   end
-  
+
   def test_privileges_one_line
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -37,14 +37,14 @@ class DSLReaderTest < Test::Unit::TestCase
         privilege :test_priv_3, :includes => [:lower_priv]
       end
     }
-    assert_equal [[:lower_priv, :test_context]], 
+    assert_equal [[:lower_priv, :test_context]],
       reader.privileges_reader.privilege_hierarchy[:test_priv]
-    assert_equal [[:lower_priv, :test_context]], 
+    assert_equal [[:lower_priv, :test_context]],
       reader.privileges_reader.privilege_hierarchy[:test_priv_2]
-    assert_equal [[:lower_priv, nil]], 
+    assert_equal [[:lower_priv, nil]],
       reader.privileges_reader.privilege_hierarchy[:test_priv_3]
   end
-  
+
   def test_auth_role
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -59,7 +59,7 @@ class DSLReaderTest < Test::Unit::TestCase
     assert_equal [:lesser_role], reader.auth_rules_reader.role_hierarchy[:test_role]
     assert_equal 1, reader.auth_rules_reader.auth_rules.length
   end
-  
+
   def test_auth_role_permit_on
     reader = Authorization::Reader::DSLReader.new
     reader.parse %|
@@ -77,7 +77,7 @@ class DSLReaderTest < Test::Unit::TestCase
     assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:test_perm], :test_context)
     assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:manage], :test_context)
   end
-  
+
   def test_permit_block
     reader = Authorization::Reader::DSLReader.new
     reader.parse %|
@@ -102,7 +102,7 @@ class DSLReaderTest < Test::Unit::TestCase
     assert_equal 1, reader.auth_rules_reader.auth_rules.length
     assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:test], :perms)
   end
-  
+
   def test_has_permission_to_with_context
     reader = Authorization::Reader::DSLReader.new
     reader.parse %|
@@ -116,7 +116,7 @@ class DSLReaderTest < Test::Unit::TestCase
     assert_equal 1, reader.auth_rules_reader.auth_rules.length
     assert reader.auth_rules_reader.auth_rules[0].matches?(:test_role, [:test], :perms)
   end
-  
+
   def test_context
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -127,7 +127,7 @@ class DSLReaderTest < Test::Unit::TestCase
       end
     }
   end
-  
+
   def test_dsl_error
     reader = Authorization::Reader::DSLReader.new
     assert_raise(Authorization::Reader::DSLError) do
@@ -138,7 +138,7 @@ class DSLReaderTest < Test::Unit::TestCase
       }
     end
   end
-  
+
   def test_syntax_error
     reader = Authorization::Reader::DSLReader.new
     assert_raise(Authorization::Reader::DSLSyntaxError) do
@@ -148,7 +148,7 @@ class DSLReaderTest < Test::Unit::TestCase
       }
     end
   end
-  
+
   def test_syntax_error_2
     reader = Authorization::Reader::DSLReader.new
     assert_raise(Authorization::Reader::DSLSyntaxError) do
