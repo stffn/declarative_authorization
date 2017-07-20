@@ -42,26 +42,15 @@ module Authorization
   # +@proxy_options[:joins] = { :bar => { :baz => :foo } }
   # @proxy_options[:conditions] = [ 'foos_bazzes.attr = :foos_bazzes__id_0', { :foos_bazzes__id_0 => 1 } ]+
   #
-  class ObligationScope < (Rails.version < "3" ? ActiveRecord::NamedScope::Scope : ActiveRecord::Relation)
+  class ObligationScope < ActiveRecord::Relation
     def initialize(model, options)
       @finder_options = {}
-      if Rails.version < "3"
-        super(model, options)
-      else
-	      super(model, model.table_name)
-      end
+	   super(model, model.table_name)
     end
 
     def scope
-      if Rails.version < "3"
-        self
-      elsif Rails.version < "4"
-        # for Rails < 4: use scoped method
-        self.klass.scoped(@finder_options)
-      else
-        # TODO Refactor this.  There is certainly a better way.
-        self.klass.joins(@finder_options[:joins]).includes(@finder_options[:include]).where(@finder_options[:conditions]).references(@finder_options[:include])
-      end
+      # TODO Refactor this.  There is certainly a better way.
+      self.klass.joins(@finder_options[:joins]).includes(@finder_options[:include]).where(@finder_options[:conditions]).references(@finder_options[:include])
     end
 
     # Consumes the given obligation, converting it into scope join and condition options.
@@ -102,15 +91,11 @@ module Authorization
     end
 
     def top_level_model
-      if Rails.version < "3"
-        @proxy_scope
-      else
-        self.klass
-      end
+      self.klass
     end
 
     def finder_options
-      Rails.version < "3" ? @proxy_options : @finder_options
+      @finder_options
     end
 
     # At the end of every association path, we expect to see a comparison of some kind; for
@@ -145,11 +130,7 @@ module Authorization
       reflection = reflection_for(path)
 
       if Authorization.is_a_association_proxy?(reflection)
-        if Rails.version < "3.2"
-          reflection.proxy_reflection.klass
-        else
-          reflection.proxy_association.reflection.klass
-        end
+        reflection.proxy_association.reflection.klass
       elsif reflection.respond_to?(:klass)
         reflection.klass
       else
