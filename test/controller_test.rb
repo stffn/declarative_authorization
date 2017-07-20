@@ -8,6 +8,17 @@ class LoadMockObject < MockDataObject
 end
 
 ##################
+
+class ActionController::Base
+  class << self
+    def before_actions
+      filters = _process_action_callbacks.select { |c| c.kind == :before }
+      filters.map! { |c| c.raw_filter }
+    end
+    alias_method :before_filters, :before_actions
+  end
+end
+
 class SpecificMocksController < MocksController
   filter_access_to :test_action, :require => :test, :context => :permissions
   filter_access_to :test_action_2, :require => :test, :context => :permissions_2
