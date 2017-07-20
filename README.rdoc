@@ -454,10 +454,8 @@ setup and assume certain identities for tests:
         without_access_control do
           Employee.create(...)
         end
-        assert_nothing_raised do
-          with_user(admin) do
-            Employee.find(:first)
-          end
+        with_user(admin) do
+          Employee.find(:first)
         end
       end
     end
@@ -484,7 +482,6 @@ See Authorization::TestHelper for more information.
 
 
 = Installation of declarative_authorization
-
 * provide the requirements as noted below,
 * create a basic config/authorization_rules.rb--you might want to take the
   provided example authorization_rules.dist.rb in the plugin root as a starting

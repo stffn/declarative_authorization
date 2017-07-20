@@ -13,7 +13,6 @@ end
 Bundler.require
 
 require 'minitest/autorun'
-require 'test_support/minitest_compatibility'
 
 
 puts "Testing against rails #{Rails::VERSION::STRING}"

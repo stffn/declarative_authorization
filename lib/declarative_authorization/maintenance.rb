@@ -138,10 +138,10 @@ module Authorization
   module TestHelper
     include Authorization::Maintenance
 
-    # Analogue to the Ruby's assert_raise method, only executing the block
+    # Analogue to the Ruby's assert_raises method, only executing the block
     # in the context of the given user.
     def assert_raise_with_user(user, *args, &block)
-      assert_raise(*args) do
+      assert_raises(*args) do
         with_user(user, &block)
       end
     end
@@ -165,9 +165,7 @@ module Authorization
       else
         options[args[0].is_a?(Symbol) ? :context : :object] = args[0]
       end
-      assert_nothing_raised do
-        Authorization::Engine.instance.permit!(privilege, options)
-      end
+      Authorization::Engine.instance.permit!(privilege, options)
     end
 
     # See should_be_allowed_to

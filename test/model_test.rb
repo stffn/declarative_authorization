@@ -154,7 +154,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.test_attrs.first.id )
     assert_equal 1, TestAttr.with_permissions_to( :read, :context => :test_attrs, :user => user ).length
     assert_equal 1, TestAttr.with_permissions_to( :read, :user => user ).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestAttr.with_permissions_to( :update_test_attrs, :user => user )
     end
     TestAttr.delete_all
@@ -244,7 +244,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 1, TestModel.with_permissions_to(:read,
       :context => :test_models, :user => user).length
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
     end
     TestModel.delete_all
@@ -403,7 +403,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 1, TestModel.with_permissions_to(:read,
       :context => :test_models, :user => user).length
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
     end
     TestModel.delete_all
@@ -429,7 +429,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 2, TestModel.with_permissions_to(:read,
       :context => :test_models, :user => user).length
     assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
     end
     TestModel.delete_all
@@ -455,7 +455,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 1, TestModel.with_permissions_to(:read,
       :context => :test_models, :user => user).length
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
     end
     TestModel.delete_all
@@ -481,7 +481,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     assert_equal 2, TestModel.with_permissions_to(:read,
       :context => :test_models, :user => user).length
     assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
     end
     TestModel.delete_all
@@ -502,7 +502,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role)
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update, :user => user)
     end
     TestModel.delete_all
@@ -1164,7 +1164,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
     assert_equal 1, TestAttr.with_permissions_to(:read, :user => also_allowed_user).length
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestAttr.with_permissions_to(:read, :user => non_allowed_user).find(:all)
     end
 
@@ -1451,9 +1451,7 @@ class ModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr => test_attr)
 
-    assert_nothing_raised do
-      assert instance.permit?(:update, :user => user, :object => test_model.test_attr_has_one)
-    end
+    assert instance.permit?(:update, :user => user, :object => test_model.test_attr_has_one)
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -1475,12 +1473,11 @@ class ModelTest < Test::Unit::TestCase
 
     Authorization.current_user = MockUser.new(:test_role)
     assert(object = TestModelSecurityModel.create)
-
-    assert_nothing_raised { object.update_attributes(:attr_2 => 2) }
+    object.update_attributes(:attr_2 => 2)
     object.reload
     assert_equal 2, object.attr_2
     object.destroy
-    assert_raise ActiveRecord::RecordNotFound do
+    assert_raises ActiveRecord::RecordNotFound do
       TestModelSecurityModel.find(object.id)
     end
   end
@@ -1505,7 +1502,7 @@ class ModelTest < Test::Unit::TestCase
     assert(object = TestModelSecurityModel.create)
 
     Authorization.current_user = MockUser.new(:test_role_restricted)
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       object.update_attributes(:attr_2 => 2)
     end
   end
@@ -1531,19 +1528,17 @@ class ModelTest < Test::Unit::TestCase
 
     Authorization.current_user = MockUser.new(:test_role)
     assert(object = TestModelSecurityModel.create)
-    assert_raise Authorization::AttributeAuthorizationError do
+    assert_raises Authorization::AttributeAuthorizationError do
       TestModelSecurityModel.create :attr => 2
     end
     object = TestModelSecurityModel.create
-    assert_raise Authorization::AttributeAuthorizationError do
+    assert_raises Authorization::AttributeAuthorizationError do
       object.update_attributes(:attr => 2)
     end
     object.reload
+    object.update_attributes(:attr_2 => 1)
 
-    assert_nothing_raised do
-      object.update_attributes(:attr_2 => 1)
-    end
-    assert_raise Authorization::AttributeAuthorizationError do
+    assert_raises Authorization::AttributeAuthorizationError do
       object.update_attributes(:attr => 2)
     end
   end
@@ -1571,10 +1566,8 @@ class ModelTest < Test::Unit::TestCase
     object = TestModelSecurityModel.create :attr => 2
     object_with_find = TestModelSecurityModelWithFind.create :attr => 2
     Authorization.current_user = MockUser.new(:test_role)
-    assert_nothing_raised do
-      object.class.find(object.id)
-    end
-    assert_raise Authorization::AttributeAuthorizationError do
+    object.class.find(object.id)
+    assert_raises Authorization::AttributeAuthorizationError do
       object_with_find.class.find(object_with_find.id)
     end
   end
@@ -1596,9 +1589,7 @@ class ModelTest < Test::Unit::TestCase
     test_attr = TestAttr.create
     Authorization.current_user = MockUser.new(:test_role, :test_attr => test_attr)
     object_with_find = TestModelSecurityModelWithFind.create :test_attr => test_attr
-    assert_nothing_raised do
-      object_with_find.class.find(object_with_find.id)
-    end
+    object_with_find.class.find(object_with_find.id)
     assert_equal 1, test_attr.test_model_security_model_with_finds.length
 
     # Raises error since AR does not populate the object
@@ -1628,7 +1619,7 @@ class ModelTest < Test::Unit::TestCase
     object = TestModelSecurityModel.create :attr => 2
     Authorization.current_user = MockUser.new(:test_role)
 
-    assert_raise Authorization::AttributeAuthorizationError do
+    assert_raises Authorization::AttributeAuthorizationError do
       object.destroy
     end
   end
@@ -1657,7 +1648,7 @@ class ModelTest < Test::Unit::TestCase
     Authorization.current_user = MockUser.new(:test_role)
 
     # TODO before not checked yet
-    #assert_raise Authorization::AuthorizationError do
+    #assert_raises Authorization::AuthorizationError do
     #  object.update_attributes(:attr => 1)
     #end
   end
@@ -1671,7 +1662,7 @@ class ModelTest < Test::Unit::TestCase
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role_2)
-    assert_raise Authorization::NotAuthorized do
+    assert_raises Authorization::NotAuthorized do
       TestModelSecurityModel.create
     end
   end
@@ -1694,15 +1685,14 @@ class ModelTest < Test::Unit::TestCase
     test_attr.role_symbols << :test_role
     Authorization.current_user = test_attr
     assert(object = TestModelSecurityModel.create(:test_attrs => [test_attr]))
-    assert_nothing_raised do
-      object.update_attributes(:attr_2 => 2)
-    end
+    object.update_attributes(:attr_2 => 2)
+
     without_access_control do
       object.reload
     end
     assert_equal 2, object.attr_2
     object.destroy
-    assert_raise ActiveRecord::RecordNotFound do
+    assert_raises ActiveRecord::RecordNotFound do
       TestModelSecurityModel.find(object.id)
     end
   end
@@ -1730,9 +1720,7 @@ class ModelTest < Test::Unit::TestCase
     end
 
     with_user MockUser.new(:test_role, :branch => test_attr.branch) do
-      assert_nothing_raised do
-        test_model.update_attributes(params[:model_data])
-      end
+      test_model.update_attributes(params[:model_data])
     end
     without_access_control do
       assert_equal params[:model_data][:attr], test_model.reload.attr
@@ -1878,13 +1866,12 @@ class ModelTest < Test::Unit::TestCase
     end
     assert !executed_block
 
-    assert_nothing_raised do
-      allowed_read_company.permitted_to!(:read, :user => user)
-    end
-    assert_raise Authorization::NotAuthorized do
+    allowed_read_company.permitted_to!(:read, :user => user)
+
+    assert_raises Authorization::NotAuthorized do
       prohibited_company.permitted_to!(:update, :user => user)
     end
-    assert_raise Authorization::AttributeAuthorizationError do
+    assert_raises Authorization::AttributeAuthorizationError do
       prohibited_company.permitted_to!(:read, :user => user)
     end
   end
