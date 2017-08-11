@@ -62,11 +62,7 @@ module Authorization
   end
 
   def self.is_a_association_proxy?(object)
-    if Rails.version < "3.2"
-      object.respond_to?(:proxy_reflection)
-    else
-      object.respond_to?(:proxy_association)
-    end
+    object.respond_to?(:proxy_association)
   end
 
   # Authorization::Engine implements the reference monitor.  It may be used
@@ -164,7 +160,7 @@ module Authorization
       # Example: permit!( :edit, :object => user.posts )
       #
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
-        options[:object] = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil)).new
+        options[:object] =  options[:object].where(nil).new
       end
 
       options[:context] ||= options[:object] && (

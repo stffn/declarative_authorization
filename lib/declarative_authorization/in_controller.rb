@@ -497,8 +497,7 @@ module Authorization
           :nested_in  => nil,
           :strong_parameters => nil
         }.merge(options)
-        options.merge!({ :strong_parameters => true }) if Rails.version >= '4' && options[:strong_parameters] == nil
-        options.merge!({ :strong_parameters => false }) if Rails.version < '4' && options[:strong_parameters] == nil
+        options.merge!({ :strong_parameters => true }) if options[:strong_parameters] == nil
 
         new_actions = actions_from_option( options[:new] ).merge(
             actions_from_option(options[:additional_new]) )

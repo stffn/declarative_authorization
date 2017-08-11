@@ -34,33 +34,6 @@ module Authorization
     def self.included(base) # :nodoc:
       #base.extend(ClassMethods)
       base.module_eval do
-        if Rails.version < "3.1"
-          scopes[:with_permissions_to] = lambda do |parent_scope, *args|
-            options = args.last.is_a?(Hash) ? args.pop : {}
-            privilege = (args[0] || :read).to_sym
-            privileges = [privilege]
-            context =
-                if options[:context]
-                  options[:context]
-                elsif parent_scope.respond_to?(:proxy_reflection)
-                  parent_scope.proxy_reflection.klass.name.tableize.to_sym
-                elsif parent_scope.respond_to?(:decl_auth_context)
-                  parent_scope.decl_auth_context
-                else
-                  parent_scope.name.tableize.to_sym
-                end
-
-            user = options[:user] || Authorization.current_user
-
-            engine = options[:engine] || Authorization::Engine.instance
-            engine.permit!(privileges, :user => user, :skip_attribute_test => true,
-                           :context => context)
-
-            obligation_scope_for( privileges, :user => user,
-                :context => context, :engine => engine, :model => parent_scope)
-          end
-        end
-
         # Builds and returns a scope with joins and conditions satisfying all obligations.
         def self.obligation_scope_for( privileges, options = {} )
           options = {
@@ -98,31 +71,27 @@ module Authorization
         #   current user.
         #
         def self.with_permissions_to(*args)
-          if Rails.version < "3.1"
-            scopes[:with_permissions_to].call(self, *args)
-          else
-            options = args.last.is_a?(Hash) ? args.pop : {}
-            privilege = (args[0] || :read).to_sym
-            privileges = [privilege]
-            parent_scope = where(nil)
-            context =
-                if options[:context]
-                  options[:context]
-                elsif parent_scope.klass.respond_to?(:decl_auth_context)
-                  parent_scope.klass.decl_auth_context
-                else
-                  parent_scope.klass.name.tableize.to_sym
-                end
+          options = args.last.is_a?(Hash) ? args.pop : {}
+          privilege = (args[0] || :read).to_sym
+          privileges = [privilege]
+          parent_scope = where(nil)
+          context =
+              if options[:context]
+                options[:context]
+              elsif parent_scope.klass.respond_to?(:decl_auth_context)
+                parent_scope.klass.decl_auth_context
+              else
+                parent_scope.klass.name.tableize.to_sym
+              end
 
-            user = options[:user] || Authorization.current_user
+          user = options[:user] || Authorization.current_user
 
-            engine = options[:engine] || Authorization::Engine.instance
-            engine.permit!(privileges, :user => user, :skip_attribute_test => true,
-                           :context => context)
+          engine = options[:engine] || Authorization::Engine.instance
+          engine.permit!(privileges, :user => user, :skip_attribute_test => true,
+                         :context => context)
 
-            obligation_scope_for( privileges, :user => user,
-                :context => context, :engine => engine, :model => parent_scope.klass)
-          end
+          obligation_scope_for( privileges, :user => user,
+              :context => context, :engine => engine, :model => parent_scope.klass)
         end
 
         # Activates model security for the current model.  Then, CRUD operations
@@ -165,10 +134,6 @@ module Authorization
               after_find do |object|
                 Authorization::Engine.instance.permit!(:read, :object => object,
                   :context => options[:context])
-              end
-
-              if Rails.version < "3"
-                def after_find; end
               end
             end
 

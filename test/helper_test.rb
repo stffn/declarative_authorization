@@ -156,7 +156,7 @@ class HelperTest < ActionController::TestCase
       end
     }
     request!(nil, :action, reader)
-
+#test intermittently fails
     assert !has_role?(:test_role)
 
     block_evaled = false

@@ -332,6 +332,7 @@ class AuthorizationTest < Test::Unit::TestCase
       end
     }
     engine = Authorization::Engine.new(reader)
+#test intermittently fails
     assert engine.permit?(:test, :context => :permissions)
     assert !engine.permit?(:test, :context => :permissions_2)
   end
@@ -348,6 +349,7 @@ class AuthorizationTest < Test::Unit::TestCase
       end
     }
     engine = Authorization::Engine.new(reader)
+#test intermittently fails
     assert engine.permit?(:test, :context => :permissions)
     assert !engine.permit?(:test, :context => :permissions,
       :user => MockUser.new(:guest))
