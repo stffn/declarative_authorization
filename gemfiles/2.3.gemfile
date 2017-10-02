@@ -1,8 +1,10 @@
 source 'https://rubygems.org'
 
+gem 'iconv'
 gem 'rails', '~> 2.3.0'
 gem 'sqlite3'
-gem 'ruby_parser'
+gem 'ruby_parser', '~> 3.6.6'
 gem 'rdoc'
+gem 'test-unit'
 gemspec :path => '..'
 

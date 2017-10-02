@@ -8,7 +8,7 @@ begin
   require 'rails/all'
 rescue LoadError
   # rails 2.3
-  %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
+  %w(active_support action_pack action_controller active_record initializer).each {|f| require f}
 end
 Bundler.require
 
@@ -44,6 +44,22 @@ begin
   require 'ruby-debug'
 rescue MissingSourceFile; end
 
+if Rails::VERSION::MAJOR == 2 && RUBY_VERSION >= '2.0.0'
+  module ActiveRecord
+    module Associations
+      class AssociationProxy
+        def send(method, *args)
+          if proxy_respond_to?(method, true)
+            super
+          else
+            load_target
+            @target.send(method, *args)
+          end
+        end
+      end
+    end
+  end
+end
 
 class MockDataObject
   def initialize (attrs = {})
@@ -54,7 +70,7 @@ class MockDataObject
       end
     end
   end
-  
+
   def self.descends_from_active_record?
     true
   end
@@ -66,7 +82,7 @@ class MockDataObject
   def self.name
     "Mock"
   end
-  
+
   def self.find(*args)
     raise StandardError, "Couldn't find #{self.name} with id #{args[0].inspect}" unless args[0]
     new :id => args[0]
@@ -92,11 +108,11 @@ end
 class MocksController < ActionController::Base
   attr_accessor :current_user
   attr_writer :authorization_engine
-  
+
   def authorized?
     !!@authorized
   end
-  
+
   def self.define_action_methods (*methods)
     methods.each do |method|
       define_method method do
@@ -109,9 +125,9 @@ class MocksController < ActionController::Base
   def self.define_resource_actions
     define_action_methods :index, :show, :edit, :update, :new, :create, :destroy
   end
-  
+
   def logger (*args)
-    Class.new do 
+    Class.new do
       def warn(*args)
         #p args
       end
@@ -175,12 +191,12 @@ end
 if Rails.version < "4"
   class Test::Unit::TestCase
     include Authorization::TestHelper
-    
+
     def request! (user, action, reader, params = {})
       action = action.to_sym if action.is_a?(String)
       @controller.current_user = user
       @controller.authorization_engine = Authorization::Engine.new(reader)
-      
+
       ((params.delete(:clear) || []) + [:@authorized]).each do |var|
         @controller.instance_variable_set(var, nil)
       end
@@ -202,12 +218,12 @@ elsif Rails.version < '4.1'
 
   class ActiveSupport::TestCase
     include Authorization::TestHelper
-    
+
     def request! (user, action, reader, params = {})
       action = action.to_sym if action.is_a?(String)
       @controller.current_user = user
       @controller.authorization_engine = Authorization::Engine.new(reader)
-      
+
       ((params.delete(:clear) || []) + [:@authorized]).each do |var|
         @controller.instance_variable_set(var, nil)
       end
@@ -233,12 +249,12 @@ else
 
   class ActiveSupport::TestCase
     include Authorization::TestHelper
-    
+
     def request! (user, action, reader, params = {})
       action = action.to_sym if action.is_a?(String)
       @controller.current_user = user
       @controller.authorization_engine = Authorization::Engine.new(reader)
-      
+
       ((params.delete(:clear) || []) + [:@authorized]).each do |var|
         @controller.instance_variable_set(var, nil)
       end
