@@ -5,5 +5,4 @@ rdoc
 gemfiles/*.lock
 log/*
 *.sublime*
-
-
+.ruby-*
