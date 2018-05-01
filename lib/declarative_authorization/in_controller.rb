@@ -6,8 +6,6 @@ module Authorization
 
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
-      base.hide_action :authorization_engine, :permitted_to?,
-        :permitted_to!
     end
 
     DEFAULT_DENY = false
@@ -311,7 +309,8 @@ module Authorization
         actions = args.flatten
 
         # prevent setting filter_access_filter multiple times
-        skip_before_filter :filter_access_filter
+        #todo, something better
+        skip_before_filter :filter_access_filter rescue nil
         before_filter :filter_access_filter
 
         filter_access_permissions.each do |perm|

@@ -106,6 +106,7 @@ end
 
 class TestApp
   class Application < ::Rails::Application
+    config.eager_load = false
     config.secret_key_base = "testingpurposesonly"
     config.active_support.deprecation = :stderr
     database_path = File.expand_path('../database.yml', __FILE__)
@@ -129,9 +130,9 @@ if Rails.version.start_with? '4'
   end
 else
   Rails.application.routes.draw do
-    match '/name/spaced_things(/:action)' => 'name/spaced_things'
-    match '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things'
-    match '/:controller(/:action(/:id))'
+   get '/name/spaced_things(/:action)' => 'name/spaced_things'
+   get '/deep/name_spaced/things(/:action)' => 'deep/name_spaced/things'
+   get '/:controller(/:action(/:id))'
   end
 end
 
