@@ -130,7 +130,7 @@ class DSLReaderTest < Test::Unit::TestCase
 
   def test_dsl_error
     reader = Authorization::Reader::DSLReader.new
-    assert_raise(Authorization::Reader::DSLError) do
+    assert_raises(Authorization::Reader::DSLError) do
       reader.parse %{
         authorization do
           includes :lesser_role
@@ -141,7 +141,7 @@ class DSLReaderTest < Test::Unit::TestCase
 
   def test_syntax_error
     reader = Authorization::Reader::DSLReader.new
-    assert_raise(Authorization::Reader::DSLSyntaxError) do
+    assert_raises(Authorization::Reader::DSLSyntaxError) do
       reader.parse %{
         authorizations do
         end
@@ -151,7 +151,7 @@ class DSLReaderTest < Test::Unit::TestCase
 
   def test_syntax_error_2
     reader = Authorization::Reader::DSLReader.new
-    assert_raise(Authorization::Reader::DSLSyntaxError) do
+    assert_raises(Authorization::Reader::DSLSyntaxError) do
       reader.parse %{
         authorizations
         end
@@ -170,7 +170,7 @@ class DSLReaderTest < Test::Unit::TestCase
   end
 
   def test_load_file_not_found
-    assert_raise(Authorization::Reader::DSLFileNotFoundError) do
+    assert_raises(Authorization::Reader::DSLFileNotFoundError) do
       Authorization::Reader::DSLReader.new.load!("nonexistent_file.rb")
     end
   end

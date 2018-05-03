@@ -84,10 +84,8 @@ class AuthorizationTest < Test::Unit::TestCase
     }
     engine = Authorization::Engine.new(reader)
     roles = [:other_role].freeze
-    assert_nothing_raised do
-      assert engine.permit?(:test, :context => :permissions,
-        :user => MockUser.new(:role_symbols => roles))
-    end
+    assert engine.permit?(:test, :context => :permissions,
+      :user => MockUser.new(:role_symbols => roles))
   end
 
   def test_obligations_without_conditions
@@ -367,10 +365,10 @@ class AuthorizationTest < Test::Unit::TestCase
       end
     }
     engine = Authorization::Engine.new(reader)
-    assert_raise(Authorization::AuthorizationUsageError) do
+    assert_raises(Authorization::AuthorizationUsageError) do
       engine.permit?(:test, :context => :permissions, :user => MockUser.new(1, 2))
     end
-    assert_raise(Authorization::AuthorizationUsageError) do
+    assert_raises(Authorization::AuthorizationUsageError) do
       engine.permit?(:test, :context => :permissions, :user => MockDataObject.new)
     end
   end
@@ -596,12 +594,12 @@ class AuthorizationTest < Test::Unit::TestCase
     }
 
     engine = Authorization::Engine.new(reader)
-    assert_raise Authorization::AuthorizationUsageError do
+    assert_raises Authorization::AuthorizationUsageError do
       engine.permit?(:test, :context => :permissions,
               :user => MockUser.new(:test_role),
               :object => MockDataObject.new(:test_attrs => 1 ))
     end
-    assert_raise Authorization::AuthorizationUsageError do
+    assert_raises Authorization::AuthorizationUsageError do
       engine.permit?(:test, :context => :permissions,
               :user => MockUser.new(:test_role_2),
               :object => MockDataObject.new(:test_attrs => [1, 2] ))
@@ -927,11 +925,9 @@ class AuthorizationTest < Test::Unit::TestCase
     }
     engine = Authorization::Engine.new(reader)
 
-    assert_nothing_raised do
-      engine.permit?(:test, :context => :permission_children,
-                :user => MockUser.new(:test_role),
-                :object => MockDataObject.new(:permission => nil))
-    end
+    engine.permit?(:test, :context => :permission_children,
+              :user => MockUser.new(:test_role),
+              :object => MockDataObject.new(:permission => nil))
 
     assert !engine.permit?(:test, :context => :permission_children,
               :user => MockUser.new(:test_role),
@@ -1054,7 +1050,7 @@ class AuthorizationTest < Test::Unit::TestCase
       end
     }
     engine = Authorization::Engine.new(reader)
-    assert_raise Authorization::AuthorizationUsageError do
+    assert_raises Authorization::AuthorizationUsageError do
       engine.permit?(:test, :context => :permissions,
                      :user => MockUser.new(:test_role),
                      :object => MockDataObject.new(:test_attrs => [1, 2, 3]))
@@ -1117,9 +1113,9 @@ class AuthorizationTest < Test::Unit::TestCase
 
     engine = Authorization::Engine.new(reader)
     cloned_engine = engine.clone
-    assert_not_equal engine.auth_rules.first.contexts.object_id,
+    refute_equal engine.auth_rules.first.contexts.object_id,
         cloned_engine.auth_rules.first.contexts.object_id
-    assert_not_equal engine.auth_rules.first.attributes.first.send(:instance_variable_get, :@conditions_hash)[:attr].object_id,
+    refute_equal engine.auth_rules.first.attributes.first.send(:instance_variable_get, :@conditions_hash)[:attr].object_id,
         cloned_engine.auth_rules.first.attributes.first.send(:instance_variable_get, :@conditions_hash)[:attr].object_id
   end
 end

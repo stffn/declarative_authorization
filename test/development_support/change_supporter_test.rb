@@ -213,7 +213,7 @@ class ChangeSupporterTest < Test::Unit::TestCase
       assert permit?(:read, :context => :permissions, :user => users.first)
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     assert approaches.any? {|approach| approach.changes.first.class == Authorization::DevelopmentSupport::ChangeSupporter::AddPrivilegeAndAssignRoleToUserAction}
   end
 
@@ -518,7 +518,7 @@ class ChangeSupporterTest < Test::Unit::TestCase
       assert permit?(:read, :context => :permissions, :user => users.first)
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignRoleToUserAction}}
   end
 
@@ -543,7 +543,7 @@ class ChangeSupporterTest < Test::Unit::TestCase
       assert permit?(:read, :context => :permissions, :user => users.first)
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignRoleToUserAction and step.role == :test_role }}
   end
 
@@ -568,7 +568,7 @@ class ChangeSupporterTest < Test::Unit::TestCase
       assert permit?(:read, :context => :permissions, :user => users.first)
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::AssignPrivilegeToRoleAction}}
   end
 
@@ -591,7 +591,7 @@ class ChangeSupporterTest < Test::Unit::TestCase
       assert !permit?(:read, :context => :permissions, :user => users.first)
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     assert !approaches.any? {|approach| approach.steps.any? {|step| step.class == Authorization::DevelopmentSupport::ChangeSupporter::RemoveRoleFromUserAction}}
   end
 
