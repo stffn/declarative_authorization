@@ -1893,5 +1893,8 @@ class ModelTest < Test::Unit::TestCase
     assert allowed_read_company.permitted_to?(:read, :user => user)
     assert !allowed_read_company.permitted_to?(:update, :user => user)
   end
-end
 
+  def teardown
+    Authorization.current_user = nil
+  end
+end

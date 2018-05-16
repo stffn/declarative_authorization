@@ -173,6 +173,10 @@ class BasicControllerTest < ActionController::TestCase
     @controller.authorization_engine = Authorization::Engine.new(reader)
     assert @controller.permitted_to?(:test)
   end
+
+  def teardown
+    @controller.current_user = nil
+  end
 end
 
 
