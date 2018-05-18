@@ -7,7 +7,7 @@ module Authorization
   module Maintenance
     # Disables access control for the given block.  Appropriate for
     # maintenance operation at the Rails console or in test case setup.
-    # 
+    #
     # For use in the Rails console:
     #  require "vendor/plugins/declarative_authorization/lib/maintenance"
     #  include Authorization::Maintenance
@@ -15,7 +15,7 @@ module Authorization
     #  without_access_control do
     #    SomeModel.find(:first).save
     #  end
-    def without_access_control (&block)
+    def without_access_control(&block)
       Authorization::Maintenance.without_access_control(&block)
     end
 
@@ -36,11 +36,11 @@ module Authorization
     # Sets the current user for the declarative authorization plugin to the
     # given one for the execution of the supplied block.  Suitable for tests
     # on certain users.
-    def with_user (user, &block)
+    def with_user(user, &block)
       Authorization::Maintenance.with_user(user, &block)
     end
 
-    def self.with_user (user)
+    def self.with_user(user)
       prev_user = Authorization.current_user
       Authorization.current_user = user
       yield
@@ -102,27 +102,27 @@ module Authorization
       end
     end
   end
-  
+
   # TestHelper provides assert methods and controller request methods which
   # take authorization into account and set the current user to a specific
   # one.
   #
-  # Defines get_with, post_with, get_by_xhr_with etc. for methods 
+  # Defines get_with, post_with, get_by_xhr_with etc. for methods
   # get, post, put, delete each with the signature
   #   get_with(user, action, params = {}, session = {}, flash = {})
   #
   # Use it by including it in your TestHelper:
-  #  require File.expand_path(File.dirname(__FILE__) + 
+  #  require File.expand_path(File.dirname(__FILE__) +
   #    "/../vendor/plugins/declarative_authorization/lib/maintenance")
-  #  class Test::Unit::TestCase 
+  #  class Test::Unit::TestCase
   #    include Authorization::TestHelper
   #    ...
-  #    
+  #
   #    def admin
   #      # create admin user
   #    end
   #  end
-  # 
+  #
   #  class SomeControllerTest < ActionController::TestCase
   #    def test_should_get_index
   #      ...
@@ -137,11 +137,11 @@ module Authorization
   # way, these methods might not work for you.
   module TestHelper
     include Authorization::Maintenance
-    
-    # Analogue to the Ruby's assert_raise method, only executing the block
+
+    # Analogue to the Ruby's assert_raises method, only executing the block
     # in the context of the given user.
-    def assert_raise_with_user (user, *args, &block)
-      assert_raise(*args) do
+    def assert_raise_with_user(user, *args, &block)
+      assert_raises(*args) do
         with_user(user, &block)
       end
     end
@@ -158,20 +158,18 @@ module Authorization
     #
     # If you use specify the object and context manually, you can also specify the user manually, skipping the with_user block:
     #   should_be_allowed_to :create, :object => car, :context => :vehicles, :user => a_normal_user
-    def should_be_allowed_to (privilege, *args)
+    def should_be_allowed_to(privilege, *args)
       options = {}
       if(args.first.class == Hash)
         options = args.extract_options!
       else
         options[args[0].is_a?(Symbol) ? :context : :object] = args[0]
       end
-      assert_nothing_raised do
-        Authorization::Engine.instance.permit!(privilege, options)
-      end
+      Authorization::Engine.instance.permit!(privilege, options)
     end
 
     # See should_be_allowed_to
-    def should_not_be_allowed_to (privilege, *args)
+    def should_not_be_allowed_to(privilege, *args)
       options = {}
       if(args.first.class == Hash)
         options = args.extract_options!
@@ -180,8 +178,8 @@ module Authorization
       end
       assert !Authorization::Engine.instance.permit?(privilege, options)
     end
-    
-    def request_with (user, method, xhr, action, params = {}, 
+
+    def request_with(user, method, xhr, action, params = {},
         session = {}, flash = {})
       session = session.merge({:user => user, :user_id => user && user.id})
       with_user(user) do
@@ -192,15 +190,15 @@ module Authorization
         end
       end
     end
-  
-    def self.included (base)
+
+    def self.included(base)
       [:get, :post, :put, :delete].each do |method|
         base.class_eval <<-EOV, __FILE__, __LINE__
-          def #{method}_with (user, *args)
+          def #{method}_with(user, *args)
             request_with(user, #{method.inspect}, false, *args)
           end
 
-          def #{method}_by_xhr_with (user, *args)
+          def #{method}_by_xhr_with(user, *args)
             request_with(user, #{method.inspect}, true, *args)
           end
         EOV

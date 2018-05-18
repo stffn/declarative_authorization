@@ -5,7 +5,7 @@ require 'rdoc/task'
 desc 'Default: run unit tests against all versions.'
 task :default => 'bundles:test'
 
-def run_for_bundles cmd
+def run_for_bundles(cmd)
   Dir['gemfiles/*.gemfile'].each do |gemfile|
     puts "\n#{gemfile}: #{cmd}"
     ENV['BUNDLE_GEMFILE'] = gemfile

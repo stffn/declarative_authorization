@@ -71,7 +71,7 @@ end
 
 
 class NestedResource < MockDataObject
-  def initialize (attributes = {})
+  def initialize(attributes = {})
     if attributes[:id]
       attributes[:parent_mock] ||= ParentMock.new(:id => attributes[:id])
     end
@@ -83,7 +83,7 @@ class NestedResource < MockDataObject
 end
 
 class ShallowNestedResource < MockDataObject
-  def initialize (attributes = {})
+  def initialize(attributes = {})
     if attributes[:id]
       attributes[:parent_mock] ||= ParentMock.new(:id => attributes[:id])
     end
@@ -97,10 +97,10 @@ end
 class ParentMock < MockDataObject
   def nested_resources
     Class.new do
-      def initialize (parent_mock)
+      def initialize(parent_mock)
         @parent_mock = parent_mock
       end
-      def new (attributes = {})
+      def new(attributes = {})
         NestedResource.new(attributes.merge(:parent_mock => @parent_mock))
       end
     end.new(self)
@@ -108,7 +108,7 @@ class ParentMock < MockDataObject
 
   alias :shallow_nested_resources :nested_resources
 
-  def == (other)
+  def ==(other)
     id == other.id
   end
   def self.name
@@ -511,65 +511,63 @@ class ExplicitContextResourceControllerTest < ActionController::TestCase
   end
 end
 
-if Rails.version >= '4'
-
-  class StrongResource < MockDataObject
-    def self.name
-      "StrongResource"
-    end
-  end
-
-  class StrongResourcesController < MocksController
-    def self.controller_name
-      "strong_resources"
-    end
-    filter_resource_access :strong_parameters => true
-    define_resource_actions
-
-    private
-    def strong_resource_params
-      params.require(:strong_resource).permit(:test_param1, :test_param2)
-    end
-  end
-  class StrongResourcesControllerTest < ActionController::TestCase
-    def test_still_authorized_with_strong_params
-      reader = Authorization::Reader::DSLReader.new
-      reader.parse %{
-        authorization do
-          role :allowed_role do
-            has_permission_on :strong_resources, :to => :show do
-              if_attribute :id => "1"
-            end
-          end
-        end
-      }
-
-      allowed_user = MockUser.new(:allowed_role)
-      request!(allowed_user, :show, reader, :id => "2")
-      assert !@controller.authorized?
-      request!(allowed_user, :show, reader, :id => "1", :clear => [:@strong_resource])
-      assert @controller.authorized?
-    end
-
-    def test_new_strong_resource
-      reader = Authorization::Reader::DSLReader.new
-      reader.parse %{
-        authorization do
-          role :allowed_role do
-            has_permission_on :strong_resources, :to => :new
-          end
-        end
-      }
-
-      allowed_user = MockUser.new(:allowed_role)
-      request!(allowed_user, :new, reader, :strong_resource => {:id => "1"},
-          :clear => [:@strong_resource])
-      assert @controller.authorized?
-
-      # allowed_user = MockUser.new(:allowed_role)
-      # request!(allowed_user, :new, reader, :strong_resource => {:id => "1"}, :clear => [:@strong_resource])
-      # assert @controller.authorized?
-      # assert assigns :strong_resource
-    end
+class StrongResource < MockDataObject
+  def self.name
+    "StrongResource"
   end
 end
+
+class StrongResourcesController < MocksController
+  def self.controller_name
+    "strong_resources"
+  end
+  filter_resource_access :strong_parameters => true
+  define_resource_actions
+
+  private
+  def strong_resource_params
+    params.require(:strong_resource).permit(:test_param1, :test_param2)
+  end
+end
+class StrongResourcesControllerTest < ActionController::TestCase
+  def test_still_authorized_with_strong_params
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :allowed_role do
+          has_permission_on :strong_resources, :to => :show do
+            if_attribute :id => "1"
+          end
+        end
+      end
+    }
+
+    allowed_user = MockUser.new(:allowed_role)
+    request!(allowed_user, :show, reader, :id => "2")
+    assert !@controller.authorized?
+    request!(allowed_user, :show, reader, :id => "1", :clear => [:@strong_resource])
+    assert @controller.authorized?
+  end
+
+  def test_new_strong_resource
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %{
+      authorization do
+        role :allowed_role do
+          has_permission_on :strong_resources, :to => :new
+        end
+      end
+    }
+
+    allowed_user = MockUser.new(:allowed_role)
+    request!(allowed_user, :new, reader, :strong_resource => {:id => "1"},
+        :clear => [:@strong_resource])
+    assert @controller.authorized?
+
+    # allowed_user = MockUser.new(:allowed_role)
+    # request!(allowed_user, :new, reader, :strong_resource => {:id => "1"}, :clear => [:@strong_resource])
+    # assert @controller.authorized?
+    # assert assigns :strong_resource
+  end
+end
+

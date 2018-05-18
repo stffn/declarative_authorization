@@ -58,11 +58,11 @@ class ChangeAnalyzerTest < Test::Unit::TestCase
       assert !permit?(:read, :context => :permissions, :user => users[1])
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     #assert_equal :role, approaches.first.target_type
     #assert_equal :test_role_2, approaches.first.target.to_sym
   end
-  
+
   def test_adding_permission_with_new_role
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
@@ -83,7 +83,7 @@ class ChangeAnalyzerTest < Test::Unit::TestCase
       assert !permit?(:read, :context => :permissions, :user => users[1])
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     #assert_equal :role, approaches.first.target_type
     #assert_equal :test_role_2, approaches.first.target.to_sym
   end
@@ -111,7 +111,7 @@ class ChangeAnalyzerTest < Test::Unit::TestCase
       assert !permit?(:read, :context => :permissions, :user => users[0])
     end
 
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     #assert_equal :role, approaches.first.target_type
     #assert_equal :test_role_2, approaches.first.target.to_sym
   end
@@ -163,7 +163,7 @@ class ChangeAnalyzerTest < Test::Unit::TestCase
       assert !permit?(:read, :context => :permissions, :user => users.first)
       assert permit?(:read, :context => :permissions, :user => users[1])
     end
-    
+
     assert approaches.find {|approach| approach.steps.find {|step| step.first == :remove_privilege}}
     assert approaches.find {|approach| approach.steps.find {|step| step.first == :add_privilege}}
   end
@@ -193,7 +193,7 @@ class ChangeAnalyzerTest < Test::Unit::TestCase
     end
 
     # solution: add a new role
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     assert approaches.any? {|approach| approach.users.first.role_symbols.include?(:test_role) }
   end
 
@@ -219,7 +219,7 @@ class ChangeAnalyzerTest < Test::Unit::TestCase
     end
 
     # solutions: remove user-role assignment for first user
-    assert_not_equal 0, approaches.length
+    refute_equal 0, approaches.length
     assert approaches.any? {|approach| approach.users.first.role_symbols.empty? }
   end
 end

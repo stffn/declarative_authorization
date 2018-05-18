@@ -21,7 +21,7 @@ module Authorization
     # Merge-able Rules:  respect if_permitted_to hash
     #
     class Analyzer < AbstractAnalyzer
-      def analyze (rules)
+      def analyze(rules)
         sexp_array = RubyParser.new.parse(rules)
         #sexp_array = ParseTree.translate(rules)
         @reports = []
@@ -48,11 +48,11 @@ module Authorization
         def analyze
           mark(:policy, nil) if analyze_policy
           roles.select {|role| analyze_role(role) }.
-              each { |role| mark(:role, role) }
+            each { |role| mark(:role, role) }
           rules.select {|rule| analyze_rule(rule) }.
-              each { |rule| mark(:rule, rule) }
+            each { |rule| mark(:rule, rule) }
           privileges.select {|privilege| !!analyze_privilege(privilege) }.
-              each { |privilege| mark(:privilege, privilege) }
+            each { |privilege| mark(:privilege, privilege) }
         end
 
         protected
@@ -70,21 +70,21 @@ module Authorization
 
         # to be implemented by specific processor
         def analyze_policy; end
-        def analyze_role (a_role); end
-        def analyze_rule (a_rule); end
-        def analyze_privilege (a_privilege); end
-        def message (object); end
+        def analyze_role(a_role); end
+        def analyze_rule(a_rule); end
+        def analyze_privilege(a_privilege); end
+        def message(object); end
 
         private
-        def source_line (object)
+        def source_line(object)
           object.source_line if object.respond_to?(:source_line)
         end
 
-        def source_file (object)
+        def source_file(object)
           object.source_file if object.respond_to?(:source_file)
         end
 
-        def mark (type, object)
+        def mark(type, object)
           @analyzer.reports << Report.new(report_type,
               source_file(object), source_line(object), message(object))
         end
@@ -103,7 +103,7 @@ module Authorization
           small_roles.length > 1 and small_roles.length.to_f / roles.length.to_f > SMALL_ROLES_RATIO
         end
 
-        def message (object)
+        def message(object)
           "The ratio of small roles is quite high (> %.0f%%).  Consider refactoring." % (SMALL_ROLES_RATIO * 100)
         end
 
@@ -114,25 +114,25 @@ module Authorization
       end
 
       class InheritingPrivilegesAnalyzer < GeneralRulesAnalyzer
-        def analyze_rule (rule)
+        def analyze_rule(rule)
           rule.privileges.any? {|privilege| rule.privileges.intersects?(privilege.ancestors) }
         end
 
-        def message (object)
+        def message(object)
           "At least one privilege inherits from another in this rule."
         end
       end
 
       class ProposedPrivilegeHierarchyAnalyzer < GeneralRulesAnalyzer
         # TODO respect, consider contexts
-        def analyze_privilege (privilege)
+        def analyze_privilege(privilege)
           privileges.find do |other_privilege|
             other_privilege != privilege and
                 other_privilege.rules.all? {|rule| rule.privileges.include?(privilege)}
           end
         end
 
-        def message (privilege)
+        def message(privilege)
           other_privilege = analyze_privilege(privilege)
           "Privilege #{other_privilege.to_sym} is always used together with #{privilege.to_sym}. " +
               "Consider to include #{other_privilege.to_sym} in #{privilege.to_sym}."
@@ -148,7 +148,7 @@ module Authorization
           @analyzer = analyzer
         end
 
-        def analyze (sexp_array)
+        def analyze(sexp_array)
           process(sexp_array)
           analyze_rules
         end
@@ -157,19 +157,19 @@ module Authorization
           # to be implemented by specific processor
         end
 
-        def process_iter (exp)
+        def process_iter(exp)
           s(:iter, process(exp.shift), process(exp.shift), process(exp.shift))
         end
 
-        def process_arglist (exp)
+        def process_arglist(exp)
           s(exp.collect {|inner_exp| process(inner_exp).shift})
         end
 
-        def process_hash (exp)
+        def process_hash(exp)
           s(Hash[*exp.collect {|inner_exp| process(inner_exp).shift}])
         end
 
-        def process_lit (exp)
+        def process_lit(exp)
           s(exp.shift)
         end
       end
@@ -198,7 +198,7 @@ module Authorization
           end
         end
 
-        def process_call (exp)
+        def process_call(exp)
           klass = exp.shift
           name = exp.shift
           case name
@@ -249,7 +249,7 @@ module Authorization
 
       class Report
         attr_reader :type, :filename, :line, :message
-        def initialize (type, filename, line, msg)
+        def initialize(type, filename, line, msg)
           @type = type
           @filename = filename
           @line = line
