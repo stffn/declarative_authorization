@@ -149,7 +149,7 @@ class ActiveSupport::TestCase
     ((params.delete(:clear) || []) + [:@authorized]).each do |var|
       @controller.instance_variable_set(var, nil)
     end
-    get action, params
+    get action, params: params
   end
 
   def setup
