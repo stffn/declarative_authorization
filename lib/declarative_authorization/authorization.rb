@@ -406,7 +406,7 @@ module Authorization
     end
 
     def each(&block)
-      @rules.each block
+      @rules.each(&block)
     end
 
     private

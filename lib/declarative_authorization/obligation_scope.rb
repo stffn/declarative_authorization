@@ -45,12 +45,21 @@ module Authorization
   class ObligationScope < ActiveRecord::Relation
     def initialize(model, _options)
       @finder_options = {}
-      super(model, model.table_name)
+      if Rails.version >= "5.2"
+        super(model, table: model.table_name)
+      elsif Rails.version >= "5"
+        super(model, model.table_name, nil)
+      else
+	      super(model, model.table_name)
+      end
     end
 
     def scope
       # TODO: Refactor this.  There is certainly a better way.
-      klass.joins(@finder_options[:joins]).includes(@finder_options[:include]).where(@finder_options[:conditions]).references(@finder_options[:include])
+      klass.joins(@finder_options[:joins])
+           .includes(@finder_options[:include])
+           .where(@finder_options[:conditions])
+           .references(@finder_options[:include])
     end
 
     # Consumes the given obligation, converting it into scope join and condition options.
@@ -68,21 +77,22 @@ module Authorization
 
     # Parses the next step in the association path.  If it's an association, we advance down the
     # path.  Otherwise, it's an attribute, and we need to evaluate it as a comparison operation.
-    def follow_path(steps, past_steps = [])
-      if steps.is_a?(Hash)
+    def follow_path( steps, past_steps = [] )
+      if steps.is_a?( Hash )
         steps.each do |step, next_steps|
           path_to_this_point = [past_steps, step].flatten
-          init_reflections_for past_steps
-          follow_path(next_steps, path_to_this_point)
-          # follow_comparison( next_steps, past_steps, step )
+          reflection = reflection_for( path_to_this_point ) rescue nil
+          if reflection
+            follow_path( next_steps, path_to_this_point )
+          else
+            follow_comparison( next_steps, past_steps, step )
+          end
         end
-      elsif steps.is_a?(Array) && steps.length == 2
-        init_reflections_for past_steps
-
-        if reflections_for(past_steps)
-          follow_comparison(steps, past_steps, :id)
+      elsif steps.is_a?( Array ) && steps.length == 2
+        if reflection_for( past_steps )
+          follow_comparison( steps, past_steps, :id )
         else
-          follow_comparison(steps, past_steps[0..-2], past_steps[-1])
+          follow_comparison( steps, past_steps[0..-2], past_steps[-1] )
         end
       else
         raise "invalid obligation path #{[past_steps, steps].inspect}"
@@ -144,21 +154,29 @@ module Authorization
     end
 
     # Attempts to map a reflection for the given path.  Raises if already defined.
-    def map_reflection_for(path)
-      refls_for_path = reflections_for_path path
+    def map_reflection_for( path )
+      raise "reflection for #{path.inspect} already exists" unless reflections[path].nil?
 
-      return nil if refls_for_path.empty?
-      reflections[path] = refls_for_path
+      reflection = path.empty? ? top_level_model : begin
+        parent = reflection_for( path[0..-2] )
+        if !Authorization.is_a_association_proxy?(parent) and parent.respond_to?(:klass)
+          parent.klass.reflect_on_association( path.last )
+        else
+          parent.reflect_on_association( path.last )
+        end
+      rescue
+        parent.reflect_on_association( path.last )
+      end
+      raise "invalid path #{path.inspect}" if reflection.nil?
 
-      init_table_alias_for path # Claim a table alias for the path.
+      reflections[path] = reflection
+      map_table_alias_for( path )  # Claim a table alias for the path.
 
       # Claim alias for join table
       # TODO change how this is checked
-      refls_for_path.each do |reflection|
-        if !Authorization.is_a_association_proxy?(reflection) && reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
-          join_table_path = path[0..-2] + [reflection.options[:through]]
-          init_reflections_for(join_table_path, true)
-        end
+      if !Authorization.is_a_association_proxy?(reflection) and !reflection.respond_to?(:proxy_scope) and reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
+        join_table_path = path[0..-2] + [reflection.options[:through]]
+        reflection_for(join_table_path, true)
       end
 
       reflection
@@ -211,81 +229,59 @@ module Authorization
     def rebuild_condition_options!
       conds = []
       binds = {}
-      obligation_conditions.each_with_index do |(_, conditions), obligation_index|
+      used_paths = Set.new
+      delete_paths = Set.new
+      obligation_conditions.each_with_index do |array, obligation_index|
+        obligation, conditions = array
         obligation_conds = []
-        obligation_conds_poly = []
-
         conditions.each do |path, expressions|
-          models = models_for path
-          raise 'too many models' if models.length > 1
-          model = models.first
+          model = model_for( path )
+          table_alias = table_alias_for(path)
+          parent_model = (path.length > 1 ? model_for(path[0..-2]) : top_level_model)
+          expressions.each do |expression|
+            attribute, operator, value = expression
+            # prevent unnecessary joins:
+            if attribute == :id and operator == :is and parent_model.columns_hash["#{path.last}_id"]
+              attribute_name = :"#{path.last}_id"
+              attribute_table_alias = table_alias_for(path[0..-2])
+              used_paths << path[0..-2]
+              delete_paths << path
+            else
+              attribute_name = model.columns_hash["#{attribute}_id"] && :"#{attribute}_id" ||
+                               model.columns_hash[attribute.to_s]    && attribute ||
+                               model.primary_key
+              attribute_table_alias = table_alias
+              used_paths << path
+            end
+            bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
 
-          table_alias_list = table_alias_for(path)
-          parent_models = (path.length > 1 ? models_for(path[0..-2]) : [top_level_model])
-          parent_is_polymorphic = parent_models.length > 1
-
-          parent_models.each do |parent_model|
-            expressions.each do |expression|
-              attribute, operator, value = expression
-              # prevent unnecessary joins:
-              if (attribute == :id) && (operator == :is) && parent_model.columns_hash["#{path.last}_id"]
-                attribute_name = :"#{path.last}_id"
-                attribute_table_alias_list = table_alias_for(path[0..-2])
-              else
-                attribute_name = model.columns_hash["#{attribute}_id"] && :"#{attribute}_id" ||
-                                 model.columns_hash[attribute.to_s]    && attribute ||
-                                 model.primary_key
-                attribute_table_alias_list = table_alias_list
-              end
-
-              attribute_table_alias_list.each do |attribute_table_alias|
-                bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
-
-                sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." \
-                                "#{parent_model.connection.quote_table_name(attribute_name)}"
-
-                obligation_cond =
-                  if value.nil? && %i[is is_not].include?(operator)
-                    "#{sql_attribute} IS #{%i[contains is].include?(operator) ? '' : 'NOT '}NULL"
-                  else
-                    attribute_operator = case operator
-                                         when :contains, :is             then "= :#{bindvar}"
-                                         when :does_not_contain, :is_not then "<> :#{bindvar}"
-                                         when :is_in, :intersects_with   then "IN (:#{bindvar})"
-                                         when :is_not_in                 then "NOT IN (:#{bindvar})"
-                                         when :lt                        then "< :#{bindvar}"
-                                         when :lte                       then "<= :#{bindvar}"
-                                         when :gt                        then "> :#{bindvar}"
-                                         when :gte                       then ">= :#{bindvar}"
-                                         else raise AuthorizationUsageError, "Unknown operator: #{operator}"
-                                         end
-
-                    binds[bindvar] = attribute_value(value)
-                    "#{sql_attribute} #{attribute_operator}"
-                  end
-
-                if parent_is_polymorphic && attribute == :id
-                  obligation_conds_poly << obligation_cond
-                else
-                  obligation_conds << obligation_cond
-                end
-              end
+            sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." +
+                "#{parent_model.connection.quote_table_name(attribute_name)}"
+            if value.nil? and [:is, :is_not].include?(operator)
+              obligation_conds << "#{sql_attribute} IS #{[:contains, :is].include?(operator) ? '' : 'NOT '}NULL"
+            else
+              attribute_operator = case operator
+                                   when :contains, :is             then "= :#{bindvar}"
+                                   when :does_not_contain, :is_not then "<> :#{bindvar}"
+                                   when :is_in, :intersects_with   then "IN (:#{bindvar})"
+                                   when :is_not_in                 then "NOT IN (:#{bindvar})"
+                                   when :lt                        then "< :#{bindvar}"
+                                   when :lte                       then "<= :#{bindvar}"
+                                   when :gt                        then "> :#{bindvar}"
+                                   when :gte                       then ">= :#{bindvar}"
+                                   else raise AuthorizationUsageError, "Unknown operator: #{operator}"
+                                   end
+              obligation_conds << "#{sql_attribute} #{attribute_operator}"
+              binds[bindvar] = attribute_value(value)
             end
           end
         end
-
-        # join conditions directly connecting a parent to its polymorphic children by OR
-        poly_conds_sql = obligation_conds_poly.empty? ? nil : "(#{obligation_conds_poly.uniq.join(' OR ')})"
-
-        # remove any duplicate ordinary conditions (defined multiple times because of polymorphism)
-        obligation_conds.uniq!
-
-        obligation_conds << poly_conds_sql if poly_conds_sql
-        obligation_conds << '1=1' if obligation_conds.empty?
+        obligation_conds << "1=1" if obligation_conds.empty?
         conds << "(#{obligation_conds.join(' AND ')})"
       end
+      (delete_paths - used_paths).each {|path| reflections.delete(path)}
 
-      finder_options[:conditions] = [conds.join(' OR '), binds]
+      finder_options[:conditions] = [ conds.join( " OR " ), binds ]
     end
 
     def attribute_value(value)
