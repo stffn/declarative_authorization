@@ -1,18 +1,16 @@
-require File.join(File.dirname(__FILE__), %w{development_support})
+require File.join(File.dirname(__FILE__), %w[development_support])
 
 begin
-  require "ruby_parser"
-  #require "parse_tree"
-  #require "parse_tree_extensions"
-  require "sexp_processor"
+  require 'ruby_parser'
+  # require "parse_tree"
+  # require "parse_tree_extensions"
+  require 'sexp_processor'
 rescue LoadError
-  raise "Authorization::DevelopmentSupport::Analyzer requires ruby_parser gem"
+  raise 'Authorization::DevelopmentSupport::Analyzer requires ruby_parser gem'
 end
 
 module Authorization
-
   module DevelopmentSupport
-
     # Ideas for improvement
     # * moving rules up in the role hierarchy
     # * merging roles
@@ -23,7 +21,7 @@ module Authorization
     class Analyzer < AbstractAnalyzer
       def analyze(rules)
         sexp_array = RubyParser.new.parse(rules)
-        #sexp_array = ParseTree.translate(rules)
+        # sexp_array = ParseTree.translate(rules)
         @reports = []
         [MergeableRulesProcessor].each do |parser|
           parser.new(self).analyze(sexp_array)
@@ -37,7 +35,7 @@ module Authorization
       end
 
       def reports
-        @reports or raise "No rules analyzed!"
+        @reports || raise('No rules analyzed!')
       end
 
       class GeneralRulesAnalyzer
@@ -47,15 +45,16 @@ module Authorization
 
         def analyze
           mark(:policy, nil) if analyze_policy
-          roles.select {|role| analyze_role(role) }.
-            each { |role| mark(:role, role) }
-          rules.select {|rule| analyze_rule(rule) }.
-            each { |rule| mark(:rule, rule) }
-          privileges.select {|privilege| !!analyze_privilege(privilege) }.
-            each { |privilege| mark(:privilege, privilege) }
+          roles.select { |role| analyze_role(role) }
+               .each { |role| mark(:role, role) }
+          rules.select { |rule| analyze_rule(rule) }
+               .each { |rule| mark(:rule, rule) }
+          privileges.select { |privilege| analyze_privilege(privilege) }
+                    .each { |privilege| mark(:privilege, privilege) }
         end
 
         protected
+
         def roles
           @analyzer.roles
         end
@@ -65,17 +64,22 @@ module Authorization
         end
 
         def privileges
-          @privileges ||= rules.collect {|rule| rule.privileges.to_a}.flatten.uniq
+          @privileges ||= rules.collect { |rule| rule.privileges.to_a }.flatten.uniq
         end
 
         # to be implemented by specific processor
         def analyze_policy; end
+
         def analyze_role(a_role); end
+
         def analyze_rule(a_rule); end
+
         def analyze_privilege(a_privilege); end
+
         def message(object); end
 
         private
+
         def source_line(object)
           object.source_line if object.respond_to?(:source_line)
         end
@@ -84,9 +88,9 @@ module Authorization
           object.source_file if object.respond_to?(:source_file)
         end
 
-        def mark(type, object)
+        def mark(_type, object)
           @analyzer.reports << Report.new(report_type,
-              source_file(object), source_line(object), message(object))
+                                          source_file(object), source_line(object), message(object))
         end
 
         # analyzer class name stripped of last word
@@ -100,42 +104,43 @@ module Authorization
         SMALL_ROLES_RATIO = 0.2
 
         def analyze_policy
-          small_roles.length > 1 and small_roles.length.to_f / roles.length.to_f > SMALL_ROLES_RATIO
+          (small_roles.length > 1) && (small_roles.length.to_f / roles.length.to_f > SMALL_ROLES_RATIO)
         end
 
-        def message(object)
-          "The ratio of small roles is quite high (> %.0f%%).  Consider refactoring." % (SMALL_ROLES_RATIO * 100)
+        def message(_object)
+          format('The ratio of small roles is quite high (> %.0f%%).  Consider refactoring.', (SMALL_ROLES_RATIO * 100))
         end
 
         private
+
         def small_roles
-          roles.select {|role| role.rules.length < SMALL_ROLE_RULES_COUNT }
+          roles.select { |role| role.rules.length < SMALL_ROLE_RULES_COUNT }
         end
       end
 
       class InheritingPrivilegesAnalyzer < GeneralRulesAnalyzer
         def analyze_rule(rule)
-          rule.privileges.any? {|privilege| rule.privileges.intersects?(privilege.ancestors) }
+          rule.privileges.any? { |privilege| rule.privileges.intersects?(privilege.ancestors) }
         end
 
-        def message(object)
-          "At least one privilege inherits from another in this rule."
+        def message(_object)
+          'At least one privilege inherits from another in this rule.'
         end
       end
 
       class ProposedPrivilegeHierarchyAnalyzer < GeneralRulesAnalyzer
-        # TODO respect, consider contexts
+        # TODO: respect, consider contexts
         def analyze_privilege(privilege)
           privileges.find do |other_privilege|
-            other_privilege != privilege and
-                other_privilege.rules.all? {|rule| rule.privileges.include?(privilege)}
+            (other_privilege != privilege) &&
+              other_privilege.rules.all? { |rule| rule.privileges.include?(privilege) }
           end
         end
 
         def message(privilege)
           other_privilege = analyze_privilege(privilege)
-          "Privilege #{other_privilege.to_sym} is always used together with #{privilege.to_sym}. " +
-              "Consider to include #{other_privilege.to_sym} in #{privilege.to_sym}."
+          "Privilege #{other_privilege.to_sym} is always used together with #{privilege.to_sym}. " \
+            "Consider to include #{other_privilege.to_sym} in #{privilege.to_sym}."
         end
       end
 
@@ -162,11 +167,11 @@ module Authorization
         end
 
         def process_arglist(exp)
-          s(exp.collect {|inner_exp| process(inner_exp).shift})
+          s(exp.collect { |inner_exp| process(inner_exp).shift })
         end
 
         def process_hash(exp)
-          s(Hash[*exp.collect {|inner_exp| process(inner_exp).shift}])
+          s(Hash[*exp.collect { |inner_exp| process(inner_exp).shift }])
         end
 
         def process_lit(exp)
@@ -177,22 +182,20 @@ module Authorization
       class MergeableRulesProcessor < GeneralAuthorizationProcessor
         def analyze_rules
           if @has_permission
-            #p @has_permission
-            permissions_by_context_and_rules = @has_permission.inject({}) do |memo, permission|
+            # p @has_permission
+            permissions_by_context_and_rules = @has_permission.each_with_object({}) do |permission, memo|
               key = [permission[:context], permission[:rules]]
               memo[key] ||= []
               memo[key] << permission
-              memo
             end
 
-            permissions_by_context_and_rules.each do |key, rules|
-              if rules.length > 1
-                rule_lines = rules.collect {|rule| rule[:line] }
-                rules.each do |rule|
-                  @analyzer.reports << Report.new(:mergeable_rules, "", rule[:line],
-                    "Similar rules already in line(s) " +
-                        rule_lines.reject {|l| l == rule[:line] } * ", ")
-                end
+            permissions_by_context_and_rules.each do |_key, rules|
+              next unless rules.length > 1
+              rule_lines = rules.collect { |rule| rule[:line] }
+              rules.each do |rule|
+                @analyzer.reports << Report.new(:mergeable_rules, '', rule[:line],
+                                                'Similar rules already in line(s) ' +
+                                                    rule_lines.reject { |l| l == rule[:line] } * ', ')
               end
             end
           end
@@ -213,11 +216,11 @@ module Authorization
             context = arglist
             args_hash = exp[0].nil? ? nil : process(exp.shift).shift
             @has_permission << {
-              :context => context,
-              :rules => [],
-              :privilege => args_hash && args_hash[:to],
+              context: context,
+              rules: [],
+              privilege: args_hash && args_hash[:to],
               # a hack: call exp line seems to be wrong
-              :line => arglist_line
+              line: arglist_line
             }
             s(:call, klass, name)
           when :to
@@ -237,8 +240,8 @@ module Authorization
             privilege = process(exp.shift)
             includes = process(exp.shift).shift
             privelege_hash = {
-              :privilege => privilege,
-              :options => includes
+              privilege: privilege,
+              options: includes
             }
             s(:call, klass, name, privelege_hash)
           else

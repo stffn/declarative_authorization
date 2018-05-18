@@ -3,7 +3,6 @@ require File.dirname(__FILE__) + '/authorization.rb'
 
 module Authorization
   module AuthorizationHelper
-
     # If the current user meets the given privilege, permitted_to? returns true
     # and yields to the optional block.  The attribute checks that are defined
     # in the authorization rules are only evaluated if an object is given
@@ -57,8 +56,8 @@ module Authorization
       controller.has_role_with_hierarchy?(*roles, &block)
     end
 
-    def has_any_role?(*roles,&block)
-      controller.has_any_role?(*roles,&block)
+    def has_any_role?(*roles, &block)
+      controller.has_any_role?(*roles, &block)
     end
 
     def has_any_role_with_hierarchy?(*roles, &block)

@@ -1,22 +1,21 @@
-if Authorization::activate_authorization_rules_browser?
+if Authorization.activate_authorization_rules_browser?
 
-require File.join(File.dirname(__FILE__), %w{.. .. lib declarative_authorization maintenance})
+  require File.join(File.dirname(__FILE__), %w[.. .. lib declarative_authorization maintenance])
 
-class AuthorizationUsagesController < ApplicationController
+  class AuthorizationUsagesController < ApplicationController
+    helper :authorization_rules
+    filter_access_to :all, require: :read
+    # TODO: set context?
 
-  helper :authorization_rules
-  filter_access_to :all, :require => :read
-  # TODO set context?
-
-  def index
-    respond_to do |format|
-      format.html do
-        @auth_usages_by_controller = Authorization::Maintenance::Usage.usages_by_controller
+    def index
+      respond_to do |format|
+        format.html do
+          @auth_usages_by_controller = Authorization::Maintenance::Usage.usages_by_controller
+        end
       end
     end
   end
-end
 
 else
-class AuthorizationUsagesController < ApplicationController; end
+  class AuthorizationUsagesController < ApplicationController; end
 end # activate_authorization_rules_browser?

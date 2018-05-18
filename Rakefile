@@ -3,7 +3,7 @@ require 'rake/testtask'
 require 'rdoc/task'
 
 desc 'Default: run unit tests against all versions.'
-task :default => 'bundles:test'
+task default: 'bundles:test'
 
 def run_for_bundles(cmd)
   Dir['gemfiles/*.gemfile'].each do |gemfile|
@@ -47,7 +47,7 @@ if File.directory?(File.join(File.dirname(__FILE__), 'garlic'))
   require File.join(File.dirname(__FILE__), 'garlic')
 end
 
-desc "clone the garlic repo (for running ci tasks)"
+desc 'clone the garlic repo (for running ci tasks)'
 task :get_garlic do
-  sh "git clone git://github.com/ianwhite/garlic.git garlic"
+  sh 'git clone git://github.com/ianwhite/garlic.git garlic'
 end

@@ -1,9 +1,8 @@
 require 'test_helper'
 
-
 class LoadMockObject < MockDataObject
   def self.name
-    "LoadMockObject"
+    'LoadMockObject'
   end
 end
 
@@ -13,24 +12,24 @@ class ActionController::Base
   class << self
     def before_actions
       filters = _process_action_callbacks.select { |c| c.kind == :before }
-      filters.map! { |c| c.raw_filter }
+      filters.map!(&:raw_filter)
     end
-    alias_method :before_filters, :before_actions
+    alias before_actions before_actions
   end
 end
 
 class SpecificMocksController < MocksController
-  filter_access_to :test_action, :require => :test, :context => :permissions
-  filter_access_to :test_action_2, :require => :test, :context => :permissions_2
+  filter_access_to :test_action, require: :test, context: :permissions
+  filter_access_to :test_action_2, require: :test, context: :permissions_2
   filter_access_to :show
-  filter_access_to :edit, :create, :require => :test, :context => :permissions
-  filter_access_to :edit_2, :require => :test, :context => :permissions,
-    :attribute_check => true, :model => LoadMockObject
-  filter_access_to :new, :require => :test, :context => :permissions
+  filter_access_to :edit, :create, require: :test, context: :permissions
+  filter_access_to :edit_2, require: :test, context: :permissions,
+                            attribute_check: true, model: LoadMockObject
+  filter_access_to :new, require: :test, context: :permissions
 
-  filter_access_to [:action_group_action_1, :action_group_action_2]
+  filter_access_to %i[action_group_action_1 action_group_action_2]
   define_action_methods :test_action, :test_action_2, :show, :edit, :create,
-    :edit_2, :new, :unprotected_action, :action_group_action_1, :action_group_action_2
+                        :edit_2, :new, :unprotected_action, :action_group_action_1, :action_group_action_2
 end
 
 class BasicControllerTest < ActionController::TestCase
@@ -39,77 +38,77 @@ class BasicControllerTest < ActionController::TestCase
   def test_filter_access_to_receiving_an_explicit_array
     reader = Authorization::Reader::DSLReader.new
 
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_action_group_2 do
           has_permission_on :specific_mocks, :to => :action_group_action_2
         end
       end
-    }
+    )
 
-    request!(MockUser.new(:test_action_group_2), "action_group_action_2", reader)
+    request!(MockUser.new(:test_action_group_2), 'action_group_action_2', reader)
     assert @controller.authorized?
-    request!(MockUser.new(:test_action_group_2), "action_group_action_1", reader)
+    request!(MockUser.new(:test_action_group_2), 'action_group_action_1', reader)
     assert !@controller.authorized?
-    request!(nil, "action_group_action_2", reader)
+    request!(nil, 'action_group_action_2', reader)
     assert !@controller.authorized?
   end
 
   def test_filter_access
-    assert !@controller.class.before_filters.empty?
+    assert !@controller.class.before_actions.empty?
 
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :permissions, :to => :test
           has_permission_on :specific_mocks, :to => :show
         end
       end
-    }
+    )
 
-    request!(MockUser.new(:test_role), "test_action", reader)
+    request!(MockUser.new(:test_role), 'test_action', reader)
     assert @controller.authorized?
 
-    request!(MockUser.new(:test_role), "test_action_2", reader)
+    request!(MockUser.new(:test_role), 'test_action_2', reader)
     assert !@controller.authorized?
 
-    request!(MockUser.new(:test_role_2), "test_action", reader)
+    request!(MockUser.new(:test_role_2), 'test_action', reader)
     assert_response :forbidden
     assert !@controller.authorized?
 
-    request!(MockUser.new(:test_role), "show", reader)
+    request!(MockUser.new(:test_role), 'show', reader)
     assert @controller.authorized?
   end
 
   def test_filter_access_multi_actions
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :permissions, :to => :test
         end
       end
-    }
-    request!(MockUser.new(:test_role), "create", reader)
+    )
+    request!(MockUser.new(:test_role), 'create', reader)
     assert @controller.authorized?
   end
 
   def test_filter_access_unprotected_actions
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
         end
       end
-    }
-    request!(MockUser.new(:test_role), "unprotected_action", reader)
+    )
+    request!(MockUser.new(:test_role), 'unprotected_action', reader)
     assert @controller.authorized?
   end
 
   def test_filter_access_priv_hierarchy
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       privileges do
         privilege :read do
           includes :list, :show
@@ -120,14 +119,14 @@ class BasicControllerTest < ActionController::TestCase
           has_permission_on :specific_mocks, :to => :read
         end
       end
-    }
-    request!(MockUser.new(:test_role), "show", reader)
+    )
+    request!(MockUser.new(:test_role), 'show', reader)
     assert @controller.authorized?
   end
 
   def test_filter_access_skip_attribute_test
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :permissions, :to => :test do
@@ -135,14 +134,14 @@ class BasicControllerTest < ActionController::TestCase
           end
         end
       end
-    }
-    request!(MockUser.new(:test_role), "new", reader)
+    )
+    request!(MockUser.new(:test_role), 'new', reader)
     assert @controller.authorized?
   end
 
   def test_existing_instance_var_remains_unchanged
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :permissions, :to => :test do
@@ -150,25 +149,25 @@ class BasicControllerTest < ActionController::TestCase
           end
         end
       end
-    }
-    mock_object = MockDataObject.new(:id => 5)
+    )
+    mock_object = MockDataObject.new(id: 5)
     @controller.send(:instance_variable_set, :"@load_mock_object",
-        mock_object)
-    request!(MockUser.new(:test_role), "edit_2", reader)
+                     mock_object)
+    request!(MockUser.new(:test_role), 'edit_2', reader)
     assert_equal mock_object,
-      @controller.send(:instance_variable_get, :"@load_mock_object")
+                 @controller.send(:instance_variable_get, :"@load_mock_object")
     assert @controller.authorized?
   end
 
   def test_permitted_to_without_context
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :specific_mocks, :to => :test
         end
       end
-    }
+    )
     @controller.current_user = MockUser.new(:test_role)
     @controller.authorization_engine = Authorization::Engine.new(reader)
     assert @controller.permitted_to?(:test)
@@ -179,52 +178,50 @@ class BasicControllerTest < ActionController::TestCase
   end
 end
 
-
 ##################
 class AllMocksController < MocksController
   filter_access_to :all
-  filter_access_to :view, :require => :test, :context => :permissions
+  filter_access_to :view, require: :test, context: :permissions
   define_action_methods :show, :view
 end
 class AllActionsControllerTest < ActionController::TestCase
   tests AllMocksController
   def test_filter_access_all
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :permissions, :to => :test
           has_permission_on :all_mocks, :to => :show
         end
       end
-    }
+    )
 
-    request!(MockUser.new(:test_role), "show", reader)
+    request!(MockUser.new(:test_role), 'show', reader)
     assert @controller.authorized?
 
-    request!(MockUser.new(:test_role), "view", reader)
+    request!(MockUser.new(:test_role), 'view', reader)
     assert @controller.authorized?
 
-    request!(MockUser.new(:test_role_2), "show", reader)
+    request!(MockUser.new(:test_role_2), 'show', reader)
     assert !@controller.authorized?
   end
 end
 
-
 ##################
 class LoadMockObjectsController < MocksController
-  before_filter { @@load_method_call_count = 0 }
-  filter_access_to :show, :attribute_check => true, :model => LoadMockObject
-  filter_access_to :edit, :attribute_check => true
-  filter_access_to :update, :delete, :attribute_check => true,
-                   :load_method => proc {MockDataObject.new(:test => 1)}
+  before_action { @@load_method_call_count = 0 }
+  filter_access_to :show, attribute_check: true, model: LoadMockObject
+  filter_access_to :edit, attribute_check: true
+  filter_access_to :update, :delete, attribute_check: true,
+                                     load_method: proc { MockDataObject.new(test: 1) }
   filter_access_to :create do
     permitted_to! :edit, :load_mock_objects
   end
-  filter_access_to :view, :attribute_check => true, :load_method => :load_method
+  filter_access_to :view, attribute_check: true, load_method: :load_method
   def load_method
     self.class.load_method_called
-    MockDataObject.new(:test => 2)
+    MockDataObject.new(test: 2)
   end
   define_action_methods :show, :edit, :update, :delete, :create, :view
 
@@ -232,6 +229,7 @@ class LoadMockObjectsController < MocksController
     @@load_method_call_count ||= 0
     @@load_method_call_count += 1
   end
+
   def self.load_method_call_count
     @@load_method_call_count || 0
   end
@@ -241,7 +239,7 @@ class LoadObjectControllerTest < ActionController::TestCase
 
   def test_filter_access_with_object_load
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :load_mock_objects, :to => [:show, :edit] do
@@ -250,24 +248,24 @@ class LoadObjectControllerTest < ActionController::TestCase
           end
         end
       end
-    }
+    )
 
-    request!(MockUser.new(:test_role), "show", reader, :id => 2)
+    request!(MockUser.new(:test_role), 'show', reader, id: 2)
     assert !@controller.authorized?
 
-    request!(MockUser.new(:test_role), "show", reader, :id => 1,
-      :clear => [:@load_mock_object])
+    request!(MockUser.new(:test_role), 'show', reader, id: 1,
+                                                       clear: [:@load_mock_object])
     assert @controller.authorized?
 
-    request!(MockUser.new(:test_role), "edit", reader, :id => 1,
-      :clear => [:@load_mock_object])
+    request!(MockUser.new(:test_role), 'edit', reader, id: 1,
+                                                       clear: [:@load_mock_object])
     assert @controller.authorized?
     assert @controller.instance_variable_defined?(:@load_mock_object)
   end
 
   def test_filter_access_object_load_without_param
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :load_mock_objects, :to => [:show, :edit] do
@@ -275,14 +273,14 @@ class LoadObjectControllerTest < ActionController::TestCase
           end
         end
       end
-    }
+    )
 
-    assert_raises StandardError, "No id param supplied" do
-      request!(MockUser.new(:test_role), "show", reader)
+    assert_raises StandardError, 'No id param supplied' do
+      request!(MockUser.new(:test_role), 'show', reader)
     end
 
     Authorization::AuthorizationInController.failed_auto_loading_is_not_found = false
-    request!(MockUser.new(:test_role), "show", reader)
+    request!(MockUser.new(:test_role), 'show', reader)
 
     assert !@controller.authorized?
     Authorization::AuthorizationInController.failed_auto_loading_is_not_found = true
@@ -290,7 +288,7 @@ class LoadObjectControllerTest < ActionController::TestCase
 
   def test_filter_access_with_object_load_custom
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :load_mock_objects, :to => :view do
@@ -304,26 +302,26 @@ class LoadObjectControllerTest < ActionController::TestCase
           end
         end
       end
-    }
+    )
 
-    request!(MockUser.new(:test_role), "delete", reader)
+    request!(MockUser.new(:test_role), 'delete', reader)
     assert !@controller.authorized?
 
-    request!(MockUser.new(:test_role), "view", reader)
+    request!(MockUser.new(:test_role), 'view', reader)
     assert @controller.authorized?
     assert_equal 1, @controller.class.load_method_call_count
 
-    request!(MockUser.new(:test_role_2), "view", reader)
+    request!(MockUser.new(:test_role_2), 'view', reader)
     assert !@controller.authorized?
     assert_equal 1, @controller.class.load_method_call_count
 
-    request!(MockUser.new(:test_role), "update", reader)
+    request!(MockUser.new(:test_role), 'update', reader)
     assert @controller.authorized?
   end
 
   def test_filter_access_custom
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :load_mock_objects, :to => :edit
@@ -332,42 +330,40 @@ class LoadObjectControllerTest < ActionController::TestCase
           has_permission_on :load_mock_objects, :to => :create
         end
       end
-    }
+    )
 
-    request!(MockUser.new(:test_role), "create", reader)
+    request!(MockUser.new(:test_role), 'create', reader)
     assert @controller.authorized?
 
-    request!(MockUser.new(:test_role_2), "create", reader)
+    request!(MockUser.new(:test_role_2), 'create', reader)
     assert !@controller.authorized?
   end
 end
 
-
 ##################
 class AccessOverwritesController < MocksController
   filter_access_to :test_action, :test_action_2,
-    :require => :test, :context => :permissions_2
-  filter_access_to :test_action, :require => :test, :context => :permissions
+                   require: :test, context: :permissions_2
+  filter_access_to :test_action, require: :test, context: :permissions
   define_action_methods :test_action, :test_action_2
 end
 class AccessOverwritesControllerTest < ActionController::TestCase
   def test_filter_access_overwrite
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :permissions, :to => :test
         end
       end
-    }
-    request!(MockUser.new(:test_role), "test_action_2", reader)
+    )
+    request!(MockUser.new(:test_role), 'test_action_2', reader)
     assert !@controller.authorized?
 
-    request!(MockUser.new(:test_role), "test_action", reader)
+    request!(MockUser.new(:test_role), 'test_action', reader)
     assert @controller.authorized?
   end
 end
-
 
 ##################
 class PeopleController < MocksController
@@ -379,26 +375,25 @@ class PluralizationControllerTest < ActionController::TestCase
 
   def test_filter_access_people_controller
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :people, :to => :show
         end
       end
-    }
-    request!(MockUser.new(:test_role), "show", reader)
+    )
+    request!(MockUser.new(:test_role), 'show', reader)
     assert @controller.authorized?
   end
 end
 
-
 ##################
 class CommonController < MocksController
-  filter_access_to :delete, :context => :common
+  filter_access_to :delete, context: :common
   filter_access_to :all
 end
 class CommonChild1Controller < CommonController
-  filter_access_to :all, :context => :context_1
+  filter_access_to :all, context: :context_1
 end
 class CommonChild2Controller < CommonController
   filter_access_to :delete
@@ -408,16 +403,16 @@ class HierachicalControllerTest < ActionController::TestCase
   tests CommonChild2Controller
   def test_controller_hierarchy
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :mocks, :to => [:delete, :show]
         end
       end
-    }
-    request!(MockUser.new(:test_role), "show", reader)
+    )
+    request!(MockUser.new(:test_role), 'show', reader)
     assert !@controller.authorized?
-    request!(MockUser.new(:test_role), "delete", reader)
+    request!(MockUser.new(:test_role), 'delete', reader)
     assert !@controller.authorized?
   end
 end
@@ -426,7 +421,7 @@ end
 module Name
   class SpacedThingsController < MocksController
     filter_access_to :show
-    filter_access_to :update, :context => :spaced_things
+    filter_access_to :update, context: :spaced_things
     define_action_methods :show, :update
   end
 end
@@ -434,7 +429,7 @@ class NameSpacedControllerTest < ActionController::TestCase
   tests Name::SpacedThingsController
   def test_context
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :permitted_role do
           has_permission_on :name_spaced_things, :to => :show
@@ -445,14 +440,14 @@ class NameSpacedControllerTest < ActionController::TestCase
           has_permission_on :spaced_things, :to => :show
         end
       end
-    }
-    request!(MockUser.new(:permitted_role), "show", reader)
+    )
+    request!(MockUser.new(:permitted_role), 'show', reader)
     assert @controller.authorized?
-    request!(MockUser.new(:prohibited_role), "show", reader)
+    request!(MockUser.new(:prohibited_role), 'show', reader)
     assert !@controller.authorized?
-    request!(MockUser.new(:permitted_role), "update", reader)
+    request!(MockUser.new(:permitted_role), 'update', reader)
     assert @controller.authorized?
-    request!(MockUser.new(:prohibited_role), "update", reader)
+    request!(MockUser.new(:prohibited_role), 'update', reader)
     assert !@controller.authorized?
   end
 end
@@ -461,7 +456,7 @@ module Deep
   module NameSpaced
     class ThingsController < MocksController
       filter_access_to :show
-      filter_access_to :update, :context => :things
+      filter_access_to :update, context: :things
       define_action_methods :show, :update
     end
   end
@@ -470,7 +465,7 @@ class DeepNameSpacedControllerTest < ActionController::TestCase
   tests Deep::NameSpaced::ThingsController
   def test_context
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :permitted_role do
           has_permission_on :deep_name_spaced_things, :to => :show
@@ -481,14 +476,14 @@ class DeepNameSpacedControllerTest < ActionController::TestCase
           has_permission_on :things, :to => :show
         end
       end
-    }
-    request!(MockUser.new(:permitted_role), "show", reader)
+    )
+    request!(MockUser.new(:permitted_role), 'show', reader)
     assert @controller.authorized?
-    request!(MockUser.new(:prohibited_role), "show", reader)
+    request!(MockUser.new(:prohibited_role), 'show', reader)
     assert !@controller.authorized?
-    request!(MockUser.new(:permitted_role), "update", reader)
+    request!(MockUser.new(:permitted_role), 'update', reader)
     assert @controller.authorized?
-    request!(MockUser.new(:prohibited_role), "update", reader)
+    request!(MockUser.new(:prohibited_role), 'update', reader)
     assert !@controller.authorized?
   end
 end

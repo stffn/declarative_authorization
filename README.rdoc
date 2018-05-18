@@ -239,13 +239,13 @@ objects needs to be enabled explicitly.
       end
     end
 
-You can provide the needed object through before_filters.  This way, you have
+You can provide the needed object through before_actions.  This way, you have
 full control over the object that the conditions are checked against.  Just make
-sure, your before_filters occur before any of the filter_access_to calls.
+sure, your before_actions occur before any of the filter_access_to calls.
 
     class EmployeesController < ApplicationController
-      before_filter :new_employee_from_params, :only => :create
-      before_filter :new_employee, :only => [:index, :new]
+      before_action :new_employee_from_params, :only => :create
+      before_action :new_employee, :only => [:index, :new]
       filter_access_to :all, :attribute_check => true
 
       def create
@@ -504,9 +504,9 @@ restful_authentication.
    cd ../.. && ruby script/generate authenticated user sessions
 * Move "include AuthenticatedSystem" to ApplicationController
 * Add +filter_access_to+ calls as described above.
-* If you'd like to use model security, add a before_filter that sets the user
+* If you'd like to use model security, add a before_action that sets the user
   globally to your ApplicationController.  This is thread-safe.
-   before_filter :set_current_user
+   before_action :set_current_user
    protected
    def set_current_user
      Authorization.current_user = current_user

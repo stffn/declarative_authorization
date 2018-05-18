@@ -1,9 +1,8 @@
 require 'test_helper'
-require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization helper})
-
+require File.join(File.dirname(__FILE__), %w[.. lib declarative_authorization helper])
 
 class HelperMocksController < MocksController
-  filter_access_to :action, :require => :show, :context => :mocks
+  filter_access_to :action, require: :show, context: :mocks
   define_action_methods :action
 end
 class HelperTest < ActionController::TestCase
@@ -13,7 +12,7 @@ class HelperTest < ActionController::TestCase
 
   def test_permit
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :mocks, :to => :show
@@ -22,7 +21,7 @@ class HelperTest < ActionController::TestCase
           has_permission_on :mocks, :to => :update
         end
       end
-    }
+    )
     user = MockUser.new(:test_role)
     request!(user, :action, reader)
 
@@ -44,7 +43,7 @@ class HelperTest < ActionController::TestCase
 
   def test_permit_with_object
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :mocks do
@@ -53,10 +52,10 @@ class HelperTest < ActionController::TestCase
           end
         end
       end
-    }
-    user = MockUser.new(:test_role, :test_attr => 1)
-    mock = MockDataObject.new(:test_attr => 1)
-    mock_2 = MockDataObject.new(:test_attr => 2)
+    )
+    user = MockUser.new(:test_role, test_attr: 1)
+    mock = MockDataObject.new(test_attr: 1)
+    mock_2 = MockDataObject.new(test_attr: 2)
     request!(user, :action, reader)
 
     assert permitted_to?(:show, mock)
@@ -66,7 +65,7 @@ class HelperTest < ActionController::TestCase
 
   def test_permit_with_object_and_context
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :other_mocks do
@@ -75,25 +74,25 @@ class HelperTest < ActionController::TestCase
           end
         end
       end
-    }
-    user = MockUser.new(:test_role, :test_attr => 1)
-    mock = MockDataObject.new(:test_attr => 1)
-    mock_2 = MockDataObject.new(:test_attr => 2)
+    )
+    user = MockUser.new(:test_role, test_attr: 1)
+    mock = MockDataObject.new(test_attr: 1)
+    mock_2 = MockDataObject.new(test_attr: 2)
     request!(user, :action, reader)
 
-    assert permitted_to?(:show, mock, :context => :other_mocks)
-    assert !permitted_to?(:show, mock_2, :context => :other_mocks)
+    assert permitted_to?(:show, mock, context: :other_mocks)
+    assert !permitted_to?(:show, mock_2, context: :other_mocks)
   end
 
   def test_has_role
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :mocks, :to => :show
         end
       end
-    }
+    )
     user = MockUser.new(:test_role)
     request!(user, :action, reader)
 
@@ -116,13 +115,13 @@ class HelperTest < ActionController::TestCase
 
   def test_has_any_role
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :mocks, :to => :show
         end
       end
-    }
+    )
     user = MockUser.new(:test_role)
     request!(user, :action, reader)
 
@@ -143,7 +142,7 @@ class HelperTest < ActionController::TestCase
     assert !block_evaled
 
     block_evaled = false
-    has_any_role?(:test_role,:test_role2) do
+    has_any_role?(:test_role, :test_role2) do
       block_evaled = true
     end
     assert block_evaled
@@ -151,12 +150,12 @@ class HelperTest < ActionController::TestCase
 
   def test_has_role_with_guest_user
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
       end
-    }
+    )
     request!(nil, :action, reader)
-#test intermittently fails
+    # test intermittently fails
     assert !has_role?(:test_role)
 
     block_evaled = false
@@ -168,7 +167,7 @@ class HelperTest < ActionController::TestCase
 
   def test_has_role_with_hierarchy
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :mocks, :to => :show
@@ -176,12 +175,11 @@ class HelperTest < ActionController::TestCase
         role :other_role do
           has_permission_on :another_mocks, :to => :show
         end
-
         role :root do
           includes :test_role
         end
       end
-    }
+    )
 
     user = MockUser.new(:root)
     request!(user, :action, reader)
@@ -204,7 +202,7 @@ class HelperTest < ActionController::TestCase
 
   def test_has_any_role_with_hierarchy
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :mocks, :to => :show
@@ -212,19 +210,18 @@ class HelperTest < ActionController::TestCase
         role :other_role do
           has_permission_on :another_mocks, :to => :show
         end
-
         role :root do
           includes :test_role
         end
       end
-    }
+    )
 
     user = MockUser.new(:root)
     request!(user, :action, reader)
 
     assert has_any_role_with_hierarchy?(:test_role)
     assert !has_any_role_with_hierarchy?(:other_role)
-    assert has_any_role_with_hierarchy?(:test_role,:other_role)
+    assert has_any_role_with_hierarchy?(:test_role, :other_role)
 
     block_evaled = false
     has_any_role_with_hierarchy?(:test_role) do
@@ -239,7 +236,7 @@ class HelperTest < ActionController::TestCase
     assert !block_evaled
 
     block_evaled = false
-    has_any_role_with_hierarchy?(:test_role,:test_role2) do
+    has_any_role_with_hierarchy?(:test_role, :test_role2) do
       block_evaled = true
     end
     assert block_evaled
