@@ -80,7 +80,7 @@ class MocksController < ActionController::Base
     methods.each do |method|
       define_method method do
         @authorized = true
-        render text: 'nothing'
+        render plain: 'nothing'
       end
     end
   end
