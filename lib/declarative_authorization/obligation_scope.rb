@@ -299,10 +299,10 @@ module Authorization
       reflections.each do |path, refs|
         next if path.empty? || @join_table_joins.include?(path)
 
-        first_ref = refs.first
+        first_ref = refs
         if polymorphic?(first_ref)
           # sanity check
-          raise 'Only one polymorphic relation is allowed at each step' if refs.length > 1
+          raise 'Only one polymorphic relation is allowed at each step' if refs.class == "Array" && refs.length > 1
 
           polymorphic_paths[path] = first_ref.active_record.poly_resource_names
         end
