@@ -397,7 +397,7 @@ module Authorization
     end
 
     def each(&block)
-      @rules.each &block
+      @rules.each(&block)
     end
 
     private
@@ -458,7 +458,7 @@ module Authorization
         @attributes.send(@join_operator == :and ? :all? : :any?) do |attr|
           begin
             attr.validate?(attr_validator)
-          rescue NilAttributeValueError => e
+          rescue NilAttributeValueError
             nil # Bumping up against a nil attribute value flunks the rule.
           end
         end
@@ -802,4 +802,3 @@ module Authorization
     end
   end
 end
-

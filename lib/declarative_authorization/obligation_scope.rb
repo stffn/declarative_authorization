@@ -223,7 +223,7 @@ module Authorization
       used_paths = Set.new
       delete_paths = Set.new
       obligation_conditions.each_with_index do |array, obligation_index|
-        obligation, conditions = array
+        _, conditions = array
         obligation_conds = []
         conditions.each do |path, expressions|
           model = model_for( path )
@@ -339,4 +339,3 @@ module Authorization
     end
   end
 end
-

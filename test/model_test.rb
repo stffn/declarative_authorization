@@ -147,7 +147,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     }
     Authorization::Engine.instance(reader)
 
-    test_attr_1 = TestAttr.create!
+    TestAttr.create!
     test_model_1 = TestModel.create!
     test_model_1.test_attrs.create!
 
@@ -619,7 +619,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     }
     Authorization::Engine.instance(reader)
 
-    test_attr_1 = TestAttr.create! :test_model_id => 1, :test_another_model_id => 2
+    TestAttr.create! :test_model_id => 1, :test_another_model_id => 2
 
     user = MockUser.new(:test_role, :id => 1)
     assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
@@ -932,8 +932,8 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     test_attr_through_1 = TestAttrThrough.create!
     test_item = NWayJoinItem.create!
-    test_model_1 = TestModel.create!(:test_attr_through_id => test_attr_through_1.id)
-    test_attr_1 = TestAttr.create!(:test_attr_through_id => test_attr_through_1.id,
+    TestModel.create!(:test_attr_through_id => test_attr_through_1.id)
+    TestAttr.create!(:test_attr_through_id => test_attr_through_1.id,
         :n_way_join_item_id => test_item.id)
 
     user = MockUser.new(:test_role,
@@ -1271,7 +1271,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
-    test_attr_1 = test_model_1.test_attrs.create!
+    test_model_1.test_attrs.create!
 
     user = MockUser.new(:test_role)
     assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
@@ -1320,7 +1320,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     test_model_1 = TestModel.create!
     test_attr_1 = test_model_1.test_attrs.create!
-    test_attr_2 = TestAttr.create!
+    TestAttr.create!
 
     user = MockUser.new(:test_role, :id => test_attr_1.id)
     assert_equal 1, TestModel.with_permissions_to(:update, :user => user).length
@@ -1342,11 +1342,11 @@ class NamedScopeModelTest < Test::Unit::TestCase
     }
     Authorization::Engine.instance(reader)
 
-    test_attr_1 = TestAttr.create!(
+    TestAttr.create!(
         :test_model => TestModel.create!(:content => 'test_1_1'),
         :test_another_model => TestModel.create!(:content => 'test_1_2')
       )
-    test_attr_2 = TestAttr.create!(
+    TestAttr.create!(
         :test_model => TestModel.create!(:content => 'test_2_1'),
         :test_another_model => TestModel.create!(:content => 'test_2_2')
       )
@@ -1375,7 +1375,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     }
     Authorization::Engine.instance(reader)
 
-    test_attr_1 = TestAttr.create!(
+    TestAttr.create!(
         :test_model => TestModel.create!(:content => 'test_1_1'),
         :test_another_model => TestModel.create!(:content => 'test_1_2')
       )
@@ -1412,12 +1412,12 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     country = Country.create!(:name => 'country_1')
     country.test_models.create!
-    test_attr_1 = TestAttr.create!(
+    TestAttr.create!(
         :branch => Branch.create!(:name => 'branch_1',
             :company => Company.create!(:name => 'company_1',
                 :country => country))
       )
-    test_attr_2 = TestAttr.create!(
+    TestAttr.create!(
         :company => Company.create!(:name => 'company_2',
             :country => country)
       )
@@ -1644,7 +1644,7 @@ class ModelTest < Test::Unit::TestCase
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role_unrestricted)
-    object = TestModelSecurityModel.create :attr => 2
+    TestModelSecurityModel.create :attr => 2
     Authorization.current_user = MockUser.new(:test_role)
 
     # TODO before not checked yet
@@ -1772,12 +1772,12 @@ class ModelTest < Test::Unit::TestCase
 
    test_model = TestModel.create!
    test_model.test_attrs.create!(:attr => 0)
-   test_attr = test_model.test_attrs.create!(:attr => 1)
+   test_model.test_attrs.create!(:attr => 1)
    test_model.test_attrs.create!(:attr => 3)
    test_branch = Branch.create!(:test_model => test_model)
 
    test_model_2 = TestModel.create!
-   test_attr_2 = test_model_2.test_attrs.create!(:attr => 2)
+   test_model_2.test_attrs.create!(:attr => 2)
    test_branch_2 = Branch.create!(:test_model => test_model_2)
 
    test_model_3 = TestModel.create!
