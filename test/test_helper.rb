@@ -30,7 +30,7 @@ class MockDataObject
     attrs.each do |key, value|
       instance_variable_set(:"@#{key}", value)
       self.class.class_eval do
-        attr_reader key
+        attr_reader key unless method_defined?(key)
       end
     end
   end
@@ -81,7 +81,7 @@ class MocksController < ActionController::Base
     methods.each do |method|
       define_method method do
         @authorized = true
-        render :text => 'nothing'
+        render :plain => 'nothing'
       end
     end
   end
@@ -159,7 +159,7 @@ class ActiveSupport::TestCase
     ((params.delete(:clear) || []) + [:@authorized]).each do |var|
       @controller.instance_variable_set(var, nil)
     end
-    get action, params
+    get action, params: params
   end
 
   def setup
@@ -167,4 +167,3 @@ class ActiveSupport::TestCase
     @routes = Rails.application.routes
   end
 end
-

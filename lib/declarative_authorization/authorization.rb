@@ -91,7 +91,7 @@ module Authorization
 
     # {[priv, ctx] => [priv, ...]}
     def rev_priv_hierarchy
-      if @rev_priv_hierarchy.nil?
+      if !defined?(@rev_priv_hierarchy) || @rev_priv_hierarchy.nil?
         @rev_priv_hierarchy = {}
         privilege_hierarchy.each do |key, value|
           value.each do |val|
@@ -105,7 +105,7 @@ module Authorization
 
     # {[priv, ctx] => [priv, ...]}
     def rev_role_hierarchy
-      if @rev_role_hierarchy.nil?
+      if !defined?(@rev_role_hierarchy) || @rev_role_hierarchy.nil?
         @rev_role_hierarchy = {}
         role_hierarchy.each do |higher_role, lower_roles|
           lower_roles.each do |role|
