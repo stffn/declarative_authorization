@@ -76,7 +76,7 @@ module Authorization
             end
           end
 
-          actions = controller.public_instance_methods(false) - controller.hidden_actions.to_a
+          actions = controller.public_instance_methods(false)
           memo[controller] = actions.inject({}) do |actions_memo, action|
             action_sym = action.to_sym
             actions_memo[action_sym] =
