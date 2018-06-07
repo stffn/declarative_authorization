@@ -1,8 +1,9 @@
 language: ruby
 script: bundle exec rake test
 rvm:
-  - 2.4
+  - 2.5
 gemfile:
   - gemfiles/4.2.gemfile
   - gemfiles/5.0.gemfile
+  - gemfiles/5.2.gemfile
 
