@@ -1,11 +1,14 @@
-require 'pathname'
-
 ENV['RAILS_ENV'] = 'test'
 
+require 'pathname'
 require 'bundler/setup'
 require 'rails/all'
 require 'minitest/autorun'
-
+begin
+  require 'rails-controller-testing'
+rescue LoadError
+  # Not required for Rails 4.2; not present in that Gemfile
+end
 puts "Testing against rails #{Rails::VERSION::STRING}"
 
 RAILS_ROOT = File.dirname(__FILE__)
