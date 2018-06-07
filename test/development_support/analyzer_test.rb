@@ -12,7 +12,7 @@ if auth_analyzer_loadable
 
   class AuthorizationRulesAnalyzerTest < Test::Unit::TestCase
     def test_analyzing_complex_rules
-      engine, analyzer = engine_analyzer_for %(
+      _engine, _analyzer = engine_analyzer_for %(
         authorization do
           role :guest do
             has_permission_on :conferences, :to => :read do
@@ -67,7 +67,7 @@ if auth_analyzer_loadable
   end
 
     def test_mergeable_rules_without_constraints
-      engine, analyzer = engine_analyzer_for %(
+      _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions, :to => :test
@@ -82,7 +82,7 @@ if auth_analyzer_loadable
     end
 
     def test_mergeable_rules_with_in_block_to
-      engine, analyzer = engine_analyzer_for %(
+      _engine, _analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions do
@@ -94,7 +94,7 @@ if auth_analyzer_loadable
     end
 
     def test_no_mergeable_rules_with_constraints
-      engine, analyzer = engine_analyzer_for %(
+      _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions, :to => :test do
@@ -111,7 +111,7 @@ if auth_analyzer_loadable
     end
 
     def test_no_mergeable_rules_with_if_permitted_to
-      engine, analyzer = engine_analyzer_for %(
+      _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions, :to => :test do
@@ -129,7 +129,7 @@ if auth_analyzer_loadable
     end
 
     def test_role_explosion
-      engine, analyzer = engine_analyzer_for %(
+      _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions, :to => :test
@@ -154,7 +154,7 @@ if auth_analyzer_loadable
     end
 
     def test_inheriting_privileges
-      engine, analyzer = engine_analyzer_for %(
+      _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions, :to => [:test, :test_2]
@@ -172,7 +172,7 @@ if auth_analyzer_loadable
     end
 
     def test_privileges_rules
-      engine, analyzer = engine_analyzer_for %(
+      engine, _analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions, :to => [:test, :test_2]
@@ -238,7 +238,7 @@ if auth_analyzer_loadable
     end
 
     def test_analyze_for_proposed_privilege_hierarchy
-      engine, analyzer = engine_analyzer_for %(
+      _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
             has_permission_on :permissions, :to => [:test, :test_2]

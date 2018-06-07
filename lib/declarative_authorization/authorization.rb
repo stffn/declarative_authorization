@@ -83,6 +83,8 @@ module Authorization
     def initialize(reader = nil)
       # @auth_rules = AuthorizationRuleSet.new reader.auth_rules_reader.auth_rules
       @reader = Reader::DSLReader.factory(reader || AUTH_DSL_FILES)
+      @rev_priv_hierarchy ||= {}
+      @rev_role_hierarchy ||= {}
     end
 
     def initialize_copy(from) # :nodoc:
@@ -91,7 +93,7 @@ module Authorization
 
     # {[priv, ctx] => [priv, ...]}
     def rev_priv_hierarchy
-      if @rev_priv_hierarchy.nil?
+      if @rev_priv_hierarchy.blank?
         @rev_priv_hierarchy = {}
         privilege_hierarchy.each do |key, value|
           value.each do |val|
@@ -105,7 +107,7 @@ module Authorization
 
     # {[priv, ctx] => [priv, ...]}
     def rev_role_hierarchy
-      if @rev_role_hierarchy.nil?
+      if @rev_role_hierarchy.blank?
         @rev_role_hierarchy = {}
         role_hierarchy.each do |higher_role, lower_roles|
           lower_roles.each do |role|
