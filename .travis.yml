@@ -1,5 +1,6 @@
 language: ruby
 script: bundle exec rake test
+cache: bundler
 rvm:
   - 2.2
   - 2.4
