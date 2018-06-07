@@ -64,7 +64,7 @@ if auth_analyzer_loadable
           privilege :delete, :includes => :destroy
         end
       )
-  end
+    end
 
     def test_mergeable_rules_without_constraints
       _engine, analyzer = engine_analyzer_for %(
