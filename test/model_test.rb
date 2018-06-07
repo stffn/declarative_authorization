@@ -1380,7 +1380,6 @@ class NamedScopeModelTest < Test::Unit::TestCase
       test_model: TestModel.create!(content: 'test_2_1'),
       test_another_model: TestModel.create!(content: 'test_2_2')
     )
-    test_attr_2.test_model.test_attrs.create!
 
     user = MockUser.new(:test_role, test_attr: test_attr_2.test_model.test_attrs.last)
     assert_equal 2, TestAttr.with_permissions_to(:read, user: user).references(:test_attrs, :test_models, :test_models_test_attrs, :test_attrs_test_models).length
