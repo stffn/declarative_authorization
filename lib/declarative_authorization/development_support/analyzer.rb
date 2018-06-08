@@ -163,6 +163,7 @@ module Authorization
         end
 
         def process_iter(exp)
+          exp.delete_if {|x| x.is_a? Integer }
           s(:iter, process(exp.shift), process(exp.shift), process(exp.shift))
         end
 
