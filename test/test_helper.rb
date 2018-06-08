@@ -1,19 +1,14 @@
-require 'pathname'
-
 ENV['RAILS_ENV'] = 'test'
 
+require 'pathname'
 require 'bundler/setup'
-begin
-  # rails 3
-  require 'rails/all'
-rescue LoadError
-  # rails 2.3
-  %w[action_pack action_controller active_record active_support initializer].each { |f| require f }
-end
-Bundler.require
-
+require 'rails/all'
 require 'minitest/autorun'
-
+begin
+  require 'rails-controller-testing'
+rescue LoadError
+  # Not required for Rails 4.2; not present in that Gemfile
+end
 puts "Testing against rails #{Rails::VERSION::STRING}"
 
 RAILS_ROOT = File.dirname(__FILE__)
@@ -28,6 +23,7 @@ class MockDataObject
   def initialize(attrs = {})
     attrs.each do |key, value|
       instance_variable_set(:"@#{key}", value)
+      next if self.respond_to?(:"#{key}")
       self.class.class_eval do
         attr_reader key
       end

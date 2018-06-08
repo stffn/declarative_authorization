@@ -1,16 +1,13 @@
 Original docs: [https://github.com/stffn/declarative_authorization/blob/master/README.rdoc](https://github.com/stffn/declarative_authorization/blob/master/README.rdoc)
 
-### Polymorphic associations
+Extends Declarative Authorization with Rails 5.2 and Ruby 2.5 support, aiming for backwards compatibility as far as Rails 4.2 and Ruby 2.2 on a best-effort basis.
 
-This branch contains polymorphic belongs_to association support.
-It relies on a monkey patch to active record which provides the method `poly_resources`
-that returns a list of classes that the polymorphic association can point to.
-
+Branch r5: [![Build Status](https://travis-ci.org/Xymist/declarative_authorization.svg?branch=r5)](https://travis-ci.org/Xymist/declarative_authorization)
 
 ### Running tests for DA
 
 ```
-cp gemfiles/3.2.gemfile Gemfile
+cp gemfiles/{RAILS_VERSION}.gemfile Gemfile
 bundle
 
 bundle exec rake test
