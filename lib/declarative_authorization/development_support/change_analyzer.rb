@@ -32,8 +32,8 @@ module Authorization
         # * heuristic: change of failed tests;  small number of policy items
         strategy = case [change_action, type]
                    when %i[remove permission]
-                     [:remove_role_from_user, :remove_privilege, :add_privilege,
-                      :add_role, :assign_role_to_user]
+                     %i[remove_role_from_user remove_privilege add_privilege
+add_role assign_role_to_user]
                    when %i[add permission]
                      %i[add_role add_privilege assign_role_to_user]
                    else
@@ -134,7 +134,7 @@ module Authorization
 
         def inspect
           "Approach (#{state_hash}): Steps: #{changes.map(&:inspect) * ', '}" # +
-             # "\n  Roles: #{AnalyzerEngine.roles(@engine).map(&:to_sym).inspect}; " +
+          # "\n  Roles: #{AnalyzerEngine.roles(@engine).map(&:to_sym).inspect}; " +
           # "\n  Users: #{@users.map(&:role_symbols).inspect}"
         end
 
@@ -149,11 +149,12 @@ module Authorization
           #    other.approach.users.index(other[idx])
           # instead of user.login
           other.is_a?(Array) && other.length == length &&
-            (0...length).all? { |idx|
-                self[idx].class == other[idx].class &&
-              ((self[idx].respond_to?(:to_sym) && self[idx].to_sym == other[idx].to_sym) ||
-                 (self[idx].respond_to?(:login) && self[idx].login == other[idx].login) ||
-                 self[idx] == other[idx]) }
+          (0...length).all? do |idx|
+            self[idx].class == other[idx].class &&
+            ((self[idx].respond_to?(:to_sym) && self[idx].to_sym == other[idx].to_sym) ||
+            (self[idx].respond_to?(:login) && self[idx].login == other[idx].login) ||
+            self[idx] == other[idx])
+          end
         end
 
         def inspect

@@ -163,7 +163,7 @@ module Authorization
         end
 
         def process_iter(exp)
-          exp.delete_if {|x| x.is_a? Integer }
+          exp.delete_if { |x| x.is_a? Integer }
           s(:iter, process(exp.shift), process(exp.shift), process(exp.shift))
         end
 
@@ -182,8 +182,8 @@ module Authorization
 
       class MergeableRulesProcessor < GeneralAuthorizationProcessor
         def analyze_rules
+          @has_permission ||= false
           if @has_permission
-            # p @has_permission
             permissions_by_context_and_rules = @has_permission.each_with_object({}) do |permission, memo|
               key = [permission[:context], permission[:rules]]
               memo[key] ||= []

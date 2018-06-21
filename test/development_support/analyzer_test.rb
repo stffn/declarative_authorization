@@ -15,30 +15,30 @@ if auth_analyzer_loadable
       _engine, _analyzer = engine_analyzer_for %(
         authorization do
           role :guest do
-            has_permission_on :conferences, :to => :read do
+            has_permission_on :conferences, to: :read do
               if_attribute :published => true
             end
-            has_permission_on :talks, :to => :read do
+            has_permission_on :talks, to: :read do
               if_permitted_to :read, :conference
             end
-            has_permission_on :users, :to => :create
-            has_permission_on :authorization_rules, :to => :read
-            has_permission_on :authorization_usages, :to => :read
+            has_permission_on :users, to: :create
+            has_permission_on :authorization_rules, to: :read
+            has_permission_on :authorization_usages, to: :read
           end
             role :user do
             includes :guest
-            has_permission_on :conference_attendees, :to => :create do
+            has_permission_on :conference_attendees, to: :create do
               if_attribute :user => is {user},
                 :conference => { :published => true }
             end
-            has_permission_on :conference_attendees, :to => :delete do
+            has_permission_on :conference_attendees, to: :delete do
               if_attribute :user => is {user},
                 :conference => { :attendees => contains {user} }
             end
-            has_permission_on :talk_attendees, :to => :create do
+            has_permission_on :talk_attendees, to: :create do
               if_attribute :talk => { :conference => { :attendees => contains {user} }}
             end
-            has_permission_on :talk_attendees, :to => :delete do
+            has_permission_on :talk_attendees, to: :delete do
               if_attribute :user => is {user},
                 :talk => { :conference => { :attendees => contains {user} }}
             end
@@ -48,12 +48,12 @@ if auth_analyzer_loadable
               to :manage
               # if...
             end
-            has_permission_on [:conference_attendees, :talks, :talk_attendees], :to => :manage
+            has_permission_on [:conference_attendees, :talks, :talk_attendees], to: :manage
           end
             role :admin do
-            has_permission_on [:conferences, :users, :talks], :to => :manage
-            has_permission_on :authorization_rules, :to => :read
-            has_permission_on :authorization_usages, :to => :read
+            has_permission_on [:conferences, :users, :talks], to: :manage
+            has_permission_on :authorization_rules, to: :read
+            has_permission_on :authorization_usages, to: :read
           end
         end
           privileges do
@@ -70,8 +70,8 @@ if auth_analyzer_loadable
       _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
-            has_permission_on :permissions, :to => :test
-            has_permission_on :permissions, :to => :test2
+            has_permission_on :permissions, to: :test
+            has_permission_on :permissions, to: :test2
           end
         end
       )
@@ -97,10 +97,10 @@ if auth_analyzer_loadable
       _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
-            has_permission_on :permissions, :to => :test do
+            has_permission_on :permissions, to: :test do
               if_attribute :some_attr => is {bla}
             end
-            has_permission_on :permissions, :to => :test2 do
+            has_permission_on :permissions, to: :test2 do
               if_attribute :some_attr_2 => is {bla}
             end
           end
@@ -114,10 +114,10 @@ if auth_analyzer_loadable
       _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
-            has_permission_on :permissions, :to => :test do
+            has_permission_on :permissions, to: :test do
               if_attribute :some_attr => is {bla}
             end
-            has_permission_on :permissions, :to => :test2 do
+            has_permission_on :permissions, to: :test2 do
               if_attribute :some_attr => is {bla}
               if_permitted_to :read, :bla
             end
@@ -132,18 +132,18 @@ if auth_analyzer_loadable
       _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
-            has_permission_on :permissions, :to => :test
-            has_permission_on :permissions, :to => :test2
+            has_permission_on :permissions, to: :test
+            has_permission_on :permissions, to: :test2
           end
           role :test_role_2 do
-            has_permission_on :permissions, :to => :test
-            has_permission_on :permissions, :to => :test2
-            has_permission_on :permissions, :to => :test3
-            has_permission_on :permissions, :to => :test4
+            has_permission_on :permissions, to: :test
+            has_permission_on :permissions, to: :test2
+            has_permission_on :permissions, to: :test3
+            has_permission_on :permissions, to: :test4
           end
           role :test_role_3 do
-            has_permission_on :permissions, :to => :test
-            has_permission_on :permissions, :to => :test2
+            has_permission_on :permissions, to: :test
+            has_permission_on :permissions, to: :test2
           end
         end
       )
@@ -157,8 +157,8 @@ if auth_analyzer_loadable
       _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
-            has_permission_on :permissions, :to => [:test, :test_2]
-            has_permission_on :other_permissions, :to => [:test, :test_3]
+            has_permission_on :permissions, to: [:test, :test_2]
+            has_permission_on :other_permissions, to: [:test, :test_3]
           end
         end
         privileges do
@@ -175,9 +175,9 @@ if auth_analyzer_loadable
       engine, _analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
-            has_permission_on :permissions, :to => [:test, :test_2]
-            has_permission_on :other_permissions, :to => :test
-            has_permission_on :other_permissions_2, :to => :test_2
+            has_permission_on :permissions, to: [:test, :test_2]
+            has_permission_on :other_permissions, to: :test
+            has_permission_on :other_permissions_2, to: :test_2
           end
         end
       )
@@ -218,10 +218,10 @@ if auth_analyzer_loadable
             includes :lower_role
           end
           role :lower_role do
-            has_permission_on :test_2, :to => :read
+            has_permission_on :test_2, to: :read
           end
           role :test_role do
-            has_permission_on :test, :to => :read
+            has_permission_on :test, to: :read
           end
           role :irrelevant_role_1 do
           end
@@ -241,12 +241,12 @@ if auth_analyzer_loadable
       _engine, analyzer = engine_analyzer_for %(
         authorization do
           role :test_role do
-            has_permission_on :permissions, :to => [:test, :test_2]
-            has_permission_on :other_permissions_2, :to => :test_2
+            has_permission_on :permissions, to: [:test, :test_2]
+            has_permission_on :other_permissions_2, to: :test_2
           end
           role :test_role_2 do
-            has_permission_on :permissions, :to => [:test, :test_2]
-            has_permission_on :other_permissions, :to => :test_3
+            has_permission_on :permissions, to: [:test, :test_2]
+            has_permission_on :other_permissions, to: :test_3
           end
         end
       )

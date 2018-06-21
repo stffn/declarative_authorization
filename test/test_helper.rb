@@ -23,9 +23,9 @@ class MockDataObject
   def initialize(attrs = {})
     attrs.each do |key, value|
       instance_variable_set(:"@#{key}", value)
-      next if self.respond_to?(:"#{key}")
+      next if respond_to?(:"#{key}")
       self.class.class_eval do
-        attr_reader key
+        attr_reader key unless method_defined?(key)
       end
     end
   end

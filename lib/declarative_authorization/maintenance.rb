@@ -66,37 +66,35 @@ module Authorization
             (!obj.name || obj.name.demodulize != 'ApplicationController')
         end
 
-        controllers.inject({}) do |memo, controller|
+        controllers.each_with_object({}) do |controller, memo|
           catchall_permissions = []
           permission_by_action = {}
           controller.all_filter_access_permissions.each do |controller_permissions|
             catchall_permissions << controller_permissions if controller_permissions.actions.include?(:all)
-            controller_permissions.actions.reject {|action| action == :all}.each do |action|
+            controller_permissions.actions.reject { |action| action == :all }.each do |action|
               permission_by_action[action] = controller_permissions
             end
           end
           actions = controller.public_instance_methods(false) - controller.private_methods
-          memo[controller] = actions.inject({}) do |actions_memo, action|
+          memo[controller] = actions.each_with_object({}) do |action, actions_memo|
             action_sym = action.to_sym
             actions_memo[action_sym] =
               if permission_by_action[action_sym]
                 {
-                  :privilege => permission_by_action[action_sym].privilege,
-                  :context   => permission_by_action[action_sym].context,
-                  :controller_permissions => [permission_by_action[action_sym]]
+                  privilege: permission_by_action[action_sym].privilege,
+                  context: permission_by_action[action_sym].context,
+                  controller_permissions: [permission_by_action[action_sym]]
                 }
               elsif !catchall_permissions.empty?
                 {
-                  :privilege => catchall_permissions[0].privilege,
-                  :context   => catchall_permissions[0].context,
-                  :controller_permissions => catchall_permissions
+                  privilege: catchall_permissions[0].privilege,
+                  context: catchall_permissions[0].context,
+                  controller_permissions: catchall_permissions
                 }
               else
                 {}
               end
-            actions_memo
           end
-          memo
         end
       end
     end

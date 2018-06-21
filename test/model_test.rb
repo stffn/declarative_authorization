@@ -2,7 +2,6 @@ require 'test_helper'
 require File.join(File.dirname(__FILE__), %w[.. lib declarative_authorization in_model])
 
 ActiveRecord::Base.send :include, Authorization::AuthorizationInModel
-# ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 options = { adapter: 'sqlite3', timeout: 500, database: ':memory:' }
 ActiveRecord::Base.establish_connection(options)
@@ -19,22 +18,29 @@ class TestModel < ActiveRecord::Base
   has_many :test_attr_throughs, through: :test_attrs
   has_one :test_attr_has_one, class_name: 'TestAttr'
   has_many :branches
-
-  # :conditions is deprecated in Rails 4.1
   has_many :test_attrs_with_attr, -> { where(attr: 1) }, class_name: 'TestAttr'
-  has_many :test_attr_throughs_with_attr, -> { where('test_attrs.attr = 1') }, through: :test_attrs,
-                                                                               class_name: 'TestAttrThrough', source: :test_attr_throughs
+  has_many :test_attr_throughs_with_attr,
+           -> { where('test_attrs.attr = 1') },
+           through: :test_attrs,
+           class_name: 'TestAttrThrough',
+           source: :test_attr_throughs
 
-  has_one :test_attr_throughs_with_attr_and_has_one, -> { where('test_attrs.attr = 1') }, through: :test_attrs,
-                                                                                          class_name: 'TestAttrThrough', source: :test_attr_throughs
+  has_one :test_attr_throughs_with_attr_and_has_one,
+          -> { where('test_attrs.attr = 1') },
+          through: :test_attrs,
+          class_name: 'TestAttrThrough',
+          source: :test_attr_throughs
 
   scope :with_content, -> { where('test_models.content IS NOT NULL') }
 
   # Primary key test
-  has_many :test_attrs_with_primary_id, class_name: 'TestAttr',
-                                        primary_key: :test_attr_through_id, foreign_key: :test_attr_through_id
+  has_many :test_attrs_with_primary_id,
+           class_name: 'TestAttr',
+           primary_key: :test_attr_through_id,
+           foreign_key: :test_attr_through_id
   has_many :test_attr_throughs_with_primary_id,
-           through: :test_attrs_with_primary_id, class_name: 'TestAttrThrough',
+           through: :test_attrs_with_primary_id,
+           class_name: 'TestAttrThrough',
            source: :n_way_join_item
 
   # for checking for unnecessary queries
@@ -146,7 +152,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     )
     Authorization::Engine.instance(reader)
 
-    _test_attr_1 = TestAttr.create!
+    TestAttr.create!
     test_model_1 = TestModel.create!
     test_model_1.test_attrs.create!
 
@@ -617,7 +623,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     )
     Authorization::Engine.instance(reader)
 
-    _test_attr_1 = TestAttr.create! test_model_id: 1, test_another_model_id: 2
+    TestAttr.create! test_model_id: 1, test_another_model_id: 2
 
     user = MockUser.new(:test_role, id: 1)
     assert_equal 1, TestAttr.with_permissions_to(:read, user: user).length
@@ -930,8 +936,8 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     test_attr_through_1 = TestAttrThrough.create!
     test_item = NWayJoinItem.create!
-    _test_model_1 = TestModel.create!(test_attr_through_id: test_attr_through_1.id)
-    _test_attr_1 = TestAttr.create!(test_attr_through_id: test_attr_through_1.id,
+    TestModel.create!(test_attr_through_id: test_attr_through_1.id)
+    TestAttr.create!(test_attr_through_id: test_attr_through_1.id,
                                    n_way_join_item_id: test_item.id)
 
     user = MockUser.new(:test_role,
@@ -1268,7 +1274,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
-    _test_attr_1 = test_model_1.test_attrs.create!
+    test_model_1.test_attrs.create!
 
     user = MockUser.new(:test_role)
     assert_equal 1, TestAttr.with_permissions_to(:read, user: user).length
@@ -1317,7 +1323,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     test_model_1 = TestModel.create!
     test_attr_1 = test_model_1.test_attrs.create!
-    _test_attr_2 = TestAttr.create!
+    TestAttr.create!
 
     user = MockUser.new(:test_role, id: test_attr_1.id)
     assert_equal 1, TestModel.with_permissions_to(:update, user: user).length
@@ -1339,11 +1345,11 @@ class NamedScopeModelTest < Test::Unit::TestCase
     )
     Authorization::Engine.instance(reader)
 
-    _test_attr_1 = TestAttr.create!(
+    TestAttr.create!(
       test_model: TestModel.create!(content: 'test_1_1'),
       test_another_model: TestModel.create!(content: 'test_1_2')
     )
-    _test_attr_2 = TestAttr.create!(
+    TestAttr.create!(
       test_model: TestModel.create!(content: 'test_2_1'),
       test_another_model: TestModel.create!(content: 'test_2_2')
     )
@@ -1372,7 +1378,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
     )
     Authorization::Engine.instance(reader)
 
-    _test_attr_1 = TestAttr.create!(
+    TestAttr.create!(
       test_model: TestModel.create!(content: 'test_1_1'),
       test_another_model: TestModel.create!(content: 'test_1_2')
     )
@@ -1408,12 +1414,12 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     country = Country.create!(name: 'country_1')
     country.test_models.create!
-    _test_attr_1 = TestAttr.create!(
+    TestAttr.create!(
       branch: Branch.create!(name: 'branch_1',
                              company: Company.create!(name: 'company_1',
                                                       country: country))
     )
-    _test_attr_2 = TestAttr.create!(
+    TestAttr.create!(
       company: Company.create!(name: 'company_2',
                                country: country)
     )
@@ -1640,7 +1646,7 @@ class ModelTest < Test::Unit::TestCase
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role_unrestricted)
-    _object = TestModelSecurityModel.create attr: 2
+    TestModelSecurityModel.create attr: 2
     Authorization.current_user = MockUser.new(:test_role)
 
     # TODO: before not checked yet
@@ -1768,12 +1774,12 @@ class ModelTest < Test::Unit::TestCase
 
     test_model = TestModel.create!
     test_model.test_attrs.create!(attr: 0)
-    _test_attr = test_model.test_attrs.create!(attr: 1)
+    test_model.test_attrs.create!(attr: 1)
     test_model.test_attrs.create!(attr: 3)
     test_branch = Branch.create!(test_model: test_model)
 
     test_model_2 = TestModel.create!
-    _test_attr_2 = test_model_2.test_attrs.create!(attr: 2)
+    test_model_2.test_attrs.create!(attr: 2)
     test_branch_2 = Branch.create!(test_model: test_model_2)
 
     test_model_3 = TestModel.create!

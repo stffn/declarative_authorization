@@ -600,7 +600,7 @@ module Authorization
 
       def filter_access_permissions # :nodoc:
         unless filter_access_permissions?
-          (ancestors - [self] ).reverse.each do |mod|
+          (ancestors - [self]).reverse.each do |mod|
             mod.filter_access_permissions if mod.respond_to?(:filter_access_permissions, true)
           end
         end
@@ -682,7 +682,11 @@ module Authorization
                             (@context ? @context.to_s.classify.constantize : contr.class.controller_name.classify.constantize)
         load_object_model = load_object_model.classify.constantize if load_object_model.is_a?(String)
         instance_var = "@#{load_object_model.name.demodulize.underscore}"
-        object = contr.instance_variable_get(instance_var)
+        object = if contr.instance_variable_defined?(instance_var)
+          contr.instance_variable_get(instance_var)
+        else
+          nil
+        end
         unless object
           begin
             object = @strong_params ? load_object_model.find_or_initialize_by(id: contr.params[:id]) : load_object_model.find(contr.params[:id])
