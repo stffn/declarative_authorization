@@ -43,3 +43,28 @@ class MaintenanceTest < Test::Unit::TestCase
     end
   end
 end
+
+class MaintenanceMocksController < MocksController
+  filter_access_to :test_action, require: :test, context: :permissions
+  define_action_methods :test_action
+end
+
+class MaintenanceControllerTest < ActionController::TestCase
+  tests MaintenanceMocksController
+
+  def test_request_with
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %(
+      authorization do
+        role :test_role do
+          has_permission_on :permissions, :to => :test
+          has_permission_on :specific_mocks, :to => :show
+        end
+      end
+    )
+    Authorization::Engine.instance(reader)
+
+    get_with(MockUser.new(:test_role), 'test_action')
+    assert @controller.authorized?
+  end
+end

@@ -181,9 +181,9 @@ module Authorization
       session = session.merge(user: user, user_id: user && user.id)
       with_user(user) do
         if xhr
-          xhr method, action, params, session, flash
+          xhr method, action, params: params, session: session, flash: flash
         else
-          send method, action, params, session, flash
+          send method, action, params: params, session: session, flash: flash
         end
       end
     end

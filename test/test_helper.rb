@@ -54,6 +54,7 @@ class MockDataObject
 end
 
 class MockUser < MockDataObject
+  attr_accessor :id
   def initialize(*roles)
     options = roles.last.is_a?(::Hash) ? roles.pop : {}
     super({ role_symbols: roles, login: hash }.merge(options))
