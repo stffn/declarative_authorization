@@ -5,5 +5,8 @@ rdoc
 gemfiles/*.lock
 log/*
 *.sublime*
-
-
+.ruby-version
+.ruby-gemset
+.idea
+Gemfile
+Gemfile.lock
