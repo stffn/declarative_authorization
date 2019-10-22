@@ -42,59 +42,61 @@ module Authorization
   # +@proxy_options[:joins] = { :bar => { :baz => :foo } }
   # @proxy_options[:conditions] = [ 'foos_bazzes.attr = :foos_bazzes__id_0', { :foos_bazzes__id_0 => 1 } ]+
   #
-  class ObligationScope < (Rails.version < "3" ? ActiveRecord::NamedScope::Scope : ActiveRecord::Relation)
-    def initialize (model, options)
+  class ObligationScope < ActiveRecord::Relation
+    def initialize(model, _options)
       @finder_options = {}
-      if Rails.version < "3"
-        super(model, options)
+      if Rails.version >= '5.2'
+        super(model, table: model.table_name)
+      elsif Rails.version >= '5'
+        super(model, model.table_name, nil) # , model.predicate_builder ?
       else
-	      super(model, model.table_name)
+        super(model, model.table_name)
       end
     end
 
     def scope
-      if Rails.version < "3"
-        self
-      elsif Rails.version < "4"
-        # for Rails < 4: use scoped method
-        self.klass.scoped(@finder_options)
-      else
-        # TODO Refactor this.  There is certainly a better way.
-        self.klass.joins(@finder_options[:joins]).includes(@finder_options[:include]).where(@finder_options[:conditions])
-      end
+      # TODO: Refactor this.  There is certainly a better way.
+      klass.joins(@finder_options[:joins])
+           .includes(@finder_options[:include])
+           .where(@finder_options[:conditions])
+           .references(@finder_options[:include])
     end
 
     # Consumes the given obligation, converting it into scope join and condition options.
-    def parse!( obligation )
+    def parse!(obligation)
       @current_obligation = obligation
       @join_table_joins = Set.new
       obligation_conditions[@current_obligation] ||= {}
-      follow_path( obligation )
+      follow_path(obligation)
 
       rebuild_condition_options!
       rebuild_join_options!
     end
-    
+
     protected
-    
+
     # Parses the next step in the association path.  If it's an association, we advance down the
     # path.  Otherwise, it's an attribute, and we need to evaluate it as a comparison operation.
-    def follow_path( steps, past_steps = [] )
-      if steps.is_a?( Hash )
+    def follow_path(steps, past_steps = [])
+      if steps.is_a?(Hash)
         steps.each do |step, next_steps|
           path_to_this_point = [past_steps, step].flatten
-          reflection = reflection_for( path_to_this_point ) rescue nil
+          reflection = begin
+                         reflection_for(path_to_this_point)
+                       rescue StandardError
+                         nil
+                       end
           if reflection
-            follow_path( next_steps, path_to_this_point )
+            follow_path(next_steps, path_to_this_point)
           else
-            follow_comparison( next_steps, past_steps, step )
+            follow_comparison(next_steps, past_steps, step)
           end
         end
-      elsif steps.is_a?( Array ) && steps.length == 2
-        if reflection_for( past_steps )
-          follow_comparison( steps, past_steps, :id )
+      elsif steps.is_a?(Array) && steps.length == 2
+        if reflection_for(past_steps)
+          follow_comparison(steps, past_steps, :id)
         else
-          follow_comparison( steps, past_steps[0..-2], past_steps[-1] )
+          follow_comparison(steps, past_steps[0..-2], past_steps[-1])
         end
       else
         raise "invalid obligation path #{[past_steps, steps].inspect}"
@@ -102,121 +104,113 @@ module Authorization
     end
 
     def top_level_model
-      if Rails.version < "3"
-        @proxy_scope
-      else
-        self.klass
-      end
+      klass
     end
 
-    def finder_options
-      Rails.version < "3" ? @proxy_options : @finder_options
-    end
-    
+    attr_reader :finder_options
+
     # At the end of every association path, we expect to see a comparison of some kind; for
     # example, +:attr => [ :is, :value ]+.
     #
     # This method parses the comparison and creates an obligation condition from it.
-    def follow_comparison( steps, past_steps, attribute )
+    def follow_comparison(steps, past_steps, attribute)
       operator = steps[0]
       value = steps[1..-1]
       value = value[0] if value.length == 1
 
-      add_obligation_condition_for( past_steps, [attribute, operator, value] )
+      add_obligation_condition_for(past_steps, [attribute, operator, value])
     end
-    
+
     # Adds the given expression to the current obligation's indicated path's conditions.
     #
     # Condition expressions must follow the format +[ <attribute>, <operator>, <value> ]+.
-    def add_obligation_condition_for( path, expression )
-      raise "invalid expression #{expression.inspect}" unless expression.is_a?( Array ) && expression.length == 3
-      add_obligation_join_for( path )
-      obligation_conditions[@current_obligation] ||= {}
-      ( obligation_conditions[@current_obligation][path] ||= Set.new ) << expression
+    def add_obligation_condition_for(path, expression)
+      (obligation_conditions[@current_obligation][path] ||= Set.new) << expression
     end
-    
+
     # Adds the given path to the list of obligation joins, if we haven't seen it before.
-    def add_obligation_join_for( path )
-      map_reflection_for( path ) if reflections[path].nil?
+    def add_obligation_join_for(path)
+      map_reflection_for(path) if reflections[path].nil?
     end
-    
+
     # Returns the model associated with the given path.
-    def model_for (path)
+    def model_for(path)
       reflection = reflection_for(path)
 
       if Authorization.is_a_association_proxy?(reflection)
-        if Rails.version < "3.2"
-          reflection.proxy_reflection.klass
-        else
-          reflection.proxy_association.reflection.klass
-        end
+        reflection.proxy_association.reflection.klass
       elsif reflection.respond_to?(:klass)
         reflection.klass
       else
         reflection
       end
     end
-    
+
     # Returns the reflection corresponding to the given path.
     def reflection_for(path, for_join_table_only = false)
-      @join_table_joins << path if for_join_table_only and !reflections[path]
-      reflections[path] ||= map_reflection_for( path )
+      @join_table_joins << path if for_join_table_only && !reflections[path]
+      reflections[path] ||= map_reflection_for(path)
     end
-    
+
     # Returns a proper table alias for the given path.  This alias may be used in SQL statements.
-    def table_alias_for( path )
-      table_aliases[path] ||= map_table_alias_for( path )
+    def table_alias_for(path)
+      table_aliases[path] ||= map_table_alias_for(path)
     end
 
     # Attempts to map a reflection for the given path.  Raises if already defined.
-    def map_reflection_for( path )
+    def map_reflection_for(path)
       raise "reflection for #{path.inspect} already exists" unless reflections[path].nil?
 
       reflection = path.empty? ? top_level_model : begin
-        parent = reflection_for( path[0..-2] )
-        if !Authorization.is_a_association_proxy?(parent) and parent.respond_to?(:klass)
-          parent.klass.reflect_on_association( path.last )
+        parent = reflection_for(path[0..-2])
+        if !Authorization.is_a_association_proxy?(parent) && parent.respond_to?(:klass)
+          parent.klass.reflect_on_association(path.last)
         else
-          parent.reflect_on_association( path.last )
+          parent.reflect_on_association(path.last)
         end
-      rescue
-        parent.reflect_on_association( path.last )
+      rescue StandardError
+        parent.reflect_on_association(path.last)
       end
       raise "invalid path #{path.inspect}" if reflection.nil?
 
       reflections[path] = reflection
-      map_table_alias_for( path )  # Claim a table alias for the path.
+      map_table_alias_for(path) # Claim a table alias for the path.
 
       # Claim alias for join table
       # TODO change how this is checked
-      if !Authorization.is_a_association_proxy?(reflection) and !reflection.respond_to?(:proxy_scope) and reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
+      if !Authorization.is_a_association_proxy?(reflection) && !reflection.respond_to?(:proxy_scope) && reflection.is_a?(ActiveRecord::Reflection::ThroughReflection)
         join_table_path = path[0..-2] + [reflection.options[:through]]
         reflection_for(join_table_path, true)
       end
-      
+
       reflection
     end
 
     # Attempts to map a table alias for the given path.  Raises if already defined.
-    def map_table_alias_for( path )
+    def map_table_alias_for(path)
       return "table alias for #{path.inspect} already exists" unless table_aliases[path].nil?
-      
-      reflection = reflection_for( path )
+
+      reflection = reflection_for(path)
       table_alias = reflection.table_name
-      if table_aliases.values.include?( table_alias )
+      if table_aliases.values.flatten.include?(table_alias)
         max_length = reflection.active_record.connection.table_alias_length
         # Rails seems to pluralize reflection names
-        table_alias = "#{reflection.name.to_s.pluralize}_#{reflection.active_record.table_name}".to(max_length-1)
-      end            
-      while table_aliases.values.include?( table_alias )
+        table_alias = "#{reflection.name.to_s.pluralize}_#{reflection.active_record.table_name}".to(max_length - 1)
+      end
+      while table_aliases.values.include?(table_alias)
         if table_alias =~ /\w(_\d+?)$/
-          table_index = $1.succ
-          table_alias = "#{table_alias[0..-(table_index.length+1)]}_#{table_index}"
+          table_index = Regexp.last_match(1).succ
+          table_alias = "#{table_alias[0..-(table_index.length + 1)]}_#{table_index}"
         else
-          table_alias = "#{table_alias[0..(max_length-3)]}_2" 
+          table_alias = "#{table_alias[0..(max_length - 3)]}_2"
         end
       end
-      table_aliases[path] = table_alias
+
+      table_alias
+    end
+
+    def polymorphic?(relation)
+      relation.respond_to?(:options) && relation.options[:polymorphic]
     end
 
     # Returns a hash mapping obligations to zero or more condition path sets.
@@ -229,12 +223,12 @@ module Authorization
       # lets try to get the order of joins right
       @reflections ||= ActiveSupport::OrderedHash.new
     end
-    
+
     # Returns a hash mapping paths to proper table aliases to use in SQL statements.
     def table_aliases
       @table_aliases ||= {}
     end
-    
+
     # Parses all of the defined obligation conditions and defines the scope's :conditions option.
     def rebuild_condition_options!
       conds = []
@@ -242,16 +236,16 @@ module Authorization
       used_paths = Set.new
       delete_paths = Set.new
       obligation_conditions.each_with_index do |array, obligation_index|
-        obligation, conditions = array
+        _, conditions = array
         obligation_conds = []
         conditions.each do |path, expressions|
-          model = model_for( path )
+          model = model_for(path)
           table_alias = table_alias_for(path)
           parent_model = (path.length > 1 ? model_for(path[0..-2]) : top_level_model)
           expressions.each do |expression|
             attribute, operator, value = expression
             # prevent unnecessary joins:
-            if attribute == :id and operator == :is and parent_model.columns_hash["#{path.last}_id"]
+            if (attribute == :id) && (operator == :is) && parent_model.columns_hash["#{path.last}_id"]
               attribute_name = :"#{path.last}_id"
               attribute_table_alias = table_alias_for(path[0..-2])
               used_paths << path[0..-2]
@@ -265,10 +259,10 @@ module Authorization
             end
             bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
 
-            sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." +
-                "#{parent_model.connection.quote_table_name(attribute_name)}"
-            if value.nil? and [:is, :is_not].include?(operator)
-              obligation_conds << "#{sql_attribute} IS #{[:contains, :is].include?(operator) ? '' : 'NOT '}NULL"
+            sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." \
+                            "#{parent_model.connection.quote_table_name(attribute_name)}"
+            if value.nil? && %i[is is_not].include?(operator)
+              obligation_conds << "#{sql_attribute} IS #{%i[contains is].include?(operator) ? '' : 'NOT '}NULL"
             else
               attribute_operator = case operator
                                    when :contains, :is             then "= :#{bindvar}"
@@ -286,27 +280,36 @@ module Authorization
             end
           end
         end
-        obligation_conds << "1=1" if obligation_conds.empty?
+        obligation_conds << '1=1' if obligation_conds.empty?
         conds << "(#{obligation_conds.join(' AND ')})"
       end
-      (delete_paths - used_paths).each {|path| reflections.delete(path)}
+      (delete_paths - used_paths).each { |path| reflections.delete(path) }
 
-      finder_options[:conditions] = [ conds.join( " OR " ), binds ]
+      finder_options[:conditions] = [conds.join(' OR '), binds]
     end
 
-    def attribute_value (value)
+    def attribute_value(value)
       value.class.respond_to?(:descends_from_active_record?) && value.class.descends_from_active_record? && value.id ||
-        value.is_a?(Array) && value[0].class.respond_to?(:descends_from_active_record?) && value[0].class.descends_from_active_record? && value.map( &:id ) ||
+        value.is_a?(Array) && value[0].class.respond_to?(:descends_from_active_record?) && value[0].class.descends_from_active_record? && value.map(&:id) ||
         value
     end
-    
+
     # Parses all of the defined obligation joins and defines the scope's :joins or :includes option.
     # TODO: Support non-linear association paths.  Right now, we just break down the longest path parsed.
     def rebuild_join_options!
       joins = (finder_options[:joins] || []) + (finder_options[:includes] || [])
 
-      reflections.keys.each do |path|
-        next if path.empty? or @join_table_joins.include?(path)
+      polymorphic_paths = {}
+      reflections.each do |path, refs|
+        next if path.empty? || @join_table_joins.include?(path)
+
+        first_ref = refs
+        if polymorphic?(first_ref)
+          # sanity check
+          raise 'Only one polymorphic relation is allowed at each step' if refs.class == 'Array' && refs.length > 1
+
+          polymorphic_paths[path] = first_ref.active_record.poly_resource_names
+        end
 
         existing_join = joins.find do |join|
           existing_path = join_to_path(join)
@@ -323,19 +326,45 @@ module Authorization
         end
       end
 
-      case obligation_conditions.length
-      when 0 then
+      # construct normal joins replacing polymorphic references to the actual resources (of which there can be many)
+      polymorphic_paths.to_a.sort_by { |p| p.first.length }.reverse.each do |ppath, resource_names|
+        normalised_joins = []
+        joins.each do |join|
+          path = join_to_path join
+
+          # check if ppath is a subset of path
+          if ppath == path[0, ppath.length]
+            resource_names.each do |resource_name|
+              resource_idx = ppath.length - 1
+              path[resource_idx] = resource_name
+              normal_join = path_to_join path
+
+              normalised_joins << normal_join
+            end
+          else
+            normalised_joins << join
+          end
+        end
+
+        joins = normalised_joins
+      end
+
+      conds_len = obligation_conditions.length
+      if conds_len == 0
         # No obligation conditions means we don't have to mess with joins or includes at all.
-      when 1 then
+      elsif conds_len == 1 && polymorphic_paths.empty?
+        # joins in a scope are converted to inner joins
         finder_options[:joins] = joins
-        finder_options.delete( :include )
+        finder_options.delete(:include)
       else
-        finder_options.delete( :joins )
+        # polymorphic paths must use left joins (include)
+        # include in a scope is converted to left joins
+        finder_options.delete(:joins)
         finder_options[:include] = joins
       end
     end
 
-    def path_to_join (path)
+    def path_to_join(path)
       case path.length
       when 0 then nil
       when 1 then path[0]
@@ -348,7 +377,7 @@ module Authorization
       end
     end
 
-    def join_to_path (join)
+    def join_to_path(join)
       case join
       when Symbol
         [join]
@@ -356,6 +385,14 @@ module Authorization
         [join.keys.first] + join_to_path(join[join.keys.first])
       end
     end
+
+    # Override AR Relation dynamic method finder.
+    #
+    # Afaik ObligationScope does not need to inherit the Relation
+    # dynamic methods. This makes debugging typos in this class
+    # much easier.
+    def method_missing(name, *_args)
+      raise "Method #{name} does not exist"
+    end
   end
 end
-

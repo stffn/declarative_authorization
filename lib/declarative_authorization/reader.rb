@@ -1,12 +1,9 @@
 # Authorization::Reader
-
-require File.dirname(__FILE__) + '/authorization.rb'
-
 module Authorization
   # Parses an authorization configuration file in the authorization DSL and
   # constructs a data model of its contents.
-  # 
-  # For examples and the modeled data model, see the 
+  #
+  # For examples and the modeled data model, see the
   # README[link:files/README_rdoc.html].
   #
   # Also, see role definition methods
@@ -40,12 +37,12 @@ module Authorization
   #
   module Reader
     # Signals that the specified file to load was not found.
-    class DSLFileNotFoundError < Exception; end
+    class DSLFileNotFoundError < RuntimeError; end
     # Signals errors that occur while reading and parsing an authorization DSL
-    class DSLError < Exception; end
+    class DSLError < RuntimeError; end
     # Signals errors in the syntax of an authorization DSL.
     class DSLSyntaxError < DSLError; end
-    
+
     # Top-level reader, parses the methods +privileges+ and +authorization+.
     # +authorization+ takes a block with authorization rules as described in
     # AuthorizationRulesReader.  The block to +privileges+ defines privilege
@@ -54,12 +51,12 @@ module Authorization
     class DSLReader
       attr_reader :privileges_reader, :auth_rules_reader # :nodoc:
 
-      def initialize ()
+      def initialize
         @privileges_reader = PrivilegesReader.new
         @auth_rules_reader = AuthorizationRulesReader.new
       end
 
-      def initialize_copy (from) # :nodoc:
+      def initialize_copy(from) # :nodoc:
         @privileges_reader = from.privileges_reader.clone
         @auth_rules_reader = from.auth_rules_reader.clone
       end
@@ -79,7 +76,7 @@ module Authorization
 
       # Parses a authorization DSL specification from the string given
       # in +dsl_data+.  Raises DSLSyntaxError if errors occur on parsing.
-      def parse (dsl_data, file_name = nil)
+      def parse(dsl_data, file_name = nil)
         if file_name
           DSLMethods.new(self).instance_eval(dsl_data, file_name)
         else
@@ -90,20 +87,20 @@ module Authorization
       end
 
       # Load and parse a DSL from the given file name.
-      def load (dsl_file)
+      def load(dsl_file)
         parse(File.read(dsl_file), dsl_file) if File.exist?(dsl_file)
       end
 
       # Load and parse a DSL from the given file name. Raises Authorization::Reader::DSLFileNotFoundError
       # if the file cannot be found.
-      def load! (dsl_file)
+      def load!(dsl_file)
         raise ::Authorization::Reader::DSLFileNotFoundError, "Error reading authorization rules file with path '#{dsl_file}'!  Please ensure it exists and that it is accessible." unless File.exist?(dsl_file)
         load(dsl_file)
       end
 
       # Loads and parses DSL files and returns a new reader
-      def self.load (dsl_files)
-        # TODO cache reader in production mode?
+      def self.load(dsl_files)
+        # TODO: cache reader in production mode?
         reader = new
         dsl_files = [dsl_files].flatten
         dsl_files.each do |file|
@@ -114,19 +111,19 @@ module Authorization
 
       # DSL methods
       class DSLMethods # :nodoc:
-        def initialize (parent)
+        def initialize(parent)
           @parent = parent
         end
 
-        def privileges (&block)
+        def privileges(&block)
           @parent.privileges_reader.instance_eval(&block)
         end
 
-        def contexts (&block)
+        def contexts(&block)
           # Not implemented
         end
 
-        def authorization (&block)
+        def authorization(&block)
           @parent.auth_rules_reader.instance_eval(&block)
         end
       end
@@ -135,7 +132,7 @@ module Authorization
     # The PrivilegeReader handles the part of the authorization DSL in
     # a +privileges+ block.  Here, privilege hierarchies are defined.
     class PrivilegesReader
-      # TODO handle privileges with separated context
+      # TODO: handle privileges with separated context
       attr_reader :privileges, :privilege_hierarchy # :nodoc:
 
       def initialize # :nodoc:
@@ -146,12 +143,12 @@ module Authorization
         @privilege_hierarchy = {}
       end
 
-      def initialize_copy (from) # :nodoc:
+      def initialize_copy(from) # :nodoc:
         @privileges = from.privileges.clone
         @privilege_hierarchy = from.privilege_hierarchy.clone
       end
 
-      def append_privilege (priv) # :nodoc:
+      def append_privilege(priv) # :nodoc:
         @privileges << priv unless @privileges.include?(priv)
       end
 
@@ -160,7 +157,7 @@ module Authorization
       # or as option :+includes+.  If the optional context is given,
       # the privilege hierarchy is limited to that context.
       #
-      def privilege (privilege, context = nil, options = {}, &block)
+      def privilege(privilege, context = nil, options = {}, &block)
         if context.is_a?(Hash)
           options = context
           context = nil
@@ -177,8 +174,8 @@ module Authorization
 
       # Specifies +privileges+ that are to be assigned as lower ones.  Only to
       # be used inside a privilege block.
-      def includes (*privileges)
-        raise DSLError, "includes only in privilege block" if @current_priv.nil?
+      def includes(*privileges)
+        raise DSLError, 'includes only in privilege block' if @current_priv.nil?
         privileges.each do |priv|
           append_privilege priv
           @privilege_hierarchy[@current_priv] ||= []
@@ -189,7 +186,7 @@ module Authorization
 
     class AuthorizationRulesReader
       attr_reader :roles, :role_hierarchy, :auth_rules,
-        :role_descriptions, :role_titles, :omnipotent_roles # :nodoc:
+                  :role_descriptions, :role_titles, :omnipotent_roles # :nodoc:
 
       def initialize # :nodoc:
         @current_role = nil
@@ -203,14 +200,14 @@ module Authorization
         @auth_rules = AuthorizationRuleSet.new
       end
 
-      def initialize_copy (from) # :nodoc:
-        [:roles, :role_hierarchy, :auth_rules,
-            :role_descriptions, :role_titles, :omnipotent_roles].each do |attribute|
+      def initialize_copy(from) # :nodoc:
+        %i[roles role_hierarchy auth_rules
+           role_descriptions role_titles omnipotent_roles].each do |attribute|
           instance_variable_set(:"@#{attribute}", from.send(attribute).clone)
         end
       end
 
-      def append_role (role, options = {}) # :nodoc:
+      def append_role(role, options = {}) # :nodoc:
         @roles << role unless @roles.include? role
         @role_titles[role] = options[:title] if options[:title]
         @role_descriptions[role] = options[:description] if options[:description]
@@ -222,7 +219,7 @@ module Authorization
       #     has_permissions_on ...
       #   end
       #
-      def role (role, options = {}, &block)
+      def role(role, options = {})
         append_role role, options
         @current_role = role
         yield
@@ -240,12 +237,12 @@ module Authorization
       #     has_permission_on :employees, :to => :read
       #   end
       #
-      def includes (*roles)
-        raise DSLError, "includes only in role blocks" if @current_role.nil?
+      def includes(*roles)
+        raise DSLError, 'includes only in role blocks' if @current_role.nil?
         @role_hierarchy[@current_role] ||= []
         @role_hierarchy[@current_role] += roles.flatten
       end
-      
+
       # Allows the definition of privileges to be allowed for the current role,
       # either in a has_permission_on block or directly in one call.
       #   role :admin
@@ -265,7 +262,7 @@ module Authorization
       # statements in one block are OR'ed if no :+join_by+ option is given
       # (see below).  To AND conditions, either set :+join_by+ to :and or place
       # them in one if_attribute statement.
-      # 
+      #
       # Available options
       # [:+to+]
       #   A symbol or an array of symbols representing the privileges that
@@ -274,26 +271,26 @@ module Authorization
       #   Join operator to logically connect the constraint statements inside
       #   of the has_permission_on block.  May be :+and+ or :+or+.  Defaults to :+or+.
       #
-      def has_permission_on (*args, &block)
+      def has_permission_on(*args)
         options = args.extract_options!
         context = args.flatten
-        
-        raise DSLError, "has_permission_on only allowed in role blocks" if @current_role.nil?
-        options = {:to => [], :join_by => :or}.merge(options)
-        
-        privs = options[:to] 
+
+        raise DSLError, 'has_permission_on only allowed in role blocks' if @current_role.nil?
+        options = { to: [], join_by: :or }.merge(options)
+
+        privs = options[:to]
         privs = [privs] unless privs.is_a?(Array)
-        raise DSLError, "has_permission_on either needs a block or :to option" if !block_given? and privs.empty?
+        raise DSLError, 'has_permission_on either needs a block or :to option' if !block_given? && privs.empty?
 
         file, line = file_and_line_number_from_call_stack
         rule = AuthorizationRule.new(@current_role, privs, context, options[:join_by],
-                   :source_file => file, :source_line => line)
+                                     source_file: file, source_line: line)
         @auth_rules << rule
         if block_given?
           @current_rule = rule
           yield
-          raise DSLError, "has_permission_on block content specifies no privileges" if rule.privileges.empty?
-          # TODO ensure?
+          raise DSLError, 'has_permission_on block content specifies no privileges' if rule.privileges.empty?
+          # TODO: ensure?
           @current_rule = nil
         end
       end
@@ -303,7 +300,7 @@ module Authorization
       #     has_omnipotence
       #   end
       def has_omnipotence
-        raise DSLError, "has_omnipotence only allowed in role blocks" if @current_role.nil?
+        raise DSLError, 'has_omnipotence only allowed in role blocks' if @current_role.nil?
         @omnipotent_roles << @current_role
       end
 
@@ -312,21 +309,21 @@ module Authorization
       #     description "To be assigned to administrative personnel"
       #     has_permission_on ...
       #   end
-      def description (text)
-        raise DSLError, "description only allowed in role blocks" if @current_role.nil?
+      def description(text)
+        raise DSLError, 'description only allowed in role blocks' if @current_role.nil?
         role_descriptions[@current_role] = text
       end
-      
+
       # Sets a human-readable title for the current role.  E.g.
       #   role :admin
       #     title "Administrator"
       #     has_permission_on ...
       #   end
-      def title (text)
-        raise DSLError, "title only allowed in role blocks" if @current_role.nil?
+      def title(text)
+        raise DSLError, 'title only allowed in role blocks' if @current_role.nil?
         role_titles[@current_role] = text
       end
-      
+
       # Used in a has_permission_on block, to may be used to specify privileges
       # to be assigned to the current role under the conditions specified in
       # the current block.
@@ -335,15 +332,15 @@ module Authorization
       #       to :create, :read, :update, :delete
       #     end
       #   end
-      def to (*privs)
-        raise DSLError, "to only allowed in has_permission_on blocks" if @current_rule.nil?
+      def to(*privs)
+        raise DSLError, 'to only allowed in has_permission_on blocks' if @current_rule.nil?
         @current_rule.append_privileges(privs.flatten)
       end
 
       # In a has_permission_on block, if_attribute specifies conditions
       # of dynamic parameters that have to be met for the user to meet the
       # privileges in this block.  Conditions are evaluated on the context
-      # object.  Thus, the following allows CRUD for branch admins only on 
+      # object.  Thus, the following allows CRUD for branch admins only on
       # employees that belong to the same branch as the current user.
       #   role :branch_admin
       #     has_permission_on :employees do
@@ -355,7 +352,7 @@ module Authorization
       # operator is contains for collections.  In the block supplied to the
       # operator, +user+ specifies the current user for whom the condition
       # is evaluated.
-      # 
+      #
       # Conditions may be nested:
       #   role :company_admin
       #     has_permission_on :employees do
@@ -375,7 +372,7 @@ module Authorization
       #   object.company.branches.any? { |branch| branch.manager ... }
       # will be executed.  with_permission_to scopes construct efficient SQL
       # joins, though.
-      # 
+      #
       # Multiple attributes in one :if_attribute statement are AND'ed.
       # Multiple if_attribute statements are OR'ed if the join operator for the
       # has_permission_on block isn't explicitly set.  Thus, the following would
@@ -394,8 +391,8 @@ module Authorization
       #   if_attribute :type => "special"
       #   if_attribute :id   => [1,2]
       #
-      def if_attribute (attr_conditions_hash)
-        raise DSLError, "if_attribute only in has_permission blocks" if @current_rule.nil?
+      def if_attribute(attr_conditions_hash)
+        raise DSLError, 'if_attribute only in has_permission blocks' if @current_rule.nil?
         parse_attribute_conditions_hash!(attr_conditions_hash)
         @current_rule.append_attribute Attribute.new(attr_conditions_hash)
       end
@@ -446,37 +443,37 @@ module Authorization
       #     if_permitted_to :read, :home_branch, :context => :branches
       #     if_permitted_to :read, :branch => :main_company, :context => :companies
       #
-      def if_permitted_to (privilege, attr_or_hash = nil, options = {})
-        raise DSLError, "if_permitted_to only in has_permission blocks" if @current_rule.nil?
+      def if_permitted_to(privilege, attr_or_hash = nil, options = {})
+        raise DSLError, 'if_permitted_to only in has_permission blocks' if @current_rule.nil?
         options[:context] ||= attr_or_hash.delete(:context) if attr_or_hash.is_a?(Hash)
         # only :context option in attr_or_hash:
-        attr_or_hash = nil if attr_or_hash.is_a?(Hash) and attr_or_hash.empty?
+        attr_or_hash = nil if attr_or_hash.is_a?(Hash) && attr_or_hash.empty?
         @current_rule.append_attribute AttributeWithPermission.new(privilege,
-            attr_or_hash, options[:context])
+                                                                   attr_or_hash, options[:context])
       end
-      
+
       # In an if_attribute statement, is says that the value has to be
       # met exactly by the if_attribute attribute.  For information on the block
       # argument, see if_attribute.
-      def is (&block)
+      def is(&block)
         [:is, block]
       end
 
       # The negation of is.
-      def is_not (&block)
+      def is_not(&block)
         [:is_not, block]
       end
 
       # In an if_attribute statement, contains says that the value has to be
       # part of the collection specified by the if_attribute attribute.
       # For information on the block argument, see if_attribute.
-      def contains (&block)
+      def contains(&block)
         [:contains, block]
       end
 
       # The negation of contains.  Currently, query rewriting is disabled
       # for does_not_contain.
-      def does_not_contain (&block)
+      def does_not_contain(&block)
         [:does_not_contain, block]
       end
 
@@ -484,63 +481,63 @@ module Authorization
       # one of the values has to be part of the collection specified by the
       # if_attribute attribute.  The value block needs to evaluate to an
       # Enumerable.  For information on the block argument, see if_attribute.
-      def intersects_with (&block)
+      def intersects_with(&block)
         [:intersects_with, block]
       end
-      
+
       # In an if_attribute statement, is_in says that the value has to
       # contain the attribute value.
       # For information on the block argument, see if_attribute.
-      def is_in (&block)
+      def is_in(&block)
         [:is_in, block]
       end
 
       # The negation of is_in.
-      def is_not_in (&block)
+      def is_not_in(&block)
         [:is_not_in, block]
       end
-      
+
       # Less than
-      def lt (&block)
+      def lt(&block)
         [:lt, block]
       end
 
       # Less than or equal to
-      def lte (&block)
+      def lte(&block)
         [:lte, block]
       end
 
       # Greater than
-      def gt (&block)
+      def gt(&block)
         [:gt, block]
       end
 
       # Greater than or equal to
-      def gte (&block)
+      def gte(&block)
         [:gte, block]
       end
 
       private
-      def parse_attribute_conditions_hash! (hash)
+
+      def parse_attribute_conditions_hash!(hash)
         merge_hash = {}
         hash.each do |key, value|
           if value.is_a?(Hash)
             parse_attribute_conditions_hash!(value)
           elsif !value.is_a?(Array)
             merge_hash[key] = [:is, proc { value }]
-          elsif value.is_a?(Array) and !value[0].is_a?(Symbol)
+          elsif value.is_a?(Array) && !value[0].is_a?(Symbol)
             merge_hash[key] = [:is_in, proc { value }]
           end
         end
         hash.merge!(merge_hash)
       end
-      
+
       def file_and_line_number_from_call_stack
         caller_parts = caller(2).first.split(':')
-        [caller_parts[0] == "(eval)" ? nil : caller_parts[0],
-          caller_parts[1] && caller_parts[1].to_i]
+        [caller_parts[0] == '(eval)' ? nil : caller_parts[0],
+         caller_parts[1] && caller_parts[1].to_i]
       end
     end
   end
 end
-
