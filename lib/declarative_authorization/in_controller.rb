@@ -309,7 +309,7 @@ module Authorization
         actions = args.flatten
 
         # prevent setting filter_access_filter multiple times
-        skip_before_filter :filter_access_filter
+        skip_before_filter :filter_access_filter, raise: false
         before_filter :filter_access_filter
         
         filter_access_permissions.each do |perm|
