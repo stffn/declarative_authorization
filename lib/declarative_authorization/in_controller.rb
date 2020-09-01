@@ -6,6 +6,7 @@ module Authorization
   
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
+      base.private :authorization_engine, :permitted_to?, :permitted_to!
     end
     
     DEFAULT_DENY = false
